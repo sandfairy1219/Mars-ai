@@ -1,5 +1,9 @@
 # API Keys & Environment Variables
 .env
+etf-alarm/.env
+
+# ETF Alarm state
+etf-alarm/state.json
 
 # Logs
 logs/
@@ -7,6 +11,7 @@ logs/
 
 # Dependencies
 node_modules/
+etf-alarm/node_modules/
 
 # OS Files
 .DS_Store
