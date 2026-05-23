@@ -12,6 +12,18 @@ const KEYWORDS = (process.env.KEYWORDS || 'launch,etf,list,new')
 
 const SOURCES = [
   {
+    name: 'SaveTicker',
+    enabled: process.env.SAVETICKER_ENABLED !== 'false',
+    type: 'json',
+    url: process.env.SAVETICKER_URL || 'https://saveticker.com/api/news/list?page=1&page_size=20&sort=created_at_desc&label_group=1&label_name=1',
+    jsonListPath: 'news_list',
+    jsonTitleField: 'title',
+    jsonDateField: 'created_at',
+    jsonUrlBuilder: (item) => `https://saveticker.com/news/${item.id}`,
+    jsonFilter: (item) => Array.isArray(item.tag_names) && item.tag_names.includes('속보'),
+    skipKeywordCheck: true,
+  },
+  {
     name: 'Defiance',
     enabled: process.env.DEFIANCE_ENABLED !== 'false',
     url: process.env.DEFIANCE_URL || 'https://www.defianceetfs.com/in-the-news/',
@@ -22,7 +34,7 @@ const SOURCES = [
     name: 'TRADR',
     enabled: process.env.TRADR_ENABLED !== 'false',
     url: process.env.TRADR_URL || 'https://www.tradretfs.com/news-and-media',
-    titleSelector: process.env.TRADR_SELECTOR || '.news-item h2 a',
+    titleSelector: process.env.TRADR_SELECTOR || '.news-item-title',
     dateSelector: process.env.TRADR_DATE_SELECTOR || '.date',
   },
   {
@@ -79,21 +91,26 @@ async function sendWebhook(sourceName, title, url, dateText) {
     return;
   }
 
+  const embed = {
+    title: `🚀 ${sourceName} - 새 ETF 관련 소식`,
+    description: `**${title}**`,
+    color: 0x00ff88,
+    fields: [
+      { name: '출처', value: sourceName, inline: true },
+      { name: '날짜', value: dateText || 'N/A', inline: true }
+    ],
+    footer: { text: 'ETF Alarm Bot' },
+    timestamp: new Date().toISOString()
+  };
+
+  if (url) {
+    embed.url = url;
+  }
+
   const payload = {
     username: 'ETF 알리미',
     avatar_url: 'https://cdn-icons-png.flaticon.com/512/4222/4222019.png',
-    embeds: [{
-      title: `🚀 ${sourceName} - 새 ETF 관련 소식`,
-      description: `**${title}**`,
-      url: url,
-      color: 0x00ff88,
-      fields: [
-        { name: '출처', value: sourceName, inline: true },
-        { name: '날짜', value: dateText || 'N/A', inline: true }
-      ],
-      footer: { text: 'ETF Alarm Bot' },
-      timestamp: new Date().toISOString()
-    }]
+    embeds: [embed]
   };
 
   try {
@@ -122,17 +139,18 @@ async function checkSource(source) {
   console.log(`🔍 [${source.name}] 크롤링 시작: ${source.url}`);
 
   try {
+    const isJson = source.type === 'json';
     const res = await fetch(source.url, {
       redirect: 'follow',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept': isJson ? 'application/json, text/plain, */*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9,ko;q=0.8',
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Dest': isJson ? 'empty' : 'document',
+        'Sec-Fetch-Mode': isJson ? 'cors' : 'navigate',
         'Sec-Fetch-Site': 'none',
         'Cache-Control': 'max-age=0'
       }
@@ -142,31 +160,64 @@ async function checkSource(source) {
       throw new Error(`HTTP ${res.status}`);
     }
 
-    const html = await res.text();
-    const $ = cheerio.load(html);
     const state = loadState();
     const prevTitles = state[source.name] || [];
-    const newTitles = [];
+    let newTitles = [];
 
-    $(source.titleSelector).each((i, el) => {
-      const title = $(el).text().trim();
-      const href = $(el).attr('href') 
-        || $(el).closest('a').attr('href')
-        || $(el).parent('a').attr('href')
-        || $(el).siblings('a').first().attr('href')
-        || '';
-      const articleUrl = href.startsWith('http') ? href : new URL(href, source.url).href;
-      
-      const dateEl = source.dateSelector 
-        ? $(el).closest('article, li, div, tr').find(source.dateSelector).first()
-        : null;
-      const dateText = dateEl ? dateEl.text().trim() : '';
-
-      // 중복 제거 (제목 기준)
-      if (!prevTitles.includes(title) && hasKeyword(title)) {
-        newTitles.push({ title, url: articleUrl, date: dateText });
+    if (isJson) {
+      const json = await res.json();
+      let items = json;
+      if (source.jsonListPath) {
+        const paths = source.jsonListPath.split('.');
+        for (const p of paths) {
+          items = items?.[p];
+        }
       }
-    });
+      if (!Array.isArray(items)) {
+        throw new Error(`JSON response did not contain array at path ${source.jsonListPath || 'root'}`);
+      }
+
+      for (const item of items) {
+        if (source.jsonFilter && !source.jsonFilter(item)) continue;
+
+        const title = item[source.jsonTitleField || 'title'];
+        if (!title) continue;
+
+        const dateText = item[source.jsonDateField || 'date'] || '';
+        let articleUrl = item[source.jsonUrlField || 'url'] || '';
+        if (!articleUrl && source.jsonUrlBuilder) {
+          articleUrl = source.jsonUrlBuilder(item);
+        }
+
+        const shouldAlert = source.skipKeywordCheck || hasKeyword(title);
+        if (!prevTitles.includes(title) && shouldAlert) {
+          newTitles.push({ title, url: articleUrl, date: dateText });
+        }
+      }
+    } else {
+      const html = await res.text();
+      const $ = cheerio.load(html);
+
+      $(source.titleSelector).each((i, el) => {
+        const title = $(el).text().trim();
+        const href = $(el).attr('href') 
+          || $(el).closest('a').attr('href')
+          || $(el).parent('a').attr('href')
+          || $(el).siblings('a').first().attr('href')
+          || '';
+        const articleUrl = href.startsWith('http') ? href : new URL(href, source.url).href;
+        
+        const dateEl = source.dateSelector 
+          ? $(el).closest('article, li, div, tr').find(source.dateSelector).first()
+          : null;
+        const dateText = dateEl ? dateEl.text().trim() : '';
+
+        // 중복 제거 (제목 기준)
+        if (!prevTitles.includes(title) && hasKeyword(title)) {
+          newTitles.push({ title, url: articleUrl, date: dateText });
+        }
+      });
+    }
 
     if (newTitles.length === 0) {
       console.log(`✔️ [${source.name}] 새 소식 없음`);
