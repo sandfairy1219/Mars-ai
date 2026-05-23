@@ -84,6 +84,22 @@ function hasKeyword(text) {
   return KEYWORDS.some(k => lower.includes(k));
 }
 
+function formatDate(dateText) {
+  if (!dateText || dateText === 'N/A') return 'N/A';
+  try {
+    const date = new Date(dateText);
+    if (isNaN(date.getTime())) return dateText;
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}년 ${month}월 ${day}일 ${hours}:${minutes}`;
+  } catch {
+    return dateText;
+  }
+}
+
 // ==================== Discord 웹훅 ====================
 async function sendWebhook(sourceName, title, url, dateText) {
   if (!WEBHOOK_URL) {
@@ -97,7 +113,7 @@ async function sendWebhook(sourceName, title, url, dateText) {
     color: 0x00ff88,
     fields: [
       { name: '출처', value: sourceName, inline: true },
-      { name: '날짜', value: dateText || 'N/A', inline: true }
+      { name: '날짜', value: formatDate(dateText), inline: true }
     ],
     footer: { text: 'ETF Alarm Bot' },
     timestamp: new Date().toISOString()
