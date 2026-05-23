@@ -92,7 +92,7 @@ async function sendWebhook(sourceName, title, url, dateText) {
   }
 
   const embed = {
-    title: `🚀 ${sourceName} - 새 ETF 관련 소식`,
+    title: `🚀 ${sourceName} - 새 뉴스`,
     description: `**${title}**`,
     color: 0x00ff88,
     fields: [
