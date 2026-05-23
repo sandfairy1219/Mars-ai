@@ -36,15 +36,15 @@ const SOURCES = [
     name: 'GraniteShares',
     enabled: process.env.GRANITESHARES_ENABLED !== 'false',
     url: process.env.GRANITESHARES_URL || 'https://graniteshares.com/press/',
-    titleSelector: process.env.GRANITESHARES_SELECTOR || '.news-item h2 a',
-    dateSelector: process.env.GRANITESHARES_DATE_SELECTOR || '.date',
+    titleSelector: process.env.GRANITESHARES_SELECTOR || '.news-article-title',
+    dateSelector: process.env.GRANITESHARES_DATE_SELECTOR || '.news-article-date',
   },
   {
     name: 'T-Rex',
     enabled: process.env.TREX_ENABLED !== 'false',
     url: process.env.TREX_URL || 'https://www.rexshares.com/news-insights/',
-    titleSelector: process.env.TREX_SELECTOR || '.news-item h2 a',
-    dateSelector: process.env.TREX_DATE_SELECTOR || '.date',
+    titleSelector: process.env.TREX_SELECTOR || '.blog-single-title',
+    dateSelector: process.env.TREX_DATE_SELECTOR || '.post-date',
   }
 ];
 
@@ -150,7 +150,11 @@ async function checkSource(source) {
 
     $(source.titleSelector).each((i, el) => {
       const title = $(el).text().trim();
-      const href = $(el).attr('href') || '';
+      const href = $(el).attr('href') 
+        || $(el).closest('a').attr('href')
+        || $(el).parent('a').attr('href')
+        || $(el).siblings('a').first().attr('href')
+        || '';
       const articleUrl = href.startsWith('http') ? href : new URL(href, source.url).href;
       
       const dateEl = source.dateSelector 
