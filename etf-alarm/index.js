@@ -15,7 +15,7 @@ const SOURCES = [
     name: 'SaveTicker',
     enabled: process.env.SAVETICKER_ENABLED !== 'false',
     type: 'json',
-    url: process.env.SAVETICKER_URL || 'https://saveticker.com/api/news/list?page=1&page_size=20&sort=created_at_desc&label_group=1&label_name=1',
+    url: process.env.SAVETICKER_URL || 'https://saveticker.com/api/news/list?page=1&page_size=20&sort=created_at_desc&label_group=2&label_name=1',
     jsonListPath: 'news_list',
     jsonTitleField: 'title',
     jsonDateField: 'created_at',
