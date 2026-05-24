@@ -115,7 +115,7 @@ async function sendWebhook(sourceName, title, url, dateText) {
       { name: '출처', value: sourceName, inline: true },
       { name: '날짜', value: formatDate(dateText), inline: true }
     ],
-    footer: { text: 'ETF Alarm Bot' },
+    footer: { text: 'Save news bot' },
     timestamp: new Date().toISOString()
   };
 
@@ -124,7 +124,7 @@ async function sendWebhook(sourceName, title, url, dateText) {
   }
 
   const payload = {
-    username: 'ETF 알리미',
+    username: '세이브 속보봇',
     avatar_url: 'https://cdn-icons-png.flaticon.com/512/4222/4222019.png',
     embeds: [embed]
   };
