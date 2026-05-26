@@ -5,7 +5,7 @@ const cheerio = require('cheerio');
 
 // ==================== 설정 ====================
 const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
-const CHECK_INTERVAL = (parseInt(process.env.CHECK_INTERVAL_MINUTES) || 60) * 60 * 1000;
+const CHECK_INTERVAL = (parseInt(process.env.CHECK_INTERVAL_MINUTES) || 10) * 60 * 1000;
 const KEYWORDS = (process.env.KEYWORDS || 'launch,etf,list,new')
   .split(',')
   .map(k => k.trim().toLowerCase());
