@@ -24,6 +24,22 @@ const SOURCES = [
     skipKeywordCheck: true,
   },
   {
+    name: 'TossInvest',
+    enabled: process.env.TOSSINVEST_ENABLED !== 'false',
+    type: 'json',
+    url: process.env.TOSSINVEST_URL || 'https://docs-api.tossinvest.com/api/v1/post/search?categoryId=45&searchTitleKeyword=&page=0&size=10&type=NOTICE',
+    jsonListPath: 'result.list',
+    jsonTitleField: 'title',
+    jsonDateField: 'displayDt',
+    jsonUrlBuilder: (item) => `https://corp.tossinvest.com/ko/post?type=notice&id=${item.id}&category=45`,
+    jsonFilter: (item) => item.displayYn === 'Y',
+    skipKeywordCheck: true,
+    extraHeaders: {
+      'Referer': 'https://corp.tossinvest.com/',
+      'Origin': 'https://corp.tossinvest.com'
+    }
+  },
+  {
     name: 'Defiance',
     enabled: process.env.DEFIANCE_ENABLED !== 'false',
     url: process.env.DEFIANCE_URL || 'https://www.defianceetfs.com/in-the-news/',
@@ -156,20 +172,26 @@ async function checkSource(source) {
 
   try {
     const isJson = source.type === 'json';
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept': isJson ? 'application/json, text/plain, */*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9,ko;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': isJson ? 'empty' : 'document',
+      'Sec-Fetch-Mode': isJson ? 'cors' : 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Cache-Control': 'max-age=0'
+    };
+    
+    if (source.extraHeaders) {
+      Object.assign(headers, source.extraHeaders);
+    }
+
     const res = await fetch(source.url, {
       redirect: 'follow',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': isJson ? 'application/json, text/plain, */*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9,ko;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': isJson ? 'empty' : 'document',
-        'Sec-Fetch-Mode': isJson ? 'cors' : 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Cache-Control': 'max-age=0'
-      }
+      headers
     });
 
     if (!res.ok) {
