@@ -4,7 +4,7 @@ const path = require('path');
 const cheerio = require('cheerio');
 
 // ==================== 설정 ====================
-const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+const DEFAULT_WEBHOOK_URL = process.env.DEFAULT_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
 const CHECK_INTERVAL = (parseInt(process.env.CHECK_INTERVAL_MINUTES) || 10) * 60 * 1000;
 const KEYWORDS = (process.env.KEYWORDS || 'launch,etf,list,new')
   .split(',')
@@ -34,6 +34,10 @@ const SOURCES = [
     jsonUrlBuilder: (item) => `https://corp.tossinvest.com/ko/post?type=notice&id=${item.id}&category=45`,
     jsonFilter: (item) => item.displayYn === 'Y',
     skipKeywordCheck: true,
+    webhookUrl: process.env.TOSSINVEST_WEBHOOK_URL,
+    webhookUsername: '토스 공지봇',
+    webhookAvatar: 'https://cdn-icons-png.flaticon.com/512/2922/2922506.png',
+    webhookFooter: 'Toss Invest Notice Bot',
     extraHeaders: {
       'Referer': 'https://corp.tossinvest.com/',
       'Origin': 'https://corp.tossinvest.com'
@@ -117,21 +121,22 @@ function formatDate(dateText) {
 }
 
 // ==================== Discord 웹훅 ====================
-async function sendWebhook(sourceName, title, url, dateText) {
-  if (!WEBHOOK_URL) {
-    console.warn('⚠️ DISCORD_WEBHOOK_URL이 설정되지 않았습니다.');
+async function sendWebhook(source, title, url, dateText) {
+  const webhookUrl = source.webhookUrl || DEFAULT_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.warn(`⚠️ [${source.name}] 웹훅 URL이 설정되지 않았습니다.`);
     return;
   }
 
   const embed = {
-    title: `🚀 ${sourceName} - 새 뉴스`,
+    title: `🚀 ${source.name} - 새 뉴스`,
     description: `**${title}**`,
     color: 0x00ff88,
     fields: [
-      { name: '출처', value: sourceName, inline: true },
+      { name: '출처', value: source.name, inline: true },
       { name: '날짜', value: formatDate(dateText), inline: true }
     ],
-    footer: { text: 'Save news bot' },
+    footer: { text: source.webhookFooter || 'Save news bot' },
     timestamp: new Date().toISOString()
   };
 
@@ -140,13 +145,13 @@ async function sendWebhook(sourceName, title, url, dateText) {
   }
 
   const payload = {
-    username: '세이브 속보봇',
-    avatar_url: 'https://cdn-icons-png.flaticon.com/512/4222/4222019.png',
+    username: source.webhookUsername || '세이브 속보봇',
+    avatar_url: source.webhookAvatar || 'https://cdn-icons-png.flaticon.com/512/4222/4222019.png',
     embeds: [embed]
   };
 
   try {
-    const res = await fetch(WEBHOOK_URL, {
+    const res = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -155,9 +160,9 @@ async function sendWebhook(sourceName, title, url, dateText) {
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     }
-    console.log(`✅ [${sourceName}] 웹훅 전송 완료: ${title.substring(0, 50)}...`);
+    console.log(`✅ [${source.name}] 웹훅 전송 완료: ${title.substring(0, 50)}...`);
   } catch (err) {
-    console.error(`❌ [${sourceName}] 웹훅 전송 실패:`, err.message);
+    console.error(`❌ [${source.name}] 웹훅 전송 실패:`, err.message);
   }
 }
 
@@ -265,7 +270,7 @@ async function checkSource(source) {
     console.log(`🆕 [${source.name}] ${newTitles.length}개 새 글 발견!`);
 
     for (const article of newTitles) {
-      await sendWebhook(source.name, article.title, article.url, article.date);
+      await sendWebhook(source, article.title, article.url, article.date);
       // 웹훅 rate limit 방지 (1초 대기)
       await new Promise(r => setTimeout(r, 1000));
     }
@@ -294,7 +299,7 @@ async function runAll() {
 
 // ==================== 메인 ====================
 console.log('🚀 ETF Alarm Bot 시작');
-console.log(`📡 Discord Webhook: ${WEBHOOK_URL ? '설정됨' : '미설정'}`);
+console.log(`📡 기본 Discord Webhook: ${DEFAULT_WEBHOOK_URL ? '설정됨' : '미설정'}`);
 console.log(`⏱️ 체크 주기: ${CHECK_INTERVAL / 60000}분`);
 console.log(`🔑 키워드: ${KEYWORDS.join(', ')}\n`);
 
