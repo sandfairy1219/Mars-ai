@@ -36,7 +36,7 @@ const SOURCES = [
     skipKeywordCheck: true,
     webhookUrl: process.env.TOSSINVEST_WEBHOOK_URL,
     webhookUsername: '토스 공지봇',
-    webhookAvatar: 'https://raw.githubusercontent.com/sandfairy1219/Mars-ai/main/etf-alarm/assets/toss-icon.jpg',
+    webhookAvatar: 'https://raw.githubusercontent.com/sandfairy1219/Mars-ai/main/etf-alarm/assets/Toss_Symbol_Primary.png',
     webhookFooter: 'Toss Invest Notice Bot',
     extraHeaders: {
       'Referer': 'https://corp.tossinvest.com/',
