@@ -23,16 +23,21 @@ marsAI/
 │   ├── portfolio.json          #   포트폴리오 상태
 │   └── swing-portfolio.json    #   스윙 포트폴리오 상태
 └── scripts/                    # 헤르메스 에이전트 크론 스크립트
-    ├── bb_touch_scanner.py     #   볼린저밴드 터치 스캐너 (일 2픽 웹훅 전송)
-    ├── swing-trader.py         #   paper-trading 버전과 동기화된 스윙 트레이더
-    ├── daily_heatmap.py        #   일간 섹터 히트맵 (paper-trading 버전과 동기화)
-    ├── sp500_heatmap.py        #   S&P 500 핀비즈 스타일 히트맵
-    ├── fetch_saveticker_summary.py  # SaveTicker 미국증시요약 자동 페치
-    ├── crypto_live_ticker.py   #   실시간 암호화폐+지수 티커 (1초 갱신)
-    ├── crypto_ticker.py        #   암호화폐 시세 조회
-    ├── nasdaq_ticker.py        #   나스닥 실시간 티커
-    ├── premarket_scanner.py    #   프리마켓 거래량 급등 스캐너
-    └── watchdog_crypto_ticker.sh  # 암호화폐 워치독
+    ├── trading/                # 트레이딩 봇
+    │   └── swing-trader.py     #   paper-trading 버전과 동기화된 스윙 트레이더
+    ├── scanners/               # 시장 스캐너
+    │   ├── bb_touch_scanner.py #   볼린저밴드 터치 스캐너 (일 2픽 웹훅 전송)
+    │   └── premarket_scanner.py#   프리마켓 거래량 급등 스캐너
+    ├── tickers/                # 실시간 시세 티커
+    │   ├── crypto_live_ticker.py   #   실시간 암호화폐+지수 티커 (1초 갱신)
+    │   ├── crypto_ticker.py    #   암호화폐 시세 조회
+    │   ├── nasdaq_ticker.py    #   나스닥 실시간 티커
+    │   └── watchdog_crypto_ticker.sh # 암호화폐 워치독
+    ├── heatmaps/               # 히트맵 생성
+    │   ├── sp500_heatmap.py    #   S&P 500 핀비즈 스타일 히트맵
+    │   └── daily_heatmap.py    #   일간 섹터 히트맵 (paper-trading 버전과 동기화)
+    └── crawlers/               # 데이터 페처
+        └── fetch_saveticker_summary.py # SaveTicker 미국증시요약 자동 페치
 ```
 
 ---
@@ -92,28 +97,49 @@ Hermes Agent 크론잡으로 6회/일 자동 실행되는 롱온리 스윙 트�
 
 ## 🔍 주요 스크립트 상세 (`scripts/`)
 
-### BB Touch Scanner (`bb_touch_scanner.py`)
+### Trading (`scripts/trading/`)
+#### Swing Trader (`swing-trader.py`)
+- paper-trading 버전과 동기화된 롱온리 스윙 트레이더
+- 거래대금 필터 + 레버리지 ETF 제외 + 뉴스 심리 분석 + 벤치마크 4종 비교
+- 자세한 설명은 [모의투자 시스템](#-모의투자-system-paper-trading) 참고
+
+### Scanners (`scripts/scanners/`)
+#### BB Touch Scanner (`bb_touch_scanner.py`)
 - Yahoo Finance 거래대금 상위 종목 스캔 → 볼린저밴드(20,2) 터치 감지
 - 6개 차원 복합 스코어링 (BB 터치 강도, RSI, 모멘텀, 거래량, 섹터 로테이션, 시장 레짐)
 - 매일 22:00 KST 전 BEST + S&P 500 BEST 2픽 웹훅 전송 (차트 이미지 포함)
 
-### SaveTicker Fetcher (`fetch_saveticker_summary.py`)
-- SaveTicker 오선 작성자의 미국 증시 요약 원문 자동 페치
-- 제목 형식 자동 감지 (`【미국 증시 요약】` / `SAVE Daily`)
-- 원문(텍스트+이미지) vs 리포트(이미지 전용) 구분 로직
-
-### Crypto Live Ticker (`crypto_live_ticker.py`)
-- 주요 암호화폐 + 주가지수 실시간 시세 (1초 갱신)
-- 단일 메시지 PATCH 패턴 (메시지 생성 후 내용만 수정)
-- 모든 코인 웹소켓 무료 (바이낸스 등)
-
-### Premarket Scanner (`premarket_scanner.py`)
+#### Premarket Scanner (`premarket_scanner.py`)
 - 프리마켓(04:00~09:30 ET) 거래량 급등 종목 감지
 - 전일 대비 거래량 비율 기반 스캔
 
-### S&P 500 Heatmap (`sp500_heatmap.py`)
+### Tickers (`scripts/tickers/`)
+#### Crypto Live Ticker (`crypto_live_ticker.py`)
+- 주요 암호화폐 + 주가지수 실시간 시세 (1초 갱신)
+- 단일 메시지 PATCH 패턴 (메시지 생성 후 내용만 수정)
+
+#### Crypto Ticker (`crypto_ticker.py`)
+- 암호화폐 시세 조회
+
+#### Nasdaq Ticker (`nasdaq_ticker.py`)
+- 나스닥 실시간 티커
+
+#### Watchdog (`watchdog_crypto_ticker.sh`)
+- 암호화폐 워치독 — 크론 기반 상태 모니터링
+
+### Heatmaps (`scripts/heatmaps/`)
+#### S&P 500 Heatmap (`sp500_heatmap.py`)
 - Finviz 스타일 S&P 500 트리맵 히트맵 생성
 - 섹터별 색상 + 등락률 기반 셀 크기/색상
+
+#### Daily Heatmap (`daily_heatmap.py`)
+- 일간 섹터 히트맵 (paper-trading 버전과 동기화)
+
+### Crawlers (`scripts/crawlers/`)
+#### SaveTicker Fetcher (`fetch_saveticker_summary.py`)
+- SaveTicker 오선 작성자의 미국 증시 요약 원문 자동 페치
+- 제목 형식 자동 감지 (`【미국 증시 요약】` / `SAVE Daily`)
+- 원문(텍스트+이미지) vs 리포트(이미지 전용) 구분 로직
 
 ---
 
