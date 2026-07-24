@@ -11,6 +11,17 @@
 | 모델 | DeepSeek V4 Flash / Pro |
 | Python | 3.10+ |
 
+## 기술 스택
+
+| 구분 | 사용 |
+|---|---|
+| 런타임 | Hermes Agent, Node.js, Python 3.10+ |
+| 데이터 | Yahoo Finance (yfinance), Binance WebSocket, SaveTicker |
+| 차트 | mplfinance, matplotlib |
+| 알림 | Discord Webhook |
+| 배포 | Oracle Cloud, GitHub |
+| 인증 | GitHub PAT, Discord Bot Token |
+
 ## 디렉토리 구조
 
 ```
@@ -22,16 +33,6 @@
 ├── heatmaps/         # 히트맵 생성 (S&P 500, Daily)
 └── crawlers/         # 데이터 페처 (SaveTicker)
 ```
-
-## 크론잡 스케줄 (KST)
-
-모든 작업은 Hermes Agent Cron을 통해 자동 실행됩니다.
-
-- **07:30** — 미국 증시 요약 (#미국증시요약 채널)
-- **09:00~21:30** — 모의투자 스윙 트레이더 (6회 스캔)
-- **13:00** — BB Touch Scanner (전체 BEST + S&P 500 BEST 2픽 웹훅)
-- **21:30** — 섹터 히트맵
-- **5분 간격** — 암호화폐 실시간 티커
 
 ## 라이선스
 
