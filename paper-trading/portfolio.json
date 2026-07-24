@@ -1,0 +1,11 @@
+{
+  "positions": [
+    {"ticker": "KO", "side": "LONG", "weight_pct": 12.0},
+    {"ticker": "PTCT", "side": "LONG", "weight_pct": 6.7},
+    {"ticker": "BKNG", "side": "SHORT", "weight_pct": 8.7},
+    {"ticker": "EA", "side": "SHORT", "weight_pct": 8.7},
+    {"ticker": "CPB", "side": "SHORT", "weight_pct": 4.9},
+    {"ticker": "LEN", "side": "SHORT", "weight_pct": 9.0},
+    {"ticker": "MSI", "side": "SHORT", "weight_pct": 6.2}
+  ]
+}

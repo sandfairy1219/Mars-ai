@@ -1,0 +1,16 @@
+[
+  {
+    "ticker": "206",
+    "name": "LHX",
+    "market_cap": 3000000000000,
+    "sector": "57.35B",
+    "price": 0.0
+  },
+  {
+    "ticker": "144",
+    "name": "MMM",
+    "market_cap": 3000000,
+    "sector": "80.20B",
+    "price": 0.0
+  }
+]
