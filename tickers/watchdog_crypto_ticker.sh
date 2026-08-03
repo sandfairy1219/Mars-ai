@@ -7,7 +7,17 @@ set -euo pipefail
 
 PID_FILE="/tmp/crypto_ticker.pid"
 MSG_ID_FILE="/tmp/crypto_ticker_msg_id"
-WEBHOOK="${DISCORD_WEBHOOK}"
+ENV_FILE="/home/ubuntu/marsAI/etf-alarm/.env"
+
+# Source webhook URL from .env file
+WEBHOOK=""
+if [ -f "$ENV_FILE" ]; then
+    # shellcheck source=/dev/null
+    source <(grep -E "^DISCORD_WEBHOOK" "$ENV_FILE")
+    # Try both DISCORD_WEBHOOK_URL and DISCORD_WEBHOOK
+    WEBHOOK="${DISCORD_WEBHOOK_URL:-${DISCORD_WEBHOOK:-}}"
+fi
+
 UA="User-Agent: Mozilla/5.0 (compatible; HermesBot/1.0)"
 
 # Check if PID file exists
@@ -27,10 +37,14 @@ fi
 # Process is dead! Clean up stale message.
 echo "[watchdog] crypto_ticker PID $PID is dead. Cleaning up..."
 
+if [ -z "$WEBHOOK" ]; then
+    echo "[watchdog] WARNING: DISCORD_WEBHOOK not found in $ENV_FILE, cannot delete stale message"
+fi
+
 # Read and delete the stale message
 if [ -f "$MSG_ID_FILE" ]; then
     MSG_ID=$(cat "$MSG_ID_FILE")
-    if [ -n "$MSG_ID" ]; then
+    if [ -n "$MSG_ID" ] && [ -n "$WEBHOOK" ]; then
         HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
             "$WEBHOOK/messages/$MSG_ID" \
             -H "$UA")

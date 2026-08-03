@@ -1,0 +1,16 @@
+{
+  "apps": [{
+    "name": "crypto-ticker",
+    "script": "/home/ubuntu/.hermes/scripts/crypto_live_ticker.py",
+    "interpreter": "python3",
+    "interpreter_args": "-u",
+    "max_restarts": 100,
+    "min_uptime": "10s",
+    "restart_delay": 3000,
+    "autorestart": true,
+    "watch": false,
+    "env": {
+      "PYTHONUNBUFFERED": "1"
+    }
+  }]
+}

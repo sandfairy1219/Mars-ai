@@ -178,7 +178,7 @@ def main():
     summary_posts = []
     for item in news_list:
         title = item.get("title", "")
-        if "미국 증시 요약" in title or "SAVE Daily" in title:
+        if "미국 증시 요약" in title or "SAVE Daily" in title or "SAVE 마감 리포트" in title or "SAVE 마감리포트" in title:
             # Prefer 원문 over 리포트 (if both exist, 원문 has text content)
             summary_posts.append(item)
 
@@ -201,8 +201,8 @@ def main():
     seen_dates = set()
     for post in summary_posts:
         title = post.get("title", "")
-        # Prefer 원문, only pick 리포트 if no 원문 for that date
-        is_original = "원문" in title
+        # Prefer 원문 or 텍스트 variant, only pick 리포트 if no 원문 for that date
+        is_original = "원문" in title or "텍스트" in title
         date_part = title.split("｜")[-1].strip() if "｜" in title else title
         date_key = date_part[:15]  # approximate date grouping
         
