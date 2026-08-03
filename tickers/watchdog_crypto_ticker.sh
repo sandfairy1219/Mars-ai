@@ -9,9 +9,9 @@ PID_FILE="/tmp/crypto_ticker.pid"
 MSG_ID_FILE="/tmp/crypto_ticker_msg_id"
 ENV_FILE="/home/ubuntu/marsAI/etf-alarm/.env"
 
-# Source webhook URL from .env file
-WEBHOOK=""
-if [ -f "$ENV_FILE" ]; then
+# Webhook URL: env var first, then .env file fallback
+WEBHOOK="${DISCORD_WEBHOOK_URL:-${DISCORD_WEBHOOK:-}}"
+if [ -z "$WEBHOOK" ] && [ -f "$ENV_FILE" ]; then
     # shellcheck source=/dev/null
     source <(grep -E "^DISCORD_WEBHOOK" "$ENV_FILE")
     # Try both DISCORD_WEBHOOK_URL and DISCORD_WEBHOOK

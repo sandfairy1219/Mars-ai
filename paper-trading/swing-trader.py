@@ -33,16 +33,23 @@ LEVERAGED_TICKER_SET = {
     'CONL','MSFL','GDXU','KMLM','TECL','SPXL',
 }
 
-# Discord webhook from existing .env
-ENV_PATH = "/home/ubuntu/marsAI/etf-alarm/.env"
-WEBHOOK_URL = None
-if os.path.exists(ENV_PATH):
-    with open(ENV_PATH) as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith("DISCORD_WEBHOOK"):
-                WEBHOOK_URL = line.split("=", 1)[1].strip().strip('"').strip("'")
-                break
+# Discord webhook: env var first, then .env fallback
+WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK") or os.environ.get("DISCORD_WEBHOOK_URL") or ""
+if not WEBHOOK_URL:
+    for env_path in [".env", "/home/ubuntu/etf-alarm/.env", "/home/ubuntu/marsAI/etf-alarm/.env"]:
+        try:
+            with open(env_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("DISCORD_WEBHOOK_URL=") or line.startswith("DISCORD_WEBHOOK="):
+                        val = line.split("=", 1)[1].strip().strip("\"'")
+                        if val:
+                            WEBHOOK_URL = val
+                            break
+        except Exception:
+            pass
+        if WEBHOOK_URL:
+            break
 
 # ─── UNIVERSE: Top ~200 US large-caps with sectors ───
 UNIVERSE = {
