@@ -1310,6 +1310,16 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     vs_nasdaq = summary['return_pct'] - nasdaq_ret
     vsn_emoji = "🟢" if vs_nasdaq > 0 else ("🟡" if vs_nasdaq > -2 else "🔴")
     lines.append(f"• vs Nasdaq 100: {vsn_emoji} {vs_nasdaq:+.1f}%p (포트 {summary['return_pct']}% vs QQQ {nasdaq_ret}%)")
+    # Dow Jones benchmark
+    dia_ret = summary.get('dia_return_pct', 0)
+    vs_dia = summary['return_pct'] - dia_ret
+    vsd_emoji = "🟢" if vs_dia > 0 else ("🟡" if vs_dia > -2 else "🔴")
+    lines.append(f"• vs Dow Jones: {vsd_emoji} {vs_dia:+.1f}%p (포트 {summary['return_pct']}% vs DIA {dia_ret}%)")
+    # Russell 2000 benchmark
+    iwm_ret = summary.get('iwm_return_pct', 0)
+    vs_iwm = summary['return_pct'] - iwm_ret
+    vsi_emoji = "🟢" if vs_iwm > 0 else ("🟡" if vs_iwm > -2 else "🔴")
+    lines.append(f"• vs Russell 2000: {vsi_emoji} {vs_iwm:+.1f}%p (포트 {summary['return_pct']}% vs IWM {iwm_ret}%)")
     lines.append(f"• 현금: ${summary['cash']:,} ({cash_ratio:.1f}%) | 투자금: ${summary['invested']:,} ({invested_ratio:.1f}%)")
     lines.append(f"• 미실현: ${summary['unrealized']:,} | 실현수익: ${summary['realized']:,}")
     lines.append(f"• 보유 종목: {summary['open_count']}/{MAX_POSITIONS}")

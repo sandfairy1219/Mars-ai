@@ -8,7 +8,24 @@ from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
 
-WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK", "")
+# Read webhook URL from env, with multiple fallback names + .env file
+WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK") or os.environ.get("DISCORD_WEBHOOK_URL") or ""
+if not WEBHOOK_URL:
+    # Try loading from .env in cwd or marsAI etf-alarm
+    for env_path in [".env", "/home/ubuntu/etf-alarm/.env", "/home/ubuntu/marsAI/etf-alarm/.env"]:
+        try:
+            with open(env_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("DISCORD_WEBHOOK_URL=") or line.startswith("DISCORD_WEBHOOK="):
+                        val = line.split("=", 1)[1].strip().strip("\"'")
+                        if val:
+                            WEBHOOK_URL = val
+                            break
+        except:
+            pass
+        if WEBHOOK_URL:
+            break
 INTERVAL = 1
 UA = "Mozilla/5.0 (compatible; HermesBot/1.0)"
 PID_FILE = "/tmp/crypto_ticker.pid"
