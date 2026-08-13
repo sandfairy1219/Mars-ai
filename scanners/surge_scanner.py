@@ -7,7 +7,7 @@ Surge Scanner — 22:00 KST (13:00 UTC) 실행용 데이터 수집기.
 2. regsho 스캐너(.regsho_state.json)가 지목했던 종목과 대조 → "맞춘 것" 확인
 3. stdout JSON 출력 → LLM 에이전트가 원인 분석 후 Discord 보고
 """
-import json, os, urllib.request, datetime, time, sys
+import json, os, urllib.request, urllib.parse, re, html as html_mod, datetime, time, sys
 
 # 스크린샷(정규장 급등 TOP7) 기준 강제 포함 종목 — 회사명 → 티커 매핑
 # OFA Group=OFAL, Valion Bio=VBIO, Rocky Mountain Chocolate=RMCF,
@@ -39,6 +39,54 @@ def http_json(url, body=None):
         headers={**UA, "Content-Type": "application/json"} if body else UA)
     with urllib.request.urlopen(req, timeout=25) as r:
         return json.loads(r.read().decode("utf-8", errors="replace"))
+
+def fetch_stockanalysis_premarket():
+    """stockanalysis.com 프리장 상승 TOP10 — TV 스크리너가 놓치는 NCM/초소형주(XHG 등) 보완.
+    HTML 테이블 파싱. (ticker, name, price, chg_pct, volume, market_cap) 리스트 반환."""
+    url = "https://stockanalysis.com/markets/premarket/"
+    req = urllib.request.Request(url, headers=UA)
+    t = urllib.request.urlopen(req, timeout=25).read().decode("utf-8", "replace")
+    rows = re.findall(r"<tr[^>]*>.*?</tr>", t, re.S)
+    out = []
+    for r in rows[1:]:
+        cells = re.findall(r"<td[^>]*>(.*?)</td>", r, re.S)
+        if len(cells) < 6:
+            continue
+        vals = [re.sub(r"<[^>]+>", "", html_mod.unescape(c)).strip() for c in cells]
+        try:
+            rank, sym, name, chg_s, price_s, vol_s, cap_s = vals[:7]
+        except ValueError:
+            continue
+        if rank == "1" and chg_s.startswith("-"):
+            break  # 상승 섹션 끝 → 하락 섹션
+        if not chg_s.endswith("%"):
+            continue
+        try:
+            chg = float(chg_s.rstrip("%").replace(",", ""))
+        except ValueError:
+            continue
+        if chg < MIN_CHG_PCT:
+            continue
+        try:
+            price = float(price_s.replace(",", ""))
+        except ValueError:
+            continue
+        try:
+            vol = int(vol_s.replace(",", ""))
+        except ValueError:
+            vol = 0
+        cap = 0
+        m = re.match(r"([\d.]+)([MBT])", cap_s)
+        if m:
+            mult = {"M": 1e6, "B": 1e9, "T": 1e12}[m.group(2)]
+            cap = int(float(m.group(1)) * mult)
+        out.append({
+            "ticker": sym, "price": price, "chg_pct": round(chg, 1),
+            "volume": vol, "regular_price": None, "regular_chg_pct": None,
+            "market_cap": cap, "name": name[:60], "sector": "",
+            "session": "PREMARKET", "forced": False, "source": "STOCKANALYSIS",
+        })
+    return out
 
 def fetch_gainers(limit=40):
     """TradingView 프리장 변동률 상위 개별주 수집 (OTC/ETF 제외).
@@ -120,6 +168,14 @@ def fetch_gainers(limit=40):
                 })
         except Exception as e:
             print(f"  forced premarket fail {tk}: {e}", file=sys.stderr)
+    # ── stockanalysis.com 프리장 TOP10 병합 (TV가 놓치는 NCM/초소형주 보완) ──
+    try:
+        existing = {x["ticker"] for x in out}
+        for sa in fetch_stockanalysis_premarket():
+            if sa["ticker"] not in existing:
+                out.append(sa)
+    except Exception as e:
+        print(f"  stockanalysis fail: {e}", file=sys.stderr)
     out.sort(key=lambda x: -x["chg_pct"])
     return out
 
