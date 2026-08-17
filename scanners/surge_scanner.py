@@ -1,38 +1,27 @@
 #!/usr/bin/env python3
 """
 Surge Scanner — 22:00 KST (13:00 UTC) 실행용 데이터 수집기.
-22시 실행은 미국 프리장 중이므로 TradingView premarket_* 필드를 기준으로 판정한다.
-1. 미국장 마감 후 실제 급등한 개별주 스캔 (TradingView 스크리너 API)
-   - NASDAQ/NYSE/AMEX, 시총 $50M+, 가격 $2+, 거래량 500k+, 변동 +5% 이상
-2. regsho 스캐너(.regsho_state.json)가 지목했던 종목과 대조 → "맞춘 것" 확인
-3. stdout JSON 출력 → LLM 에이전트가 원인 분석 후 Discord 보고
+22시 실행은 미국 프리장 중이므로 premarket 데이터를 기준으로 판정한다.
+기준: 프리장 +20% 이상 상승 + 거래대금(가격×거래량) $1M 이상 (거래량 급증 검증).
+1. 메인 소스: stockanalysis.com/markets/premarket/ 프리장 상승 TOP10 (거래량 급증 내장)
+2. 보조 소스: TradingView 프리장 스크리너 (+20%, 거래대금 $1M+)
+3. regsho 스캐너(.regsho_state.json)가 지목했던 종목과 대조 → "맞춘 것" 확인
+4. stdout JSON 출력 → LLM 에이전트가 원인 분석 후 Discord 보고
 """
 import json, os, urllib.request, urllib.parse, re, html as html_mod, datetime, time, sys
-
-# 스크린샷(정규장 급등 TOP7) 기준 강제 포함 종목 — 회사명 → 티커 매핑
-# OFA Group=OFAL, Valion Bio=VBIO, Rocky Mountain Chocolate=RMCF,
-# BioVie=BIVI, Boxlight=BOXL, ChowChow Cloud=CHOW, Splash Beverage=SBEV
-FORCE_TICKERS = ["OFAL", "VBIO", "RMCF", "BIVI", "BOXL", "CHOW", "SBEV"]
-# TradingView name 컬럼이 티커를 반환하는 경우를 대비한 회사명 사전
-COMPANY_NAMES = {
-    "OFAL": "OFA Group",
-    "VBIO": "Valion Bio, Inc.",
-    "RMCF": "Rocky Mountain Chocolate Factory, Inc.",
-    "BIVI": "BioVie Inc.",
-    "BOXL": "Boxlight Corporation",
-    "CHOW": "ChowChow Cloud International Holdings",
-    "SBEV": "Splash Beverage Group, Inc.",
-}
 
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
 REG_SHO_STATE = os.path.expanduser("~/.hermes/scripts/.regsho_state.json")
 SCAN_URL = "https://scanner.tradingview.com/america/scan"
+STOCKANALYSIS_URL = "https://stockanalysis.com/markets/premarket/"
 
-MIN_CHG_PCT = 100.0    # 급등 기준: 프리장 +100% 이상만 포함
-MIN_VOLUME = 100_000   # 프리장 거래량 필터 (초소형 급등주 누락 방지)
-MIN_PRICE = 0.10       # 저가주 포함
-MIN_CAP = 0             # 시총 하한 없음 — 급등률·거래량으로 선별
+MIN_CHG_PCT = 20.0          # 급등 기준: 프리장 +20% 이상
+MIN_TRADE_VALUE = 1_000_000  # 거래대금(USD = 프리장가 × 프리장거래량) 최소 $1M
+MIN_VOLUME = 100_000        # 프리장 거래량 하한 (초소형주 누락 방지)
+MIN_PRICE = 0.10            # 저가주 포함
+MIN_CAP = 0                  # 시총 하한 없음 — 급등률·거래대금으로 선별
 PREMARKET_COLUMNS = ["name", "close", "change", "premarket_close", "premarket_change", "premarket_volume", "volume", "market_cap_basic", "sector", "exchange"]
+
 
 def http_json(url, body=None):
     req = urllib.request.Request(url, data=body,
@@ -40,11 +29,11 @@ def http_json(url, body=None):
     with urllib.request.urlopen(req, timeout=25) as r:
         return json.loads(r.read().decode("utf-8", errors="replace"))
 
+
 def fetch_stockanalysis_premarket():
-    """stockanalysis.com 프리장 상승 TOP10 — TV 스크리너가 놓치는 NCM/초소형주(XHG 등) 보완.
-    HTML 테이블 파싱. (ticker, name, price, chg_pct, volume, market_cap) 리스트 반환."""
-    url = "https://stockanalysis.com/markets/premarket/"
-    req = urllib.request.Request(url, headers=UA)
+    """stockanalysis.com 프리장 상승 TOP10 — 가격·거래량·거래대금 파싱.
+    이 페이지는 '상승률 + 거래량 급증' 기준 상위 목록이라 TV가 놓치는 NCM/초소형주까지 커버."""
+    req = urllib.request.Request(STOCKANALYSIS_URL, headers=UA)
     t = urllib.request.urlopen(req, timeout=25).read().decode("utf-8", "replace")
     rows = re.findall(r"<tr[^>]*>.*?</tr>", t, re.S)
     out = []
@@ -80,17 +69,21 @@ def fetch_stockanalysis_premarket():
         if m:
             mult = {"M": 1e6, "B": 1e9, "T": 1e12}[m.group(2)]
             cap = int(float(m.group(1)) * mult)
+        trade_value = price * vol
+        if trade_value < MIN_TRADE_VALUE:
+            continue  # 거래대금(USD) 미달 — 거래량만 많고 금액 작은 초저가주 제외
         out.append({
-            "ticker": sym, "price": price, "chg_pct": round(chg, 1),
-            "volume": vol, "regular_price": None, "regular_chg_pct": None,
+            "ticker": sym, "price": round(price, 2), "chg_pct": round(chg, 1),
+            "volume": vol, "trade_value": int(trade_value),
+            "regular_price": None, "regular_chg_pct": None,
             "market_cap": cap, "name": name[:60], "sector": "",
-            "session": "PREMARKET", "forced": False, "source": "STOCKANALYSIS",
+            "session": "PREMARKET", "source": "STOCKANALYSIS",
         })
     return out
 
-def fetch_gainers(limit=40):
-    """TradingView 프리장 변동률 상위 개별주 수집 (OTC/ETF 제외).
-    KST 22:00 실행 시 정규장 change가 아니라 premarket_* 필드를 사용한다."""
+
+def fetch_tv_gainers(limit=100):
+    """TradingView 프리장 스크리너 — stockanalysis가 놓친 종목 보조 + 교차검증."""
     body = {
         "symbols": {"tickers": [], "query": {"types": ["stock"]}},
         "filter": [
@@ -118,66 +111,45 @@ def fetch_gainers(limit=40):
         n, close, chg, pm_price, pm_chg, pm_vol, vol, cap, sector, ex = it["d"]
         if pm_chg is None or pm_price is None or pm_chg < MIN_CHG_PCT:
             continue
+        trade_value = (pm_price or 0) * int(pm_vol or 0)
+        if trade_value < MIN_TRADE_VALUE:
+            continue  # 거래대금 미달 제외
         out.append({
             "ticker": sym,
             "price": round(pm_price, 2),
             "chg_pct": round(pm_chg, 1),
             "volume": int(pm_vol or 0),
+            "trade_value": int(trade_value),
             "regular_price": round(close, 2) if close is not None else None,
             "regular_chg_pct": round(chg, 1) if chg is not None else None,
             "market_cap": int(cap or 0),
-            "name": COMPANY_NAMES.get(sym) or (n or "")[:60],
+            "name": (n or "")[:60],
             "sector": sector or "",
             "session": "PREMARKET",
+            "source": "TradingView",
         })
-    # 시총 필터에 걸리는 초소형주도 강제 조회 (OFAL 포함)
-    existing = {x["ticker"] for x in out}
-    for tk in FORCE_TICKERS:
-        if tk in existing:
-            continue
-        try:
-            found = None
-            for prefix in ("NASDAQ", "NYSE", "AMEX"):
-                forced_body = {
-                    "symbols": {"tickers": [f"{prefix}:{tk}"], "query": {"types": ["stock"]}},
-                    "columns": PREMARKET_COLUMNS,
-                    "options": {"lang": "en"},
-                }
-                fd = http_json(SCAN_URL, json.dumps(forced_body).encode())
-                if fd.get("data"):
-                    found = fd
-                    break
-            if not found:
-                continue
-            for it in fd.get("data", []):
-                vals = it.get("d", [])
-                if len(vals) < 10:
-                    continue
-                n, close, chg, pm_price, pm_chg, pm_vol, vol, cap, sector, ex = vals
-                if pm_price is None or pm_chg is None:
-                    continue
-                # 강제 종목은 프리장 임계값(+100%) 미달이어도 포함
-                # (스크린샷 기준 정규장 급등주 — 프리장 기준과 다를 수 있음)
-                out.append({
-                    "ticker": tk, "price": round(pm_price, 2), "chg_pct": round(pm_chg, 1),
-                    "volume": int(pm_vol or 0),
-                    "regular_price": round(close, 2) if close is not None else None,
-                    "regular_chg_pct": round(chg, 1) if chg is not None else None,
-                    "market_cap": int(cap or 0), "name": COMPANY_NAMES.get(tk) or (n or "")[:60],
-                    "sector": sector or "", "session": "PREMARKET", "forced": True,
-                })
-        except Exception as e:
-            print(f"  forced premarket fail {tk}: {e}", file=sys.stderr)
-    # ── stockanalysis.com 프리장 TOP10 병합 (TV가 놓치는 NCM/초소형주 보완) ──
+    return out
+
+
+def fetch_gainers(limit=40):
+    """stockanalysis(메인) + TradingView(보조) 병합, 티커 중복 제거 후 상승률 정렬."""
+    out = []
+    seen = {}
     try:
-        existing = {x["ticker"] for x in out}
-        for sa in fetch_stockanalysis_premarket():
-            if sa["ticker"] not in existing:
-                out.append(sa)
+        for g in fetch_stockanalysis_premarket():
+            out.append(g)
+            seen[g["ticker"]] = True
     except Exception as e:
         print(f"  stockanalysis fail: {e}", file=sys.stderr)
+    try:
+        for g in fetch_tv_gainers(max(limit, 100)):
+            if g["ticker"] not in seen:
+                out.append(g)
+    except Exception as e:
+        print(f"  tradingview fail: {e}", file=sys.stderr)
     out.sort(key=lambda x: -x["chg_pct"])
     return out
+
 
 def fetch_ticker_quotes(tickers):
     """regsho 지목 종목들의 오늘 변동률을 Yahoo chart API(5d)로 직접 조회.
@@ -212,6 +184,7 @@ def fetch_ticker_quotes(tickers):
         time.sleep(0.15)
     return result
 
+
 def check_regsho_hits(gainers):
     """regsho 지목 종목이 오늘 급등했는지 대조 + 학습용 outcomes 누적 기록.
     오늘 스캔 상위 급등주(gainers)에 있는 경우 + 지목 종목 직접 조회 후 변동률 확인.
@@ -240,7 +213,7 @@ def check_regsho_hits(gainers):
         if not g or g.get("chg_pct") is None:
             continue
         all_results[tk] = {"chg_pct": g["chg_pct"], "price": g.get("price")}
-        if g["chg_pct"] >= MIN_CHG_PCT:  # +100% 이상만 '맞춤'으로 인정
+        if g["chg_pct"] >= MIN_CHG_PCT:  # +20% 이상만 '맞춤'으로 인정
             hits.append({
                 "ticker": tk,
                 "cat": v.get("cat", "?"),          # 발사대기 / 관찰
@@ -288,6 +261,7 @@ def check_regsho_hits(gainers):
 
     return hits, all_results
 
+
 def main():
     try:
         gainers = fetch_gainers(40)
@@ -304,18 +278,15 @@ def main():
     except Exception:
         pick_count = 0
     today = datetime.date.today().strftime("%Y-%m-%d")
-    # 강제 종목(스크린샷 기준)은 프리장 %가 낮아도 항상 출력에 포함되도록 우선 배치
-    forced = [g for g in gainers if g.get("forced")]
-    rest = [g for g in gainers if not g.get("forced")]
-    ordered = forced + rest[: max(0, 25 - len(forced))]
     print(json.dumps({
         "status": "OK",
         "date": today,
         "scan_time_kst": "22:00",
-        "gainers": ordered,
+        "gainers": gainers[:25],
         "regsho_hits": hits,
         "regsho_pick_count": pick_count,
     }, ensure_ascii=False))
+
 
 if __name__ == "__main__":
     main()
