@@ -182,12 +182,25 @@ def finnhub_quote(ticker):
 
 
 def fetch_ticker_quotes(tickers):
-    """regsho 지목 종목들의 오늘 변동률을 Yahoo chart API(5d)로 직접 조회.
-    소형주는 surge 필터(시총/가격)에 안 걸리므로 별도 조회가 필요. dict[ticker] = quote 반환."""
+    """regsho 지목 종목들의 오늘 변동률 조회. Finnhub(우선) → Yahoo(폴백).
+    Finnhub quote는 현재가/전일종가/변동%를 항상 확정해 줘서
+    Yahoo 종가 None 버그(급등일 close 누락)의 영향이 없다."""
     if not tickers:
         return {}
     result = {}
     for tk in tickers:
+        # 1) Finnhub 우선 — 실시간 quote (현재가+전일종가+변동% 한 번에)
+        fq = finnhub_quote(tk)
+        if fq:
+            result[tk] = {
+                "ticker": tk,
+                "price": fq.get("c"),
+                "chg_pct": round(fq["dp"], 2) if fq.get("dp") is not None else None,
+                "volume": 0,
+            }
+            time.sleep(0.15)
+            continue
+        # 2) Yahoo 폴백 — 5d 차트에서 최근 종가 확정
         try:
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{tk}?range=5d&interval=1d"
             d = http_json(url)
@@ -202,12 +215,6 @@ def fetch_ticker_quotes(tickers):
             rmp = meta.get("regularMarketPrice")
             if rmp and closes:
                 closes[-1] = rmp
-            else:
-                # Yahoo 종가/현재가 없으면 Finnhub 폴백
-                fq = finnhub_quote(tk)
-                if fq and closes:
-                    closes[-1] = fq["c"]
-                    print(f"  finnhub fallback {tk}: close={fq['c']} (Yahoo close None)", file=sys.stderr)
             # 신선도 가드: 마지막 봉이 7일+ 지났고 meta 현재가도 없으면 스킵
             if ts:
                 stale_days = (time.time() - ts[-1]) / 86400.0
@@ -229,15 +236,6 @@ def fetch_ticker_quotes(tickers):
             }
         except Exception as e:
             print(f"  quote fail {tk}: {e}", file=sys.stderr)
-            # Yahoo API 실패 → Finnhub 실시간 quote 폴백
-            fq = finnhub_quote(tk)
-            if fq:
-                result[tk] = {
-                    "ticker": tk,
-                    "price": fq.get("c"),
-                    "chg_pct": round(fq["dp"], 2) if fq.get("dp") is not None else None,
-                    "volume": 0,
-                }
         time.sleep(0.15)
     return result
 

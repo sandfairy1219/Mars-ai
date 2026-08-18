@@ -301,19 +301,23 @@ def build_tracking_lines(merged, results):
     for tk, v in list(merged.items()):
         r = lookup.get(tk)
         if not r:
-            # 오늘 리스트에 없으면 신규로 현재가 조회
+            # 오늘 리스트에 없으면 신규로 현재가 조회 — Finnhub(우선, 종가 None 버그 없음) → Yahoo
             try:
-                d = fetch_daily(tk)
-                if d:
-                    closes, vols, highs = d
-                    if len(closes) < 5:
-                        continue
-                    last = closes[-1]
-                    rets5 = [(closes[i]/(closes[i-1])-1)*100 for i in range(max(1,len(closes)-4), len(closes))]
-                    mx5 = max(rets5)
-                    r = {"last": last, "max5": mx5, "score": None, "rev_split": False}
+                fq = finnhub_quote(tk)
+                if fq:
+                    r = {"last": fq["c"], "max5": None, "score": None, "rev_split": False}
                 else:
-                    continue
+                    d = fetch_daily(tk)
+                    if d:
+                        closes, vols, highs = d
+                        if len(closes) < 5:
+                            continue
+                        last = closes[-1]
+                        rets5 = [(closes[i]/(closes[i-1])-1)*100 for i in range(max(1,len(closes)-4), len(closes))]
+                        mx5 = max(rets5)
+                        r = {"last": last, "max5": mx5, "score": None, "rev_split": False}
+                    else:
+                        continue
             except Exception:
                 continue
         try:
@@ -322,9 +326,10 @@ def build_tracking_lines(merged, results):
             vdate = now
         age = (now - vdate).days
         chg = (r["last"] - v["last"]) / v["last"] * 100 if v["last"] else 0
+        mx5 = r.get("max5") or 0  # Finnhub 경로는 max5가 없을 수 있음 → None-safe
         if r.get("rev_split"):
             status = "🚫 병합"
-        elif r["max5"] >= 35:
+        elif mx5 >= 35:
             status = "✅ 터짐🚀"
         elif chg >= 20:
             status = "✅ 상승"
@@ -333,7 +338,7 @@ def build_tracking_lines(merged, results):
         else:
             status = "⏳ 대기"
         sc = f"{v['score']}" if r["score"] is None else f"{v['score']}"
-        rows.append((tk, age, v["last"], r["last"], chg, status, v["score"], r["max5"]))
+        rows.append((tk, age, v["last"], r["last"], chg, status, v["score"], mx5))
         if len(rows) >= 10:
             break
 
