@@ -151,6 +151,36 @@ def fetch_gainers(limit=40):
     return out
 
 
+def finnhub_quote(ticker):
+    """Finnhub 실시간 quote — Yahoo 종가 None/API 실패 시 폴백 소스.
+    Returns {c: 현재가, pc: 전일종가, dp: 변동%, ...} or None.
+    키는 .env(FINNHUB_KEY)에서 읽는다 — PUBLIC 레포에 하드코딩 금지."""
+    key = os.environ.get("FINNHUB_KEY", "")
+    if not key:
+        for p in (os.path.expanduser("~/.hermes/scripts/.env"),
+                  os.path.expanduser("~/marsAI/.env"), ".env"):
+            try:
+                for line in open(p, encoding="utf-8"):
+                    if line.startswith("FINNHUB_KEY="):
+                        key = line.strip().split("=", 1)[1]
+                        break
+            except Exception:
+                continue
+            if key:
+                break
+    if not key:
+        return None
+    try:
+        url = f"https://finnhub.io/api/v1/quote?symbol={ticker}&token={key}"
+        req = urllib.request.Request(url, headers=UA)
+        d = json.loads(urllib.request.urlopen(req, timeout=15).read().decode())
+        if d.get("c") is None or d.get("pc") is None:
+            return None
+        return d
+    except Exception:
+        return None
+
+
 def fetch_ticker_quotes(tickers):
     """regsho 지목 종목들의 오늘 변동률을 Yahoo chart API(5d)로 직접 조회.
     소형주는 surge 필터(시총/가격)에 안 걸리므로 별도 조회가 필요. dict[ticker] = quote 반환."""
@@ -172,6 +202,12 @@ def fetch_ticker_quotes(tickers):
             rmp = meta.get("regularMarketPrice")
             if rmp and closes:
                 closes[-1] = rmp
+            else:
+                # Yahoo 종가/현재가 없으면 Finnhub 폴백
+                fq = finnhub_quote(tk)
+                if fq and closes:
+                    closes[-1] = fq["c"]
+                    print(f"  finnhub fallback {tk}: close={fq['c']} (Yahoo close None)", file=sys.stderr)
             # 신선도 가드: 마지막 봉이 7일+ 지났고 meta 현재가도 없으면 스킵
             if ts:
                 stale_days = (time.time() - ts[-1]) / 86400.0
@@ -193,6 +229,15 @@ def fetch_ticker_quotes(tickers):
             }
         except Exception as e:
             print(f"  quote fail {tk}: {e}", file=sys.stderr)
+            # Yahoo API 실패 → Finnhub 실시간 quote 폴백
+            fq = finnhub_quote(tk)
+            if fq:
+                result[tk] = {
+                    "ticker": tk,
+                    "price": fq.get("c"),
+                    "chg_pct": round(fq["dp"], 2) if fq.get("dp") is not None else None,
+                    "volume": 0,
+                }
         time.sleep(0.15)
     return result
 

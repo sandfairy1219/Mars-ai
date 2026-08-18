@@ -93,6 +93,36 @@ def get_latest_list():
             continue
     return None, None
 
+def finnhub_quote(ticker):
+    """Finnhub 실시간 quote — Yahoo 종가 None/API 실패 시 폴백 소스.
+    Returns {c: 현재가, pc: 전일종가, dp: 변동%, h, l, o} or None.
+    키는 .env(FINNHUB_KEY)에서 읽는다 — PUBLIC 레포에 하드코딩 금지."""
+    key = os.environ.get("FINNHUB_KEY", "")
+    if not key:
+        for p in (os.path.expanduser("~/.hermes/scripts/.env"),
+                  os.path.expanduser("~/marsAI/.env"), ".env"):
+            try:
+                for line in open(p, encoding="utf-8"):
+                    if line.startswith("FINNHUB_KEY="):
+                        key = line.strip().split("=", 1)[1]
+                        break
+            except Exception:
+                continue
+            if key:
+                break
+    if not key:
+        return None
+    try:
+        url = f"https://finnhub.io/api/v1/quote?symbol={ticker}&token={key}"
+        req = urllib.request.Request(url, headers=UA)
+        d = json.loads(urllib.request.urlopen(req, timeout=15).read().decode())
+        if d.get("c") is None or d.get("pc") is None:
+            return None
+        return d
+    except Exception:
+        return None
+
+
 def fetch_daily(ticker):
     """Fetch ~3mo daily closes+volumes from Yahoo chart API.
     Returns (closes, vols, highs) or (closes, vols, highs, splits) with split events.
@@ -117,6 +147,12 @@ def fetch_daily(ticker):
     rmp = meta.get("regularMarketPrice")
     if rmp and closes:
         closes[-1] = rmp
+    else:
+        # Yahoo 종가/현재가가 없으면 Finnhub 실시간 quote로 보정 (교차검증+폴백)
+        fq = finnhub_quote(ticker)
+        if fq and closes:
+            closes[-1] = fq["c"]
+            print(f"  finnhub fallback {ticker}: close={fq['c']} (Yahoo close None)", file=sys.stderr)
     # 데이터 신선도 가드: 마지막 봉이 일주일 이상 지났고 meta 현재가도 없으면
     # 오래된 종가로 잘못된 변동률을 계산하지 않도록 스킵 (STALE 데이터 방지)
     if ts:
