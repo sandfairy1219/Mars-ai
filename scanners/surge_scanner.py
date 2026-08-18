@@ -162,10 +162,16 @@ def fetch_ticker_quotes(tickers):
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{tk}?range=5d&interval=1d"
             d = http_json(url)
             res = d["chart"]["result"][0]
+            meta = res.get("meta", {}) or {}
             quote = res["indicators"]["quote"][0]
             ts = res["timestamp"]
             closes = [quote["close"][i] for i in range(len(ts)) if quote["close"][i] is not None]
             vols = [quote["volume"][i] for i in range(len(ts)) if quote["volume"][i] is not None]
+            # Yahoo 버그 보정: 최근 거래일 close가 None이면 meta 현재가로 대체
+            # (예: IVF 8/17 close=None vol=113M → regularMarketPrice=1.53 사용)
+            rmp = meta.get("regularMarketPrice")
+            if rmp and closes:
+                closes[-1] = rmp
             if len(closes) < 2:
                 continue
             today_c, prev_c = closes[-1], closes[-2]

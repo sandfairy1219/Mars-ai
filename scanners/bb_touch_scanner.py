@@ -25,24 +25,30 @@ import urllib.request
 warnings.filterwarnings('ignore')
 pd.set_option('display.max_colwidth', 30)
 
-# ── Discord Webhook ──────────────────────────────────────────
-# env var first, then .env fallback (never hardcode secrets/paths)
-WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK") or os.environ.get("DISCORD_WEBHOOK_URL") or ""
+# ── Discord Webhook: 전용 변수 우선 + 고정 배정 검증 가드 ─────
+# 종목 추천 채널 전용. 절대 다른 채널로 전송 불가 (ID 검증 강제).
+_TS_WEBHOOK_ID = "1517552970387034112"  # 치즈종목 추천 (고정)
+WEBHOOK_URL = os.environ.get("BB_TOUCH_WEBHOOK") or os.environ.get("DISCORD_WEBHOOK") or os.environ.get("DISCORD_WEBHOOK_URL") or ""
 if not WEBHOOK_URL:
-    for env_path in [".env", "/home/ubuntu/etf-alarm/.env", "/home/ubuntu/marsAI/etf-alarm/.env"]:
+    for env_path in [".env", "/home/ubuntu/marsAI/etf-alarm/.env"]:
         try:
             with open(env_path) as f:
                 for line in f:
                     line = line.strip()
-                    if line.startswith("DISCORD_WEBHOOK_URL=") or line.startswith("DISCORD_WEBHOOK="):
-                        val = line.split("=", 1)[1].strip().strip("\"'")
-                        if val:
-                            WEBHOOK_URL = val
-                            break
+                    for _k in ("BB_TOUCH_WEBHOOK=", "DISCORD_WEBHOOK_URL=", "DISCORD_WEBHOOK="):
+                        if line.startswith(_k):
+                            val = line.split("=", 1)[1].strip().strip("\"'")
+                            if val:
+                                WEBHOOK_URL = val
+                                break
         except Exception:
             pass
         if WEBHOOK_URL:
             break
+# ── 하드 가드: 웹훅 ID가 추천 채널이 아니면 즉시 중단 ──
+_wid = WEBHOOK_URL.split("webhooks/")[1].split("/")[0] if "/webhooks/" in WEBHOOK_URL else ""
+if _wid != _TS_WEBHOOK_ID:
+    raise SystemExit(f"[bb_touch_scanner] 웹훅 가드 발동: {_wid} != {_TS_WEBHOOK_ID} — 전송 중단")
 
 def send_discord(message, image_path=None):
     if not WEBHOOK_URL:
@@ -418,11 +424,47 @@ def download_batch(tickers: list[str]) -> dict:
     except Exception:
         return {}
 
+def fetch_premarket_prices(tickers: list[str]) -> dict:
+    """Fetch live/pre-market prices via 5m bars with prepost=True.
+    Returns {ticker: last_price}. Empty dict on failure — caller falls back to close."""
+    if not tickers:
+        return {}
+    result = {}
+    try:
+        batch_size = 25
+        for i in range(0, len(tickers), batch_size):
+            batch = tickers[i:i+batch_size]
+            ticker_str = ' '.join(batch)
+            df = yf.download(ticker_str, period='1d', interval='5m', prepost=True,
+                             progress=False, group_by='ticker', threads=True,
+                             timeout=FETCH_TIMEOUT + 5)
+            if df is None or df.empty:
+                continue
+            if isinstance(df.columns, pd.MultiIndex):
+                for t in batch:
+                    if t in df.columns.get_level_values(0):
+                        sub = df[t]['Close'].dropna()
+                        if not sub.empty:
+                            result[t] = float(sub.iloc[-1])
+            else:
+                closes = df['Close'].dropna()
+                if not closes.empty and len(batch) == 1:
+                    result[batch[0]] = float(closes.iloc[-1])
+            if i + batch_size < len(tickers):
+                time.sleep(0.3)
+    except Exception:
+        pass
+    return result
+
 # ── Phase 3: BB Metrics + Enhanced Analysis ──────────────────
 
 def compute_enhanced_metrics(ticker: str, df: pd.DataFrame, name: str,
-                              sector: str | None, regime: dict) -> dict | None:
-    """Compute BB metrics + momentum/trend + composite score."""
+                              sector: str | None, regime: dict,
+                              premarket_price: float | None = None) -> dict | None:
+    """Compute BB metrics + momentum/trend + composite score.
+    If premarket_price is given (>0), %B / band distance / touch flags are
+    computed against the live pre-market price instead of the last close,
+    so the 22:00 KST scan reflects pre-market action."""
     try:
         closes = df['Close'].dropna()
         volumes = df['Volume'].dropna()
@@ -431,7 +473,7 @@ def compute_enhanced_metrics(ticker: str, df: pd.DataFrame, name: str,
 
         avg_dollar_vol = (closes * volumes).mean() / 1_000_000
 
-        # BB calculation
+        # BB calculation (daily closes — the band itself stays close-based)
         ma20 = closes.rolling(BB_PERIOD).mean()
         std20 = closes.rolling(BB_PERIOD).std()
         upper = ma20 + BB_STD * std20
@@ -442,10 +484,13 @@ def compute_enhanced_metrics(ticker: str, df: pd.DataFrame, name: str,
         last_lower = lower.dropna().iloc[-1]
         last_ma20 = ma20.dropna().iloc[-1]
         band_width = last_upper - last_lower
-        pct_b = (last_close - last_lower) / band_width if band_width > 0 else float('nan')
+
+        # Live price: pre-market when available, else last close
+        live = premarket_price if premarket_price is not None and premarket_price > 0 else last_close
+        pct_b = (live - last_lower) / band_width if band_width > 0 else float('nan')
         rsi_val = calc_rsi(closes, RSI_PERIOD)
 
-        # Returns
+        # Returns (close-based — momentum context)
         ret_5d = safe_float((closes.iloc[-1] / closes.iloc[-6] - 1) * 100) if len(closes) >= 6 else None
         ret_20d = safe_float((closes.iloc[-1] / closes.iloc[-21] - 1) * 100) if len(closes) >= 21 else None
         ret_1d = safe_float((closes.iloc[-1] / closes.iloc[-2] - 1) * 100) if len(closes) >= 2 else None
@@ -468,12 +513,12 @@ def compute_enhanced_metrics(ticker: str, df: pd.DataFrame, name: str,
         if dist_ma50 is not None and dist_ma50 > 0: trend_alignment += 1
         # -3 (all bear) to +3 (all bull)
 
-        # Distance from band
-        dist_upper_pct = safe_float((last_close - last_upper) / last_upper * 100) if last_upper > 0 else None
-        dist_lower_pct = safe_float((last_close - last_lower) / last_lower * 100) if last_lower > 0 else None
+        # Distance from band (live-price based)
+        dist_upper_pct = safe_float((live - last_upper) / last_upper * 100) if last_upper > 0 else None
+        dist_lower_pct = safe_float((live - last_lower) / last_lower * 100) if last_lower > 0 else None
         band_width_pct = safe_float(band_width / last_ma20 * 100) if last_ma20 > 0 and band_width > 0 else None
 
-        # Determine side (lower/upper/neutral)
+        # Determine side (lower/upper/neutral) — live price
         is_upper_touch = pct_b >= UPPER_TOUCH_THRESHOLD
         is_lower_touch = pct_b <= LOWER_TOUCH_THRESHOLD
 
@@ -492,6 +537,8 @@ def compute_enhanced_metrics(ticker: str, df: pd.DataFrame, name: str,
             'name': name,
             'sector': sector,
             'close': round(safe_float(last_close), 2),
+            'premarket': round(safe_float(live), 2) if premarket_price is not None and premarket_price > 0 else None,
+            'premarket_pct': round(safe_float((live / last_close - 1) * 100), 2) if premarket_price is not None and premarket_price > 0 and last_close > 0 else None,
             'upper': round(safe_float(last_upper), 2),
             'lower': round(safe_float(last_lower), 2),
             'ma20': round(safe_float(last_ma20), 2),
@@ -1006,6 +1053,16 @@ def main():
         sys.exit(1)
 
     # ══════════════════════════════════════════════════════════
+    # PHASE 2.5: Live pre-market prices
+    # ══════════════════════════════════════════════════════════
+    print("🔄 프리장/실시간 가격 수집 중 (5m prepost)...", file=sys.stderr)
+    premarket_prices = fetch_premarket_prices(ticker_list)
+    if premarket_prices:
+        print(f"   ✓ {len(premarket_prices)} 종목 프리장 가격 확보", file=sys.stderr)
+    else:
+        print("   ⚠️ 프리장 가격 없음 — 종가 기준으로 판정", file=sys.stderr)
+
+    # ══════════════════════════════════════════════════════════
     # PHASE 3: Compute enhanced metrics
     # ══════════════════════════════════════════════════════════
     print("🔄 볼린저밴드 + 종합 스코어 계산 중...", file=sys.stderr)
@@ -1014,7 +1071,8 @@ def main():
         meta = ticker_meta.get(ticker, {})
         name = meta.get('name', ticker)
         sector = resolve_sector(ticker, meta.get('sector'))
-        metrics = compute_enhanced_metrics(ticker, df, name, sector, regime)
+        metrics = compute_enhanced_metrics(ticker, df, name, sector, regime,
+                                           premarket_prices.get(ticker))
         if metrics:
             results.append(metrics)
 
@@ -1117,9 +1175,19 @@ def main():
     # ══════════════════════════════════════════════════════════
     # PHASE 7: Discord Message
     # ══════════════════════════════════════════════════════════
+
+    # ── AUTO-SEND MODE (no LLM): build top-2 picks, send via webhook ──
+    if getattr(args, 'auto_send', False):
+        out = auto_send_picks(results, chart_map, regime)
+        # out이 비어있으면 성공(silent). 비어있지 않으면 웹훅 실패 → stdout 백업.
+        if out:
+            print(out)
+        return
+
     msg_lines = []
     msg_lines.append(f"📊 **컴프리헨시브 BB 터치 스캔** | {date_str}")
-    msg_lines.append(f"BB({BB_PERIOD},{BB_STD}σ) | 종합스코어링 v4 | 거래대금 상위 {len(results)}종목")
+    pm_badge = f" | ⚡ 프리장 반영" if premarket_prices else ""
+    msg_lines.append(f"BB({BB_PERIOD},{BB_STD}σ) | 종합스코어링 v4 | 거래대금 상위 {len(results)}종목{pm_badge}")
     msg_lines.append("")
 
     # Market regime summary
@@ -1146,14 +1214,18 @@ def main():
     if top_lower_picks:
         msg_lines.append(f"🟢 **하단터치 베스트** (과매도 바운스) | 점수: {W_BB_TOUCH}+{W_RSI}+{W_LIQUIDITY}+{W_MOMENTUM}+{W_TREND}+{W_SECTOR}")
         msg_lines.append("```")
-        msg_lines.append(f"{'순위':<4} {'티커':<7} {'종가':>7} {'%B':>5} {'RSI':>5} {'거래대금':>9} {'5일':>7} {'스코어':>6}")
+        price_hdr = '현재가' if premarket_prices else '종가'
+        msg_lines.append(f"{'순위':<4} {'티커':<7} {price_hdr:>7} {'%B':>5} {'RSI':>5} {'거래대금':>9} {'5일':>7} {'스코어':>6}")
         msg_lines.append("─" * 55)
         for i, r in enumerate(top_lower_picks[:5], 1):
             vol_str = f"{r['avg_dollar_vol_m']:.0f}M"
             ret5 = f"{r['ret_5d_pct']:+.1f}%" if r['ret_5d_pct'] is not None else "N/A"
-            bd = r.get('score_breakdown', {})
             score_str = f"{r['composite_score']:.0f}"
-            msg_lines.append(f"{i:<4} {r['ticker']:<7} ${r['close']:>6.2f} {r['pct_b']:>4.2f} {r['rsi']:>4.0f} {vol_str:>9} {ret5:>7} {score_str:>6}")
+            if r.get('premarket') is not None:
+                px_str = f"${r['premarket']:>6.2f}*"
+            else:
+                px_str = f"${r['close']:>6.2f}"
+            msg_lines.append(f"{i:<4} {r['ticker']:<7} {px_str:>7} {r['pct_b']:>4.2f} {r['rsi']:>4.0f} {vol_str:>9} {ret5:>7} {score_str:>6}")
         msg_lines.append("```")
         msg_lines.append("")
 
@@ -1161,15 +1233,23 @@ def main():
     if top_upper_picks:
         msg_lines.append(f"🚀 **상단터치 베스트** (모멘텀 지속)")
         msg_lines.append("```")
-        msg_lines.append(f"{'순위':<4} {'티커':<7} {'종가':>7} {'%B':>5} {'RSI':>5} {'거래대금':>9} {'5일':>7} {'스코어':>6}")
+        price_hdr = '현재가' if premarket_prices else '종가'
+        msg_lines.append(f"{'순위':<4} {'티커':<7} {price_hdr:>7} {'%B':>5} {'RSI':>5} {'거래대금':>9} {'5일':>7} {'스코어':>6}")
         msg_lines.append("─" * 55)
         for i, r in enumerate(top_upper_picks[:5], 1):
             vol_str = f"{r['avg_dollar_vol_m']:.0f}M"
             ret5 = f"{r['ret_5d_pct']:+.1f}%" if r['ret_5d_pct'] is not None else "N/A"
             score_str = f"{r['composite_score']:.0f}"
-            msg_lines.append(f"{i:<4} {r['ticker']:<7} ${r['close']:>6.2f} {r['pct_b']:>4.2f} {r['rsi']:>4.0f} {vol_str:>9} {ret5:>7} {score_str:>6}")
+            if r.get('premarket') is not None:
+                px_str = f"${r['premarket']:>6.2f}*"
+            else:
+                px_str = f"${r['close']:>6.2f}"
+            msg_lines.append(f"{i:<4} {r['ticker']:<7} {px_str:>7} {r['pct_b']:>4.2f} {r['rsi']:>4.0f} {vol_str:>9} {ret5:>7} {score_str:>6}")
         msg_lines.append("```")
         msg_lines.append("")
+
+    if premarket_prices:
+        msg_lines.append("⚡ * = 프리장 현재가 | %B·터치판정 프리장 가격 기준")
 
     # ── Score Detail for Top Picks Overall ──
     msg_lines.append(f"📋 **종합 TOP 10** (100점 만점)")

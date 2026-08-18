@@ -4,6 +4,7 @@ Reg SHO Threshold Squeeze Scanner
 - Pulls latest Nasdaq Reg SHO threshold list (FTD / naked-short accumulation names)
 - Keeps only S-category small caps (skips leveraged ETFs = G category noise)
 - Scores precursor (전조) signals: volume dry-up, BB squeeze, base proximity, freshness, pop history
+- Self-learning: signal weights auto-adjusted by learning_engine.py based on hit/miss outcomes
 - Outputs a formatted Discord message to stdout (no_agent cron mode)
 """
 import urllib.request, json, re, time, datetime, sys, os
@@ -12,15 +13,52 @@ UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 MAX_DAYS_BACK = 10
 # 지난 실행에서 지목한 종목의 실제 성과를 다음 실행에서 보고하는 추적 기능
 STATE_FILE = os.path.expanduser("~/.hermes/scripts/.regsho_state.json")
+WEIGHTS_FILE = os.path.expanduser("~/.hermes/scripts/.regsho_weights.json")
 TRACK_DAYS = 7        # 이 기간(일) 안의 지목만 비교 대상
 RECORD_LIMIT = 30     # 상태에 저장할 지목 종목 상한
+
+# 신호 기본 가중치 (learning_engine.py가 .regsho_weights.json으로 학습 조정)
+DEFAULT_WEIGHTS = {
+    "vol_dry": 2.0, "vol_low": 1.0,
+    "bb_squeeze": 2.0, "bb_tight": 1.0,
+    "near_high": 2.0, "near_high_15": 1.0,
+    "quiet5": 2.0, "quiet25": 1.0,
+    "pop50": 2.0, "pop20": 1.0,
+    "price_ok": 1.0,
+}
+WEIGHTS = None
+
+def load_weights():
+    """학습된 신호 가중치 + 적응형 임계값 로드 (없으면 기본값). 전역 WEIGHTS에 캐시."""
+    global WEIGHTS
+    if WEIGHTS is not None:
+        return WEIGHTS
+    w = dict(DEFAULT_WEIGHTS)
+    try:
+        with open(WEIGHTS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for k, v in data.get("weights", {}).items():
+            if k in w and isinstance(v, (int, float)) and v > 0:
+                w[k] = float(v)
+        w["_threshold"] = float(data.get("adaptive_threshold", 5.0))
+    except Exception:
+        w["_threshold"] = 5.0
+    WEIGHTS = w
+    return w
+
+def get_signal_weight(sig):
+    return load_weights().get(sig, 1.0)
+
+def get_threshold():
+    """적응형 발사대기 최소 점수 (학습 엔진이 조정, 5.0~8.0)."""
+    return load_weights().get("_threshold", 5.0)
 
 def load_state():
     try:
         with open(STATE_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
-        return {"picks": {}}
+        return {"picks": {}, "outcomes": {}}
 
 def save_state(s):
     os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
@@ -56,12 +94,15 @@ def get_latest_list():
     return None, None
 
 def fetch_daily(ticker):
-    """Fetch ~3mo daily closes+volumes from Yahoo chart API."""
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?range=3mo&interval=1d"
+    """Fetch ~3mo daily closes+volumes from Yahoo chart API.
+    Returns (closes, vols, highs) or (closes, vols, highs, splits) with split events.
+    splits: dict {date_str: ratio} — ratio<1 = 리버스 스플릿(주식 병합), ratio>1 = 정방향 스플릿."""
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?range=3mo&interval=1d&events=split"
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=15) as r:
         d = json.loads(r.read().decode())
     res = d["chart"]["result"][0]
+    meta = res.get("meta", {}) or {}
     quote = res["indicators"]["quote"][0]
     ts = res["timestamp"]
     closes, vols, highs = [], [], []
@@ -70,12 +111,28 @@ def fetch_daily(ticker):
         if c is not None and h is not None:
             closes.append(c); highs.append(h)
             vols.append(v if v is not None else 0)
+    # Yahoo 버그 보정: 최근 거래일 close가 None으로 오는 경우(급등일 Vol만 있고 close 누락)
+    # meta.regularMarketPrice(정규장 현재가/직전 종가)를 마지막 유효 봉에 반영한다.
+    # 예: IVF 8/17 — bars 마지막 close=None, vol=113M, meta.regularMarketPrice=1.53
+    rmp = meta.get("regularMarketPrice")
+    if rmp and closes:
+        closes[-1] = rmp
     if len(closes) < 25:
         return None
-    return closes, vols, highs
+    # Split events (리버스 스플릿 = 주식 병합, 주가 점프의 원인)
+    splits = {}
+    events = res.get("events", {}) or {}
+    for ev in events.get("splits", {}).values():
+        try:
+            edate = datetime.datetime.utcfromtimestamp(ev["date"]).strftime("%Y-%m-%d")
+            splits[edate] = ev.get("numerator", 1) / ev.get("denominator", 1)
+        except Exception:
+            continue
+    return closes, vols, highs, splits
 
 def score_ticker(t):
-    closes, vols, highs = t
+    closes, vols, highs = t[:3]
+    splits = t[3] if len(t) > 3 else {}
     n = len(closes)
     last = closes[-1]
     # daily returns over last 30 sessions
@@ -100,49 +157,80 @@ def score_ticker(t):
     # 30d total
     tot30 = (last/closes[-min(31,n)]-1)*100
 
+    # ── 리버스 스플릿(주식 병합) 감지 — 주가 점프는 실제 상승이 아님 ──
+    # 병합 후 30일 내 지표(max5/max1d_30)가 오염되므로 해당 기간은 후보에서 제외
+    rev_split_recent = False
+    rev_split_ratio = None
+    for edate, ratio in splits.items():
+        if ratio < 1:  # 리버스 스플릿
+            try:
+                ed = datetime.datetime.strptime(edate, "%Y-%m-%d").date()
+                if (datetime.date.today() - ed).days <= 30:
+                    rev_split_recent = True
+                    rev_split_ratio = ratio
+            except Exception:
+                continue
+
+    # ── 신호 코드 판정 (학습용) ──
+    signals = []
+    if vol_ratio <= 0.7: signals.append("vol_dry")
+    elif vol_ratio <= 1.0: signals.append("vol_low")
+    if bbw < 12: signals.append("bb_squeeze")
+    elif bbw < 18: signals.append("bb_tight")
+    if dist_high <= 8: signals.append("near_high")
+    elif dist_high <= 15: signals.append("near_high_15")
+    if max5 < 10: signals.append("quiet5")
+    elif max5 < 25: signals.append("quiet25")
+    if max1d_30 >= 50: signals.append("pop50")
+    elif max1d_30 >= 20: signals.append("pop20")
+    if last >= 0.5: signals.append("price_ok")
+
+    # ── 학습 가중치 적용 점수 ──
+    w = load_weights()
     score = 0
     reasons = []
-    if vol_ratio <= 0.7:
-        score += 2; reasons.append(f"거래량말림 {vol_ratio:.2f}x")
-    elif vol_ratio <= 1.0:
-        score += 1; reasons.append(f"거래량 {vol_ratio:.2f}x")
-    if bbw < 12:
-        score += 2; reasons.append(f"BB스퀴즈 {bbw:.0f}%")
-    elif bbw < 18:
-        score += 1; reasons.append(f"BB {bbw:.0f}%")
-    if dist_high <= 8:
-        score += 2; reasons.append("고점근접")
-    elif dist_high <= 15:
-        score += 1
-    if max5 < 10:
-        score += 2; reasons.append("5일조용")
-    elif max5 < 25:
-        score += 1
-    if max1d_30 >= 50:
-        score += 2; reasons.append(f"폭발이력+{max1d_30:.0f}%")
-    elif max1d_30 >= 20:
-        score += 1
-    if last >= 0.5:
-        score += 1
+    for sig in signals:
+        sw = w.get(sig, 1.0)
+        score += sw
+    score = round(score)
+    if "vol_dry" in signals: reasons.append(f"거래량말림 {vol_ratio:.2f}x")
+    elif "vol_low" in signals: reasons.append(f"거래량 {vol_ratio:.2f}x")
+    if "bb_squeeze" in signals: reasons.append(f"BB스퀴즈 {bbw:.0f}%")
+    elif "bb_tight" in signals: reasons.append(f"BB {bbw:.0f}%")
+    if "near_high" in signals: reasons.append("고점근접")
+    if "quiet5" in signals: reasons.append("5일조용")
+    if "pop50" in signals: reasons.append(f"폭발이력+{max1d_30:.0f}%")
+    elif "pop20" in signals: reasons.append(f"폭발이력+{max1d_30:.0f}%")
+    # 리버스 스플릿(병합) 종목은 실제 상승이 아니므로 별도 플래그 + 사유 표기
+    if rev_split_recent:
+        reasons.append(f"⚠️병합(1:{int(1/rev_split_ratio) if rev_split_ratio else '?'})")
     return {
         "ticker": None, "last": last, "score": score, "max1d_30": max1d_30,
         "max5": max5, "vol_ratio": vol_ratio, "bbw": bbw, "dist_high": dist_high,
-        "tot30": tot30, "reasons": reasons
+        "tot30": tot30, "reasons": reasons, "signals": signals,
+        "rev_split": rev_split_recent, "rev_split_ratio": rev_split_ratio
     }
 
 def fmt_pct(x):
     return f"{x:+.0f}%"
 
 def record_picks(state, date_str, fresh, watch):
-    """이 실행에서 지목한 종목들을 상태에 기록 (이후 실행에서 실제 성과와 비교용)."""
+    """이 실행에서 지목한 종목들을 상태에 기록 (이후 실행에서 실제 성과와 비교 + 학습용).
+    리버스 스플릿(병합) 종목은 제외 — 가짜 상승이 학습 데이터를 오염시킴."""
     picks = {}
     for r in fresh:
+        if r.get("rev_split"):
+            continue
         picks[r["ticker"]] = {"cat": "발사대기", "last": r["last"], "score": r["score"],
+                              "signals": r.get("signals", []),
                               "ts": date_str}
     for r in watch:
         # 발사대기 우선 — 이미 있는 종목은 발사대기로 유지
+        if r.get("rev_split"):
+            continue
         if r["ticker"] not in picks:
             picks[r["ticker"]] = {"cat": "관찰", "last": r["last"], "score": r["score"],
+                                  "signals": r.get("signals", []),
                                   "ts": date_str}
     # 기존 저장과 병합 + 오래된 지목 정리(TRACK_DAYS 초과 제거) + 상한
     merged = state.setdefault("picks", {})
@@ -179,7 +267,7 @@ def build_tracking_lines(merged, results):
                     last = closes[-1]
                     rets5 = [(closes[i]/(closes[i-1])-1)*100 for i in range(max(1,len(closes)-4), len(closes))]
                     mx5 = max(rets5)
-                    r = {"last": last, "max5": mx5, "score": None}
+                    r = {"last": last, "max5": mx5, "score": None, "rev_split": False}
                 else:
                     continue
             except Exception:
@@ -190,7 +278,9 @@ def build_tracking_lines(merged, results):
             vdate = now
         age = (now - vdate).days
         chg = (r["last"] - v["last"]) / v["last"] * 100 if v["last"] else 0
-        if r["max5"] >= 35:
+        if r.get("rev_split"):
+            status = "🚫 병합"
+        elif r["max5"] >= 35:
             status = "✅ 터짐🚀"
         elif chg >= 20:
             status = "✅ 상승"
@@ -247,13 +337,21 @@ def main():
         print("⚠️ 스캔 결과 없음 (데이터 문제).")
         return
 
-    fresh = sorted([r for r in results if r["score"] >= 5 and r["max5"] < 35], key=lambda r: -r["score"])
-    watch = sorted([r for r in results if 3 <= r["score"] < 5 and r["max5"] < 35], key=lambda r: -r["score"])
-    popped = sorted([r for r in results if r["max5"] >= 35], key=lambda r: -r["max5"])
+    # 리버스 스플릿(병합) 종목 분리 — 주가 점프는 실제 상승이 아니므로 '터짐'에서 제외
+    merged_out = [r for r in results if r.get("rev_split")]
+    real = [r for r in results if not r.get("rev_split")]
+
+    # 적응형 임계값 (학습 엔진이 적중률 기반으로 조정 — 후보 수 자동 조절)
+    th = get_threshold()
+    fresh = sorted([r for r in real if r["score"] >= th and r["max5"] < 35], key=lambda r: -r["score"])
+    watch = sorted([r for r in real if (th - 2) <= r["score"] < th and r["max5"] < 35], key=lambda r: -r["score"])
+    popped = sorted([r for r in real if r["max5"] >= 35], key=lambda r: -r["max5"])
 
     out = []
     out.append(f"📋 **Reg SHO 급등 전조 스캔** (리스트 {fdate}, S종목 {len(symbols)}개)")
     out.append(f"출처: nasdaqtrader.com — FTD 5일 연속 누적 = 나체숏 축적 종목")
+    if th > 5.0:
+        out.append(f"🧠 학습 임계값 {th:.1f}점↑ — 후보 좁혀서 적중률 최적화 중")
     out.append("")
 
     # 0) 이전 실행에서 지목했던 종목들의 실제 성과 먼저 보고 (있다면)
@@ -279,11 +377,16 @@ def main():
         out.append(f"💥 **이미 터짐** (최근5일 +35%↑, 숏 아직 안풀림)")
         out.append("`" + "  ".join(f"{r['ticker']}+{r['max5']:.0f}%" for r in popped[:10]) + "`")
         out.append("")
+    if merged_out:
+        # 리버스 스플릿(병합) 종목 — 주가 점프는 실제 상승 아님, 표시만 하고 후보에서 제외
+        out.append(f"🚫 **주식병합 제외** (리버스 스플릿 — 가격 점프는 실제 상승 아님)")
+        out.append("`" + "  ".join(f"{r['ticker']} 1:{int(1/(r.get('rev_split_ratio') or 0.1))}" for r in merged_out[:8]) + "`")
+        out.append("")
     out.append("— 전조점수: 거래량말림+BB스퀴즈+고점근접+5일조용+폭발이력. S종목만, ETF 제외.")
     out.append("— 룰: 발사는 캐탈리스트(뉴스)와 함께. 프리마켓 RVOL>3 확인 후 진입.")
     out.append("")
-    # ticker-only summary at the end, grouped by score
-    pool = [r for r in results if r["max5"] < 35 and r["score"] >= 3]
+    # ticker-only summary at the end, grouped by score (병합 종목 제외, 임계값 적용)
+    pool = [r for r in real if r["max5"] < 35 and r["score"] >= (th - 2)]
     pool.sort(key=lambda r: -r["score"])
     if pool:
         out.append("📌 **티커 정리 (점수별)**")
