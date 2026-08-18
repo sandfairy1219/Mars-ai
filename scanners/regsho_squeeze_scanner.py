@@ -117,6 +117,14 @@ def fetch_daily(ticker):
     rmp = meta.get("regularMarketPrice")
     if rmp and closes:
         closes[-1] = rmp
+    # 데이터 신선도 가드: 마지막 봉이 일주일 이상 지났고 meta 현재가도 없으면
+    # 오래된 종가로 잘못된 변동률을 계산하지 않도록 스킵 (STALE 데이터 방지)
+    if ts:
+        last_bar_ts = ts[-1]
+        stale_days = (time.time() - last_bar_ts) / 86400.0
+        if stale_days > 7 and not rmp:
+            print(f"  stale data skip {ticker}: last bar {stale_days:.0f}d old", file=sys.stderr)
+            return None
     if len(closes) < 25:
         return None
     # Split events (리버스 스플릿 = 주식 병합, 주가 점프의 원인)

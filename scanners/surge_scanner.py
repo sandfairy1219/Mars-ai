@@ -172,6 +172,12 @@ def fetch_ticker_quotes(tickers):
             rmp = meta.get("regularMarketPrice")
             if rmp and closes:
                 closes[-1] = rmp
+            # 신선도 가드: 마지막 봉이 7일+ 지났고 meta 현재가도 없으면 스킵
+            if ts:
+                stale_days = (time.time() - ts[-1]) / 86400.0
+                if stale_days > 7 and not rmp:
+                    print(f"  stale quote skip {tk}: {stale_days:.0f}d old", file=sys.stderr)
+                    continue
             if len(closes) < 2:
                 continue
             today_c, prev_c = closes[-1], closes[-2]
