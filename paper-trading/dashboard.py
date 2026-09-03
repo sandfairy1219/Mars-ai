@@ -117,6 +117,7 @@ def build_payload():
 
     total_unrealized = 0.0
     invested = 0.0
+    market_value = 0.0
     for p in positions:
         q = quotes.get(p["ticker"]) or {}
         live = q.get("price")
@@ -129,10 +130,12 @@ def build_payload():
         )
         total_unrealized += p["unrealized_live"]
         invested += p["entry_price"] * p["shares"]
+        market_value += p["live_price"] * p["shares"]
 
+    # 총자산 = 현금 + 보유종목 시가평가 (실현수익은 이미 현금에 반영됨)
+    # = SEED + 실현누적 + 미실현 → 크론 swing-trader.py portfolio_summary()와 동일한 식
     cash = pf.get("cash", SEED)
-    equity = SEED + total_unrealized
-
+    equity = cash + market_value
     realized = sum(h.get("pnl", 0) for h in history)
 
     def bench(prefix, name):
@@ -154,7 +157,7 @@ def build_payload():
         bench("dia", "Dow Jones"),
         bench("iwm", "Russell 2000"),
     ]
-    equity_return = round(total_unrealized / SEED * 100, 2)
+    equity_return = round((equity - SEED) / SEED * 100, 2)
 
     watch_out = []
     for w in watchlist:
