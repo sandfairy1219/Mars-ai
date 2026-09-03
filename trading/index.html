@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mars 모의투자 대시보드</title>
+<style>
+:root{
+  --bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;
+  --green:#3fb950;--red:#f85149;--blue:#58a6ff;--yellow:#d29922;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,'Segoe UI','Malgun Gothic',sans-serif;padding:20px;max-width:1280px;margin:0 auto}
+h1{font-size:1.35rem;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.sub{color:var(--muted);font-size:.8rem;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.card .label{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.card .value{font-size:1.45rem;font-weight:700;font-variant-numeric:tabular-nums}
+.card .delta{font-size:.85rem;margin-top:3px;font-variant-numeric:tabular-nums}
+.up{color:var(--green)}.down{color:var(--red)}.neu{color:var(--blue)}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px;overflow-x:auto}
+.panel h2{font-size:.95rem;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.panel h2 .badge{font-size:.7rem;background:var(--border);border-radius:20px;padding:2px 10px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:.85rem;font-variant-numeric:tabular-nums}
+th{color:var(--muted);text-align:left;font-weight:600;font-size:.72rem;text-transform:uppercase;padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid #21262d;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#1c2128}
+.tag{display:inline-block;font-size:.68rem;padding:1px 8px;border-radius:10px;font-weight:700}
+.tag.LONG{background:#0d4429;color:var(--green)}
+.tag.SHORT{background:#5c1a1a;color:var(--red)}
+.progress{position:relative;background:#21262d;border-radius:6px;height:6px;width:90px;overflow:hidden}
+.progress .bar{position:absolute;top:0;height:100%;background:var(--blue)}
+.progress .bar.stop{background:var(--red)}
+.pctcell{min-width:90px}
+#upd{color:var(--muted)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot.off{background:var(--red)}
+@media(max-width:640px){body{padding:10px}.card .value{font-size:1.15rem}}
+</style>
+</head>
+<body>
+<h1>🛰️ Mars 모의투자 대시보드 <span id="mkt" class="sub"></span></h1>
+<div class="sub">갱신: <span id="upd">-</span> · <span id="auto">자동 새로고침 60초</span></div>
+
+<div class="grid" id="stats"></div>
+
+<div class="panel">
+  <h2>💼 보유 포지션 <span class="badge" id="pos-count">-</span></h2>
+  <table>
+    <thead><tr>
+      <th>티커</th><th>방향</th><th>섹터</th><th>티어</th><th>진입가</th><th>현재가</th>
+      <th>수량</th><th>평가손익</th><th>수익률</th><th>스톱→목표</th><th>진행</th><th>보유</th>
+    </tr></thead>
+    <tbody id="pos-body"></tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>👁️ 워치리스트 <span class="badge" id="watch-count">-</span></h2>
+  <table>
+    <thead><tr>
+      <th>티커</th><th>방향</th><th>점수</th><th>RSI</th><th>현재가</th><th>일간%</th><th>MA20거리</th><th>ATR%</th>
+    </tr></thead>
+    <tbody id="watch-body"></tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>📜 실현 거래 내역 <span class="badge" id="hist-count">-</span></h2>
+  <table>
+    <thead><tr>
+      <th>청산일</th><th>티커</th><th>방향</th><th>진입→청산</th><th>수량</th><th>P&L</th><th>수익률</th><th>사유</th>
+    </tr></thead>
+    <tbody id="hist-body"></tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <h2>🏆 벤치마크 비교 (기준일 대비)</h2>
+  <table>
+    <thead><tr><th>지수</th><th>기준가</th><th>현재</th><th>수익률</th><th>내 계좌 대비</th></tr></thead>
+    <tbody id="bench-body"></tbody>
+  </table>
+</div>
+
+<script>
+const fmt$ = v => v==null ? '—' : '$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtK$ = v => v==null ? '—' : (Math.abs(v)>=1000 ? '$'+(v/1000).toFixed(1)+'K' : '$'+v.toFixed(0));
+const fmtPct = v => v==null ? '—' : (v>0?'+':'')+v.toFixed(2)+'%';
+const cls = v => v==null ? 'neu' : (v>0 ? 'up' : v<0 ? 'down' : 'neu');
+const esc = s => String(s??'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+
+function statCard(label, value, delta, deltaCls){
+  return `<div class="card"><div class="label">${label}</div>
+    <div class="value ${deltaCls||''}">${value}</div>
+    ${delta!=null?`<div class="delta ${deltaCls||'neu'}">${delta}</div>`:''}</div>`;
+}
+
+async function refresh(){
+  try{
+    const d = await (await fetch('/api/summary')).json();
+
+    // market status
+    document.getElementById('mkt').innerHTML =
+      `<span class="dot ${d.market_open?'on':'off'}"></span>${d.market_open?'장중 (ET)':'장 마감 / 프리장'}`;
+    document.getElementById('upd').textContent = new Date(d.updated_at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
+
+    // stat cards
+    const eqCls = cls(d.equity_return_pct);
+    document.getElementById('stats').innerHTML =
+      statCard('총 자산', fmt$(d.equity), `${fmtPct(d.equity_return_pct)} · 시드 대비`, eqCls) +
+      statCard('미실현 P&L', (d.unrealized>=0?'+':'')+fmtK$(d.unrealized), `투자금 ${fmtK$(d.invested)}`, cls(d.unrealized)) +
+      statCard('현금', fmt$(d.cash), (d.cash/d.equity*100).toFixed(1)+'% 유지', 'neu') +
+      statCard('실현 누적', (d.realized>=0?'+':'')+fmtK$(d.realized), `${d.trade_count}회 · 승률 ${d.win_rate==null?'—':d.win_rate+'%'}`, cls(d.realized)) +
+      statCard('S&P 500 대비', fmtPct(d.vs_spy), '기준 2026-06-15', cls(d.vs_spy)) +
+      statCard('거래 횟수', d.trade_count+'회', '전체 청산 건수', 'neu');
+
+    // positions
+    document.getElementById('pos-count').textContent = d.positions.length+'개';
+    document.getElementById('pos-body').innerHTML = d.positions.map(p=>{
+      const pnl = p.unrealized_live, pct = p.unrealized_live_pct;
+      const lo = Math.min(p.entry_price, p.stop_price), hi = Math.max(p.target_price, p.entry_price);
+      const prog = Math.max(0, Math.min(100, (p.live_price - lo)/(hi-lo)*100));
+      const stopPos = (p.stop_price - lo)/(hi-lo)*100;
+      return `<tr>
+        <td><b>${esc(p.ticker)}</b></td>
+        <td><span class="tag ${p.side}">${p.side}</span></td>
+        <td>${esc(p.sector||'—')}</td>
+        <td>${esc(p.cap_tier||'—')}</td>
+        <td>${fmt$(p.entry_price)}</td>
+        <td>${fmt$(p.live_price)}${p.live_dp!=null?` <span class="${cls(p.live_dp)}" style="font-size:.75rem">(${fmtPct(p.live_dp)})</span>`:''}</td>
+        <td>${p.shares}</td>
+        <td class="${cls(pnl)}"><b>${(pnl>=0?'+':'')+fmtK$(pnl)}</b></td>
+        <td class="${cls(pct)} pctcell"><b>${fmtPct(pct)}</b></td>
+        <td style="font-size:.78rem;color:var(--muted)">${fmt$(p.stop_price)} → ${fmt$(p.target_price)}</td>
+        <td><div class="progress"><div class="bar" style="width:${prog}%"></div><div class="bar stop" style="left:${stopPos}%;width:2px"></div></div></td>
+        <td style="color:var(--muted)">${p.days_held}일</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="12" style="color:var(--muted)">포지션 없음</td></tr>';
+
+    // watchlist
+    document.getElementById('watch-count').textContent = d.watchlist.length+'개';
+    document.getElementById('watch-body').innerHTML = d.watchlist.map(w=>`<tr>
+        <td><b>${esc(w.ticker)}</b></td>
+        <td><span class="tag ${w.side}">${w.side}</span></td>
+        <td><b>${w.score}/8</b></td>
+        <td>${w.rsi?.toFixed(1)}</td>
+        <td>${fmt$(w.live_price)}</td>
+        <td class="${cls(w.live_dp)}">${fmtPct(w.live_dp)}</td>
+        <td>${w.dist_ma20!=null?w.dist_ma20.toFixed(2)+'%':'—'}</td>
+        <td>${w.atr_pct!=null?w.atr_pct.toFixed(2)+'%':'—'}</td>
+      </tr>`).join('');
+
+    // history — 최신순, 최근 15건
+    const hist = [...d.history].reverse().slice(0,15);
+    document.getElementById('hist-count').textContent = d.history.length+'건';
+    document.getElementById('hist-body').innerHTML = hist.map(h=>{
+      const pnl = h.pnl||0, pct = h.entry_price ? (h.exit_price/h.entry_price-1)*100*(h.side==='SHORT'?-1:1) : null;
+      return `<tr>
+        <td style="color:var(--muted)">${esc(h.exit_date)}</td>
+        <td><b>${esc(h.ticker)}</b></td>
+        <td><span class="tag ${h.side}">${h.side}</span></td>
+        <td>${fmt$(h.entry_price)} → ${fmt$(h.exit_price)}</td>
+        <td>${h.shares}</td>
+        <td class="${cls(pnl)}"><b>${(pnl>=0?'+':'')+fmtK$(pnl)}</b></td>
+        <td class="${cls(pct)}">${fmtPct(pct)}</td>
+        <td style="font-size:.78rem;color:var(--muted)">${esc(h.exit_reason)}</td>
+      </tr>`;
+    }).join('');
+
+    // benchmarks
+    document.getElementById('bench-body').innerHTML = d.benchmarks.map(b=>`<tr>
+        <td>${esc(b.name)}</td>
+        <td>${fmt$(b.baseline)}</td>
+        <td>${fmt$(b.current)}</td>
+        <td class="${cls(b.return_pct)}"><b>${fmtPct(b.return_pct)}</b></td>
+        <td class="${cls(d.equity_return_pct - (b.return_pct||0))}">${fmtPct(d.equity_return_pct - (b.return_pct||0))}</td>
+      </tr>`).join('');
+  }catch(e){
+    document.getElementById('upd').textContent = '로드 실패: '+e.message;
+  }
+}
+refresh();
+setInterval(refresh, 60000);
+</script>
+</body>
+</html>
