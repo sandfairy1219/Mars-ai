@@ -6,9 +6,54 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 SEED = 100_000.0
 PORTFOLIO_PATH = "/home/ubuntu/marsAI/paper-trading/swing-portfolio.json"
 MAX_POSITIONS = 10          # 유동적: 신호 강하면 최대 10개 까지 허용
-MAX_HOLD_DAYS = 14
+# MAX_HOLD_DAYS는 weekly_learning이 튜닝한 params에서 로드 (기본 14)
+DEFAULT_MAX_HOLD_DAYS = 14
 # STOP_LOSS / TARGET_GAIN / BASE_POSITION 은 시장 상황에 따라 동적 계산
 DEFAULT_BASE_POSITION = 10_000.0
+
+# ─── 자가학습 파라미터 (weekly_learning.py가 매주 튜닝) ───
+PARAMS_PATH = os.path.expanduser("~/.hermes/scripts/swing_params.json")
+_LEARNED_PARAMS = None
+
+def load_learned_params():
+    """weekly_learning.py가 저장한 튜닝 파라미터 로드. 실패 시 기본값."""
+    global _LEARNED_PARAMS
+    if _LEARNED_PARAMS is not None:
+        return _LEARNED_PARAMS
+    defaults = {
+        "score_min": 5, "price_min": 2.0, "max_hold_days": DEFAULT_MAX_HOLD_DAYS,
+        "stop_mult": 1.0, "target_mult": 1.0, "base_position_mult": 1.0,
+        "aggression_bias": 0.0, "vix_floor": 15.0, "vix_ceiling": 30.0,
+        "aggr_5d_bull": 3.0, "aggr_5d_bear": -3.0,
+    }
+    try:
+        if os.path.exists(PARAMS_PATH):
+            with open(PARAMS_PATH) as f:
+                saved = json.load(f)
+            for k in defaults:
+                if k in saved.get("params", {}):
+                    defaults[k] = saved["params"][k]
+    except Exception:
+        pass
+    # ─── AI 결정 오버라이드 병합 (당일 유효) ───
+    # swing_ai.js가 AI 판단을 반영해 저장한 파일. 날짜가 오늘이면 학습 파라미터를 덮어씀.
+    try:
+        _ai_path = os.path.expanduser("~/.hermes/scripts/swing_ai_overrides.json")
+        if os.path.exists(_ai_path):
+            with open(_ai_path) as f:
+                ov = json.load(f)
+            if ov.get("date") == datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"):
+                ovp = ov.get("params", {})
+                for k in defaults:
+                    if k in ovp and ovp[k] is not None:
+                        defaults[k] = ovp[k]
+    except Exception:
+        pass
+    _LEARNED_PARAMS = defaults
+    return defaults
+
+def params():
+    return load_learned_params()
 
 # ─── 거래대금 필터 ───
 TOP_VOLUME_N = 250                # 거래대금 상위 250개 종목만 스캔 (API 최대치)
@@ -34,6 +79,8 @@ LEVERAGED_TICKER_SET = {
 }
 
 # Discord webhook: env var first, then .env fallback
+# NOTE: swing-trader는 기본적으로 cron deliver(채널)로 stdout을 전송.
+# WEBHOOK_URL은 send_discord() 호출 시에만 사용되며, 가드는 함수 내부에서 발동.
 WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK") or os.environ.get("DISCORD_WEBHOOK_URL") or ""
 if not WEBHOOK_URL:
     for env_path in [".env", "/home/ubuntu/etf-alarm/.env", "/home/ubuntu/marsAI/etf-alarm/.env"]:
@@ -738,7 +785,7 @@ SAVETICKER_API = "https://saveticker.com/api/news/list?page=1&page_size=50&sort=
 SAVETICKER_STATE = os.path.expanduser("~/.hermes/scripts/.saveticker_sentiment_cache.json")
 
 # etf-alarm state.json (채널 #1504492705340981309로 올라가는 속보 데이터)
-ETF_ALARM_STATE = "/home/ubuntu/marsAI/etf-alarm/state.json"
+ETF_ALARM_STATE = "/home/ubuntu/etf-alarm/state.json"
 
 def _read_etf_alarm_headlines() -> list[str]:
     """etf-alarm state.json에서 SaveTicker 속보 헤드라인 읽기."""
@@ -781,6 +828,42 @@ def _score_text_sentiment(text: str) -> float:
     if total == 0:
         return 0.0
     return (bull_count - bear_count) / max(total, 1)
+
+def _earnings_calendar_context() -> str:
+    """실적 일정 정답지: yfinance calendar로 포트+관심 종목의 다음 실적일을 조회.
+    LLM이 뉴스 헤드라인만 보고 '어닝콜 임박'을 추측하는 것을 차단한다."""
+    import datetime as _dt
+    lines = []
+    try:
+        import yfinance as yf
+        all_t = []
+        try:
+            with open('/home/ubuntu/marsAI/paper-trading/swing-portfolio.json') as f:
+                _p = json.load(f)
+            all_t = [p['ticker'] for p in _p.get('positions', [])] + \
+                    [w['ticker'] for w in _p.get('watchlist', [])[:8]]
+        except Exception:
+            pass
+        for t in all_t[:18]:
+            try:
+                ed = yf.Ticker(t).calendar
+                if isinstance(ed, dict):
+                    el = ed.get('Earnings Date')
+                    d = el[0] if isinstance(el, (list, tuple)) and el else el
+                    if isinstance(d, _dt.date):
+                        days = (d - _dt.date.today()).days
+                        if 0 <= days <= 30:
+                            lines.append(f"{t}: {d.isoformat()} (D-{days}) ⚠️실적 임박")
+                        elif days < 0:
+                            lines.append(f"{t}: 직전 실적 {d.isoformat()} (완료)")
+            except Exception:
+                continue
+    except ImportError:
+        pass
+    if not lines:
+        return "• 포트폴리오 종목 중 30일 내 실적 발표 예정: 없음 (실적 리스크 이벤트 없음)"
+    return "\n".join(f"• {x}" for x in lines)
+
 
 def fetch_news_sentiment() -> dict:
     """
@@ -865,6 +948,7 @@ def fetch_news_sentiment() -> dict:
 
 # ─── Helpers ───
 def fetch_chart(ticker):
+    """일봉 데이터 (RSI/MA/ATR 계산용). 프리마켓 가격은 반영 안 됨."""
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=3mo&includePrePost=true"
     req = urllib.request.Request(url, headers={"User-Agent":"Mozilla/5.0"})
     try:
@@ -875,6 +959,35 @@ def fetch_chart(ticker):
         return close
     except Exception:
         return None
+
+def fetch_live_price(ticker):
+    """
+    현재 라이브 가격 (프리마켓/정규장/애프터마켓 반영).
+    5분봉 마지막 값을 사용 — 오전 크론이 프리마켓 가격으로 진입/스톱/목표 판단 가능.
+    """
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=5m&range=1d&includePrePost=true"
+    req = urllib.request.Request(url, headers={"User-Agent":"Mozilla/5.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+        result = data["chart"]["result"][0]
+        close = [c for c in result["indicators"]["quote"][0]["close"] if c is not None]
+        if not close:
+            return None
+        return close[-1]
+    except Exception:
+        return None
+
+def _is_premarket_or_afterhours():
+    """미국 동부 기준 장중(09:30~16:00)이 아니면 True (프리마켓/애프터마켓/주말)."""
+    try:
+        now = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=4)  # EDT
+        if now.weekday() >= 5:
+            return True
+        t = now.hour * 60 + now.minute
+        return t < 9 * 60 + 30 or t >= 16 * 60
+    except Exception:
+        return False
 
 def calc_rsi(prices, period=14):
     if len(prices) < period + 1:
@@ -963,30 +1076,38 @@ def save_portfolio(p):
         json.dump(p, f, indent=2, ensure_ascii=False)
 
 def market_aggression(ctx, news_sentiment=None):
-    """시장 상황 + 뉴스 센티먼트에 따라 0.0(최대 방어) ~ 1.0(최대 공격) 반환"""
+    """시장 상황 + 뉴스 센티먼트 + 학습된 바이어스에 따라 0.0(최대 방어) ~ 1.0(최대 공격) 반환"""
+    P = params()
     spy = ctx.get("S&P 500", {})
     vix = ctx.get("VIX", {})
     qqq = ctx.get("Nasdaq 100", {})
     score = 0.5
+
+    # 학습된 공격도 바이어스 반영
+    score += P.get("aggression_bias", 0.0)
     
     if spy.get("5d") is not None:
         c5 = spy["5d"]
-        if c5 > 3: score += 0.3
-        elif c5 > 1: score += 0.15
-        elif c5 < -3: score -= 0.3
-        elif c5 < -1: score -= 0.15
+        bull_th = P.get("aggr_5d_bull", 3.0)
+        bear_th = P.get("aggr_5d_bear", -3.0)
+        if c5 > bull_th: score += 0.3
+        elif c5 > bull_th * 0.4: score += 0.15
+        elif c5 < bear_th: score -= 0.3
+        elif c5 < bear_th * 0.4: score -= 0.15
     
     if qqq.get("5d") is not None:
         n5 = qqq["5d"]
         if n5 > 4: score += 0.1
         elif n5 < -5: score -= 0.1
     
+    vix_floor = P.get("vix_floor", 15.0)
+    vix_ceiling = P.get("vix_ceiling", 30.0)
     if vix.get("price") is not None:
         vp = vix["price"]
-        if vp < 15: score += 0.2
-        elif vp < 18: score += 0.1
-        elif vp > 30: score -= 0.3
-        elif vp > 25: score -= 0.2
+        if vp < vix_floor: score += 0.2
+        elif vp < vix_floor + 3: score += 0.1
+        elif vp > vix_ceiling: score -= 0.3
+        elif vp > vix_ceiling - 5: score -= 0.2
     
     # 뉴스 센티먼트 반영
     if news_sentiment is not None:
@@ -1004,7 +1125,13 @@ def market_context():
         if prices and len(prices) >= 6:
             c5 = (prices[-1] - prices[-6]) / prices[-6] * 100
             c20 = (prices[-1] - prices[-21]) / prices[-21] * 100 if len(prices) >= 21 else 0.0
-            ctx[name] = {"price": round(prices[-1], 2), "5d": round(c5, 2), "20d": round(c20, 2)}
+            # 표시/판단 가격은 프리마켓이면 라이브 반영 (5d/20d는 일봉 기준 유지)
+            if _is_premarket_or_afterhours():
+                live = fetch_live_price(t)
+                price = live if live is not None else prices[-1]
+            else:
+                price = prices[-1]
+            ctx[name] = {"price": round(price, 2), "5d": round(c5, 2), "20d": round(c20, 2)}
         else:
             ctx[name] = {"price": None, "5d": None, "20d": None}
         time.sleep(0.2)
@@ -1012,6 +1139,7 @@ def market_context():
 
 def _scan_one(ticker):
     '''Scan a single ticker, returns dict or None.'''
+    P = params()
     prices = fetch_chart(ticker)
     if not prices or len(prices) < 50:
         return None
@@ -1024,8 +1152,14 @@ def _scan_one(ticker):
     lscore = score_long(prices, rsi, ma20, ma50, atr)
     if lscore < 4:
         return None
-    price = round(prices[-1], 2)
-    if price < 2.0:
+    # 프리마켓/애프터마켓이면 라이브 가격으로 진입가 결정 (지표는 일봉 유지)
+    if _is_premarket_or_afterhours():
+        live = fetch_live_price(ticker)
+        ref_price = live if live is not None else prices[-1]
+    else:
+        ref_price = prices[-1]
+    price = round(ref_price, 2)
+    if price < P.get("price_min", 2.0):
         return None
     return {
         "ticker": ticker, "sector": UNIVERSE.get(ticker, "Unknown"),
@@ -1060,13 +1194,20 @@ def update_positions(portfolio, today):
         if not prices:
             remaining.append(pos)
             continue
-        current = prices[-1]
+        # 프리마켓/애프터마켓이면 라이브 가격으로 스톱/목표 체크
+        if _is_premarket_or_afterhours():
+            live = fetch_live_price(pos["ticker"])
+            current = live if live is not None else prices[-1]
+        else:
+            current = prices[-1]
         days_held = (datetime.datetime.strptime(today, "%Y-%m-%d") - datetime.datetime.strptime(pos["date"], "%Y-%m-%d")).days
         exit_reason = None
         if current <= pos["stop_price"]:
             exit_reason = f"스톱 출도 (${current:.2f} ≤ ${pos['stop_price']:.2f})"
         elif current >= pos["target_price"]:
             exit_reason = f"목표 도달 (${current:.2f} ≥ ${pos['target_price']:.2f})"
+        elif days_held >= params().get("max_hold_days", DEFAULT_MAX_HOLD_DAYS) and not pos.get("long_term"):
+            exit_reason = f"시간 초과 ({days_held}일 보유 ≥ {params().get('max_hold_days', DEFAULT_MAX_HOLD_DAYS)}일)"
         
         if exit_reason:
             pnl = (current - pos["entry_price"]) * pos["shares"]
@@ -1082,7 +1223,8 @@ def update_positions(portfolio, today):
     return closed
 
 def enter_positions(portfolio, candidates, today, aggression=0.5):
-    """시장 상황(aggression)에 따라 현금 뱃스, 진입 개수, 포지션 크기를 유동적으로 조절."""
+    """시장 상황(aggression) + 학습 파라미터에 따라 현금 뱃스, 진입 개수, 포지션 크기를 유동적으로 조절."""
+    P = params()
     entered = []
     sector_counts = {}
     cap_counts = {"large": 0, "mid": 0, "small": 0}
@@ -1161,8 +1303,8 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         sec = c["sector"]
         tier = CAP_TIER.get(c["ticker"], "large")
         
-        # ─── Position size ───
-        base = DEFAULT_BASE_POSITION * (0.3 + aggression * 0.8)  # $3K ~ $11K
+        # ─── Position size (학습 배수 반영) ───
+        base = DEFAULT_BASE_POSITION * (0.3 + aggression * 0.8) * P.get("base_position_mult", 1.0)  # $3K ~ $11K × 배수
         # Score bonus
         if c["score"] >= 8: base += 6_000
         elif c["score"] >= 7: base += 3_000
@@ -1185,11 +1327,11 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         
         entry = c["price"]
         
-        # Dynamic stop / target based on aggression + tier
+        # Dynamic stop / target based on aggression + tier + 학습 배수
         base_stop = {"large": 0.05, "mid": 0.07, "small": 0.10}[tier]
         base_tgt = {"large": 0.10, "mid": 0.12, "small": 0.15}[tier]
-        stop_pct = base_stop * (0.8 + aggression * 0.5)   # 0.8x ~ 1.3x
-        tgt_pct = base_tgt * (0.8 + aggression * 0.6)      # 0.8x ~ 1.4x
+        stop_pct = base_stop * (0.8 + aggression * 0.5) * P.get("stop_mult", 1.0)   # 0.8x ~ 1.3x × 학습배수
+        tgt_pct = base_tgt * (0.8 + aggression * 0.6) * P.get("target_mult", 1.0)    # 0.8x ~ 1.4x × 학습배수
         
         stop = round(entry * (1 - stop_pct), 2)
         target = round(entry * (1 + tgt_pct), 2)
@@ -1256,7 +1398,7 @@ def portfolio_summary(portfolio):
         "open_count": len(portfolio["positions"])
     }
 
-def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered, today, aggression=0.5, history=None, news_sentiment=None):
+def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered, today, aggression=0.5, history=None, news_sentiment=None, earnings_ctx=None):
     labels = {
         "pre_market_1": "✅ 오버나이트 스캔 1",
         "pre_market_2": "🌅 프리장 스캔 2 (오픈 준비)",
@@ -1279,6 +1421,11 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     
     # Market context
     lines.append("📊 **시장 환경**")
+    lines.append("📅 **실적 일정 (정답지 — 뉴스 추측 금지, 이 표가 기준)**")
+    if earnings_ctx:
+        lines.append(earnings_ctx)
+    else:
+        lines.append("• 실적 일정 조회 실패 — 실적 임박 여부 판단 불가. 실적 관련 파라미터 변경 금지")
     for name, data in ctx.items():
         if data["price"]:
             lines.append(f"• {name}: ${data['price']} (5일: {data['5d']}%, 20일: {data['20d']}%)")
@@ -1300,6 +1447,11 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             sent_emoji = "🔴"
             sent_label = "공포"
         headline = news_sentiment.get("headline", "")
+        # LLM이 헤드라인을 이벤트 예측으로 오독하는 것 방지:
+        # 헤드라인에 발표 '후기' 키워드가 있으면 [지난 이벤트] 라벨을 명시한다.
+        _post_kw = ("어닝콜", "실적 발표", "실적발표", "어닝 서프라이즈", "발표 후")
+        if any(k in headline for k in _post_kw):
+            headline = f"[지난 이벤트 — 임박 아님] {headline}"
         lines.append(f"• 뉴스심리: {sent_emoji} {sent_label} ({sent_score:+.2f}) | {headline[:80]}")
     lines.append("")
     
@@ -1330,6 +1482,9 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     lines.append(f"• 현금: ${summary['cash']:,} ({cash_ratio:.1f}%) | 투자금: ${summary['invested']:,} ({invested_ratio:.1f}%)")
     lines.append(f"• 미실현: ${summary['unrealized']:,} | 실현수익: ${summary['realized']:,}")
     lines.append(f"• 보유 종목: {summary['open_count']}/{MAX_POSITIONS}")
+    P = params()
+    if P.get("stop_mult", 1.0) != 1.0 or P.get("score_min", 5) != 5 or P.get("aggression_bias", 0.0) != 0.0:
+        lines.append(f"• 🧠 **학습 파라미터**: score≥{P['score_min']} | stop×{P['stop_mult']:.2f} | tgt×{P['target_mult']:.2f} | bias {P['aggression_bias']:+.2f}")
     if aggression >= 0.75:
         lines.append("• 💡 **현금 전략**: 강세장 — 현금 비중 최소화, 적극 배분 중")
     elif aggression <= 0.3:
@@ -1384,6 +1539,7 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     vs_dia = summary.get('return_pct', 0) - summary.get('dia_return_pct', 0)
     vs_iwm = summary.get('return_pct', 0) - summary.get('iwm_return_pct', 0)
     lines.append(f"📊 **Dow Jones 대비**: {vs_dia:+.1f}%p | **Russell 2000 대비**: {vs_iwm:+.1f}%p")
+    lines.append("🌐 **실시간 대시보드**: https://sandfairy1219.github.io/Mars-ai/")
     vix = ctx.get("VIX", {}).get("price")
     if vix and vix > 25:
         lines.append(f"⚠️ **VIX 고점** ({vix}) — 방어적 자세, 현금 비중 유지")
@@ -1406,6 +1562,12 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
 
 def send_discord(message):
     if not WEBHOOK_URL:
+        return
+    # ── 하드 가드(함수 내부): 다른 봇 전용 채널(시세봇/종목추천/실적)로 전송 금지 ──
+    _FORBIDDEN_IDS = {"1518387756315705514", "1517552970387034112", "1532528318396629143"}
+    _wid = WEBHOOK_URL.split("webhooks/")[1].split("/")[0] if "/webhooks/" in WEBHOOK_URL else ""
+    if _wid in _FORBIDDEN_IDS:
+        print(f"[swing-trader] 웹훅 가드 발동: 타 봇 채널({_wid}) 전송 차단", file=sys.stderr)
         return
     try:
         payload = {"content": message}
@@ -1432,6 +1594,8 @@ def main():
         # 뉴스 센티먼트 조회 (시황 기준)
         news_sentiment = fetch_news_sentiment()
         aggression = market_aggression(ctx, news_sentiment)
+        # 실적 일정 정답지 (LLM 오독 방지 — 리포트에 직접 주입)
+        _earn_ctx = _earnings_calendar_context()
         
         # SPY benchmark tracking (set baseline on first run)
         spy_price = ctx.get("S&P 500", {}).get("price")
@@ -1508,22 +1672,28 @@ def main():
         # For after_hours and regular_1, try to enter new positions from watchlist
         entered = []
         if scan_type in ("after_hours", "regular_1"):
-            candidates = [w for w in watchlist if w.get("score", 0) >= 5]
+            candidates = [w for w in watchlist if w.get("score", 0) >= params().get("score_min", 5)]
             entered = enter_positions(portfolio, candidates, today, aggression)
         
         # Recompute summary with updated prices for remaining positions
         for p in portfolio["positions"]:
             prices = fetch_chart(p["ticker"])
             if prices:
-                p["current_price"] = round(prices[-1], 2)
-                p["unrealized"] = round((prices[-1] - p["entry_price"]) * p["shares"], 2)
+                # 프리마켓/애프터마켓이면 라이브 가격 반영
+                if _is_premarket_or_afterhours():
+                    live = fetch_live_price(p["ticker"])
+                    cur = live if live is not None else prices[-1]
+                else:
+                    cur = prices[-1]
+                p["current_price"] = round(cur, 2)
+                p["unrealized"] = round((cur - p["entry_price"]) * p["shares"], 2)
                 p["days_held"] = (datetime.datetime.strptime(today, "%Y-%m-%d") - datetime.datetime.strptime(p["date"], "%Y-%m-%d")).days
         
         summary = portfolio_summary(portfolio)
         save_portfolio(portfolio)
         
         # Build and send message
-        msg = build_message(scan_type, ctx, summary, portfolio["positions"], portfolio.get("watchlist", []), closed, entered, today, aggression, portfolio.get("history", []), news_sentiment)
+        msg = build_message(scan_type, ctx, summary, portfolio["positions"], portfolio.get("watchlist", []), closed, entered, today, aggression, portfolio.get("history", []), news_sentiment, earnings_ctx=_earn_ctx)
         print(msg)
         
     except Exception as e:
