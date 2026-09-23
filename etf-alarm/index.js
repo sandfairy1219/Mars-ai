@@ -1,4 +1,5 @@
-require('dotenv').config();
+// 앱 자신의 .env를 절대경로로 로드 (pm2 cwd가 달라도 동작) — 2026-09-23 fix
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const fs = require('fs');
 const path = require('path');
 const cheerio = require('cheerio');
