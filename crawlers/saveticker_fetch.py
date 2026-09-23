@@ -88,7 +88,7 @@ def _via_scraper(url: str, kind: str = "text", timeout: int = 120,
     """설정된 외부 스크래핑 API를 순서대로 시도."""
     conf = _load_scrapers()
     errs = []
-    render = "true" if (kind == "html" or browser) else "false"   # 기사 HTML은 렌더링 필요할 수 있음
+    render = "false"   # 검증 결과: 원문 HTML/JSON에 내용이 다 들어있어 렌더링 불필요(1크레딧)
 
     if conf.get("scrapingant"):
         try:
@@ -235,9 +235,11 @@ def fetch_bytes(url: str, headers: dict | None = None, timeout: int = 25,
         errors.append(f"direct:{type(e).__name__}")
 
     # 외부 스크래핑 API (설정돼 있으면 microlink보다 우선 — 진짜 브라우저로 통과)
+    # browser=false 로 호출해야 원문 그대로(JSON/HTML/이미지) 1크레딧에 받아진다.
+    # (browser=true 는 결과를 HTML로 감싸 JSON 파싱이 깨지고 10크레딧 소모)
     if _load_scrapers():
         try:
-            body = _via_scraper(url, kind, timeout=max(timeout, 120), browser=not binary)
+            body = _via_scraper(url, kind, timeout=max(timeout, 120), browser=False)
             if body and not _looks_blocked(body):
                 return body
             errors.append("scraper:blocked")

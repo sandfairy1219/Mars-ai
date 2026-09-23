@@ -29,7 +29,8 @@ function relayUp() {
     const conf = JSON.parse(fs.readFileSync(RELAY_CONF, 'utf8'));
     if (conf.enabled !== false && conf.ssh) {
       execFileSync('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5',
-        '-o', 'StrictHostKeyChecking=accept-new', conf.ssh, 'echo', 'ok'], { timeout: 15000 });
+        '-o', 'StrictHostKeyChecking=accept-new', conf.ssh, 'echo', 'ok'],
+        { timeout: 15000, stdio: ['ignore', 'pipe', 'ignore'] });
       up = true;
     }
   } catch (e) {
@@ -37,6 +38,17 @@ function relayUp() {
   }
   _relayCache = { at: Date.now(), up };
   return up;
+}
+
+// 외부 스크래핑 API 키가 설정돼 있으면 실시간(10분) 주기 사용 (건당 1크레딧, 무료 10,000/월)
+const SCRAPERS_CONF = path.join(os.homedir(), '.hermes/scripts/.saveticker_scrapers.json');
+function scraperConfigured() {
+  try {
+    const c = JSON.parse(fs.readFileSync(SCRAPERS_CONF, 'utf8'));
+    return ['scrapingant', 'scrapedo', 'scrapingbee'].some(k => String(c[k] || '').trim().length > 0);
+  } catch (e) {
+    return false;
+  }
 }
 
 // 소스별 fetch 시각 기록 (주기 제한용)
@@ -227,12 +239,15 @@ async function checkSource(source) {
   // 주기 제한(소스별): SaveTicker는 CF 우회 폴백(microlink 무료 한도) 때문에 75분 주기로만 조회
   const _preState = loadState();
   if (source.minIntervalMinutes) {
-    const useRelay = source.relayIntervalMinutes && relayUp();
-    const interval = useRelay ? source.relayIntervalMinutes : source.minIntervalMinutes;
+    const useRelay = !!(source.relayIntervalMinutes && relayUp());
+    const useScraper = !!(source.relayIntervalMinutes && !useRelay && scraperConfigured());
+    const fast = useRelay || useScraper;
+    const interval = fast ? source.relayIntervalMinutes : source.minIntervalMinutes;
     const last = (_preState.__meta && _preState.__meta[`${source.name}_last_fetch`]) || 0;
     const elapsedMin = (Date.now() - last) / 60000;
     if (last && elapsedMin < interval) {
-      console.log(`⏳ [${source.name}] 주기 대기 (${elapsedMin.toFixed(0)}/${interval}분${useRelay ? ', 릴레이 ON' : ''}) — 건너뜀`);
+      const why = useRelay ? '릴레이 ON' : (useScraper ? '스크래퍼 ON' : '');
+      console.log(`⏳ [${source.name}] 주기 대기 (${elapsedMin.toFixed(0)}/${interval}분${why ? ', ' + why : ''}) — 건너뜀`);
       return;
     }
   }
