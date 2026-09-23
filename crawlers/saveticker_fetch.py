@@ -43,7 +43,7 @@ def _quota_used() -> int:
         return 0
 
 
-def _quota_add(n: int = 1) -> None:
+def _quota_add(n: int = 1, provider: str = "microlink") -> None:
     now = time.time()
     try:
         with open(_QUOTA_FILE, encoding="utf-8") as f:
@@ -51,14 +51,84 @@ def _quota_add(n: int = 1) -> None:
     except Exception:
         d = {}
     if now - float(d.get("window_start", 0)) > 86400:
-        d = {"window_start": now, "used": 0}
-    d["used"] = int(d.get("used", 0)) + n
+        d = {"window_start": now, "used": 0, "providers": {}}
+    d["used"] = int(d.get("used", 0)) + (n if provider == "microlink" else 0)
+    provs = d.setdefault("providers", {})
+    provs[provider] = int(provs.get(provider, 0)) + n
     d.setdefault("window_start", now)
     try:
         with open(_QUOTA_FILE, "w", encoding="utf-8") as f:
             json.dump(d, f)
     except Exception:
         pass
+
+
+# ---------- 외부 스크래핑 API (진짜 브라우저로 CF 챌린지 통과) ----------
+_SCRAPERS_CONF = os.path.expanduser("~/.hermes/scripts/.saveticker_scrapers.json")
+
+
+def _load_scrapers() -> dict:
+    """{provider: key} — 설정 파일 또는 환경변수에서 읽는다."""
+    try:
+        with open(_SCRAPERS_CONF, encoding="utf-8") as f:
+            conf = json.load(f) or {}
+    except Exception:
+        conf = {}
+    for prov, env in (("scrapingant", "SAVETICKER_SCRAPINGANT_KEY"),
+                      ("scrapedo", "SAVETICKER_SCRAPEDO_KEY"),
+                      ("scrapingbee", "SAVETICKER_SCRAPINGBEE_KEY")):
+        key = os.environ.get(env, "").strip() or str(conf.get(prov) or "").strip()
+        if key:
+            conf[prov] = key
+    return conf
+
+
+def _via_scraper(url: str, kind: str = "text", timeout: int = 120,
+                 browser: bool = True) -> bytes:
+    """설정된 외부 스크래핑 API를 순서대로 시도."""
+    conf = _load_scrapers()
+    errs = []
+    render = "true" if (kind == "html" or browser) else "false"   # 기사 HTML은 렌더링 필요할 수 있음
+
+    if conf.get("scrapingant"):
+        try:
+            q = urllib.parse.urlencode({"url": url, "x-api-key": conf["scrapingant"],
+                                        "browser": "true" if browser else "false"})
+            with urllib.request.urlopen(f"https://api.scrapingant.com/v2/general?{q}", timeout=timeout) as res:
+                body = res.read()
+            _quota_add(provider="scrapingant")
+            if body and not _looks_blocked(body):
+                return body
+            errs.append("scrapingant:blocked")
+        except Exception as e:
+            errs.append(f"scrapingant:{type(e).__name__}")
+
+    if conf.get("scrapedo"):
+        try:
+            q = urllib.parse.urlencode({"token": conf["scrapedo"], "url": url, "render": render})
+            with urllib.request.urlopen(f"https://api.scrape.do/?{q}", timeout=timeout) as res:
+                body = res.read()
+            _quota_add(provider="scrapedo")
+            if body and not _looks_blocked(body):
+                return body
+            errs.append("scrapedo:blocked")
+        except Exception as e:
+            errs.append(f"scrapedo:{type(e).__name__}")
+
+    if conf.get("scrapingbee"):
+        try:
+            q = urllib.parse.urlencode({"api_key": conf["scrapingbee"], "url": url,
+                                        "render_js": render})
+            with urllib.request.urlopen(f"https://app.scrapingbee.com/api/v1/?{q}", timeout=timeout) as res:
+                body = res.read()
+            _quota_add(provider="scrapingbee")
+            if body and not _looks_blocked(body):
+                return body
+            errs.append("scrapingbee:blocked")
+        except Exception as e:
+            errs.append(f"scrapingbee:{type(e).__name__}")
+
+    raise RuntimeError("scrapers: " + (", ".join(errs) if errs else "none configured"))
 
 
 SSH_TARGET = os.environ.get("SAVETICKER_SSH", "").strip()
@@ -163,6 +233,16 @@ def fetch_bytes(url: str, headers: dict | None = None, timeout: int = 25,
         errors.append("direct:cloudflare")
     except Exception as e:
         errors.append(f"direct:{type(e).__name__}")
+
+    # 외부 스크래핑 API (설정돼 있으면 microlink보다 우선 — 진짜 브라우저로 통과)
+    if _load_scrapers():
+        try:
+            body = _via_scraper(url, kind, timeout=max(timeout, 120), browser=not binary)
+            if body and not _looks_blocked(body):
+                return body
+            errors.append("scraper:blocked")
+        except Exception as e:
+            errors.append(f"scraper:{type(e).__name__}")
 
     if not binary:
         for k in (kind, "text" if kind != "text" else "html"):
