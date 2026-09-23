@@ -13,6 +13,8 @@ function fetchViaCfBypass(url) {
   const out = execFileSync('python3', [script, url], {
     maxBuffer: 64 * 1024 * 1024,
     timeout: 150000,
+    // 요약 크론 몫(6회/24h)을 남기고 microlink 무료 한도 안에서만 쓴다
+    env: { ...process.env, SAVETICKER_QUOTA_RESERVE: '6' },
   });
   return out.toString('utf8');
 }
@@ -66,7 +68,7 @@ const SOURCES = [
     skipKeywordCheck: true,
     webhookUrl: process.env.SAVETICKER_WEBHOOK_URL,   // #세이브-속보 (1504492705340981309)
     cfBypass: true,          // 직접 fetch 실패 시 파이썬 우회 레이어 경유
-    minIntervalMinutes: 75,  // microlink 무료 한도(25회/24h) 안에서 돌리기 위한 주기
+    minIntervalMinutes: 85,  // microlink 무료 한도(25회/24h) 안에서 돌리기 위한 주기 (요약 몫 6회 보존)
     relayIntervalMinutes: 10,// sp PC 릴레이가 켜져 있으면 실시간 10분 주기
     maxPostsPerRun: 3,       // 폭주 방지
     maxAgeMinutes: 120,      // 신선도 가드: 2시간 넘은 글(쌓인 백로그)은 전송 안 함

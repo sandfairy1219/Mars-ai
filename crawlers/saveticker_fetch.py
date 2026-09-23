@@ -20,12 +20,47 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.parse
 import urllib.request
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36")
 MICROLINK = "https://api.microlink.io/"
+MICROLINK_LIMIT = 25          # 무료 플랜 실측 한도 (x-rate-limit-limit 헤더, 24h 창)
+_QUOTA_FILE = os.path.expanduser("~/.hermes/scripts/.saveticker_quota.json")
+
+
+def _quota_used() -> int:
+    """최근 24h microlink 호출 수."""
+    try:
+        with open(_QUOTA_FILE, encoding="utf-8") as f:
+            d = json.load(f)
+        if time.time() - float(d.get("window_start", 0)) > 86400:
+            return 0
+        return int(d.get("used", 0))
+    except Exception:
+        return 0
+
+
+def _quota_add(n: int = 1) -> None:
+    now = time.time()
+    try:
+        with open(_QUOTA_FILE, encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception:
+        d = {}
+    if now - float(d.get("window_start", 0)) > 86400:
+        d = {"window_start": now, "used": 0}
+    d["used"] = int(d.get("used", 0)) + n
+    d.setdefault("window_start", now)
+    try:
+        with open(_QUOTA_FILE, "w", encoding="utf-8") as f:
+            json.dump(d, f)
+    except Exception:
+        pass
+
+
 SSH_TARGET = os.environ.get("SAVETICKER_SSH", "").strip()
 PROXY = os.environ.get("SAVETICKER_PROXY", "").strip()
 
@@ -75,6 +110,13 @@ def _via_ssh(url: str, timeout: int) -> bytes:
 
 
 def _via_microlink(url: str, kind: str = "text", timeout: int = 60) -> bytes:
+    # 무료 한도(25회/24h) 원장 — 요약 크론 몫을 남기고 속보봇이 초과하지 않게 한다.
+    # SAVETICKER_QUOTA_RESERVE=6 이면 19회까지만 사용(요약용 6회 보존).
+    reserve = int(os.environ.get("SAVETICKER_QUOTA_RESERVE", "0") or 0)
+    used = _quota_used()
+    if used + 1 > MICROLINK_LIMIT - reserve:
+        raise RuntimeError(f"microlink quota guard: used={used} limit={MICROLINK_LIMIT} reserve={reserve}")
+
     params = {"url": url, "meta": "false"}
     if kind == "html":
         params["data.html.selector"] = "body"
@@ -84,6 +126,7 @@ def _via_microlink(url: str, kind: str = "text", timeout: int = 60) -> bytes:
         params["data.raw.type"] = "text"
     with urllib.request.urlopen(f"{MICROLINK}?{urllib.parse.urlencode(params)}", timeout=timeout) as res:
         payload = json.loads(res.read().decode("utf-8"))
+    _quota_add()
     data = payload.get("data") or {}
     val = data.get("html" if kind == "html" else "raw") or ""
     if kind == "text":
@@ -169,6 +212,7 @@ def fetch_image(url: str, timeout: int = 25) -> bytes | None:
         })
         with urllib.request.urlopen(f"{MICROLINK}?{q}", timeout=90) as res:
             payload = json.loads(res.read().decode("utf-8"))
+        _quota_add()
         shot = ((payload.get("data") or {}).get("screenshot") or {}).get("url")
         if shot:
             with urllib.request.urlopen(shot, timeout=45) as res:
