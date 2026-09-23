@@ -19,6 +19,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import urllib.parse
 import urllib.request
 
@@ -27,6 +28,17 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 MICROLINK = "https://api.microlink.io/"
 SSH_TARGET = os.environ.get("SAVETICKER_SSH", "").strip()
 PROXY = os.environ.get("SAVETICKER_PROXY", "").strip()
+
+# 환경변수가 없으면 릴레이 설정 파일을 읽는다 (Node 봇·크론 공용)
+_RELAY_CONF = os.path.expanduser("~/.hermes/scripts/.saveticker_relay.json")
+if not SSH_TARGET and os.path.exists(_RELAY_CONF):
+    try:
+        with open(_RELAY_CONF, encoding="utf-8") as _f:
+            _conf = json.load(_f)
+        if _conf.get("enabled", True):
+            SSH_TARGET = (_conf.get("ssh") or "").strip()
+    except Exception:
+        pass
 
 
 def _looks_blocked(body: bytes) -> bool:
@@ -53,7 +65,8 @@ def _direct(url: str, headers: dict, timeout: int) -> bytes:
 
 def _via_ssh(url: str, timeout: int) -> bytes:
     """주거용 IP PC(Windows)의 내장 curl.exe 로 대신 받아온다."""
-    cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", SSH_TARGET,
+    cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
+           "-o", "StrictHostKeyChecking=accept-new", SSH_TARGET,
            "curl.exe", "-s", "-L", "--max-time", "25", "-A", UA, url]
     out = subprocess.run(cmd, capture_output=True, timeout=timeout)
     if out.returncode != 0:
@@ -141,3 +154,18 @@ def fetch_image(url: str, timeout: int = 25) -> bytes | None:
                            timeout, binary=True)
     except Exception:
         return None
+
+
+if __name__ == "__main__":
+    # CLI 모드: 다른 언어(Node 등)에서 호출해 본문을 stdout으로 받아간다.
+    #   python3 saveticker_fetch.py "<url>" [--kind text|html]
+    import argparse
+    ap = argparse.ArgumentParser(description="SaveTicker CF 우회 fetch (stdout 출력)")
+    ap.add_argument("url")
+    ap.add_argument("--kind", default="text", choices=["text", "html"])
+    args = ap.parse_args()
+    try:
+        sys.stdout.buffer.write(fetch_bytes(args.url, kind=args.kind))
+    except Exception as exc:
+        print(f"fetch failed: {exc}", file=sys.stderr)
+        sys.exit(1)

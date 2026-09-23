@@ -17,6 +17,26 @@ function fetchViaCfBypass(url) {
   return out.toString('utf8');
 }
 
+// 주거용 IP 릴레이(sp PC) 가용 여부 — 켜져 있으면 10분 주기, 아니면 기본(75분)
+const RELAY_CONF = path.join(os.homedir(), '.hermes/scripts/.saveticker_relay.json');
+let _relayCache = { at: 0, up: false };
+function relayUp() {
+  if (Date.now() - _relayCache.at < 5 * 60 * 1000) return _relayCache.up;
+  let up = false;
+  try {
+    const conf = JSON.parse(fs.readFileSync(RELAY_CONF, 'utf8'));
+    if (conf.enabled !== false && conf.ssh) {
+      execFileSync('ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5',
+        '-o', 'StrictHostKeyChecking=accept-new', conf.ssh, 'echo', 'ok'], { timeout: 15000 });
+      up = true;
+    }
+  } catch (e) {
+    up = false;
+  }
+  _relayCache = { at: Date.now(), up };
+  return up;
+}
+
 // 소스별 fetch 시각 기록 (주기 제한용)
 function recordFetchTime(state, source) {
   if (!source.minIntervalMinutes) return;
@@ -44,9 +64,13 @@ const SOURCES = [
     jsonUrlBuilder: (item) => `https://saveticker.com/news/${item.id}`,
     jsonFilter: (item) => Array.isArray(item.tag_names) && item.tag_names.includes('속보'),
     skipKeywordCheck: true,
+    webhookUrl: process.env.SAVETICKER_WEBHOOK_URL,   // #세이브-속보 (1504492705340981309)
     cfBypass: true,          // 직접 fetch 실패 시 파이썬 우회 레이어 경유
     minIntervalMinutes: 75,  // microlink 무료 한도(25회/24h) 안에서 돌리기 위한 주기
-    maxPostsPerRun: 3,       // 9일 공백 후 백로그 폭주 방지
+    relayIntervalMinutes: 10,// sp PC 릴레이가 켜져 있으면 실시간 10분 주기
+    maxPostsPerRun: 3,       // 폭주 방지
+    maxAgeMinutes: 120,      // 신선도 가드: 2시간 넘은 글(쌓인 백로그)은 전송 안 함
+    maxSeen: 200,            // 피드가 100건이라 최근 200개 제목까지 기억
   },
   {
     name: 'TossInvest',
@@ -201,10 +225,12 @@ async function checkSource(source) {
   // 주기 제한(소스별): SaveTicker는 CF 우회 폴백(microlink 무료 한도) 때문에 75분 주기로만 조회
   const _preState = loadState();
   if (source.minIntervalMinutes) {
+    const useRelay = source.relayIntervalMinutes && relayUp();
+    const interval = useRelay ? source.relayIntervalMinutes : source.minIntervalMinutes;
     const last = (_preState.__meta && _preState.__meta[`${source.name}_last_fetch`]) || 0;
     const elapsedMin = (Date.now() - last) / 60000;
-    if (last && elapsedMin < source.minIntervalMinutes) {
-      console.log(`⏳ [${source.name}] 주기 대기 (${elapsedMin.toFixed(0)}/${source.minIntervalMinutes}분) — 건너뜀`);
+    if (last && elapsedMin < interval) {
+      console.log(`⏳ [${source.name}] 주기 대기 (${elapsedMin.toFixed(0)}/${interval}분${useRelay ? ', 릴레이 ON' : ''}) — 건너뜀`);
       return;
     }
   }
@@ -265,6 +291,12 @@ async function checkSource(source) {
         if (!title) continue;
 
         const dateText = item[source.jsonDateField || 'date'] || '';
+
+        // 신선도 가드: 너무 오래된 글(과거 백로그)은 새 소식으로 취급하지 않는다
+        if (source.maxAgeMinutes && dateText) {
+          const ageMin = (Date.now() - new Date(dateText).getTime()) / 60000;
+          if (Number.isFinite(ageMin) && ageMin > source.maxAgeMinutes) continue;
+        }
         let articleUrl = item[source.jsonUrlField || 'url'] || '';
         if (!articleUrl && source.jsonUrlBuilder) {
           articleUrl = source.jsonUrlBuilder(item);
@@ -323,9 +355,10 @@ async function checkSource(source) {
 
     // 상태 업데이트
     state[source.name] = [...prevTitles, ...allNewTitles];
-    // 오래된 제목 정리 (최근 50개만 유지)
-    if (state[source.name].length > 50) {
-      state[source.name] = state[source.name].slice(-50);
+    // 오래된 제목 정리 (소스별 유지 개수)
+    const seenLimit = source.maxSeen || 50;
+    if (state[source.name].length > seenLimit) {
+      state[source.name] = state[source.name].slice(-seenLimit);
     }
     saveState(state);
     recordFetchTime(state, source);
