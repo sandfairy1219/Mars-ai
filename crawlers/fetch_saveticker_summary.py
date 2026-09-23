@@ -11,8 +11,14 @@ import re
 import html as html_mod
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import saveticker_fetch as stf  # CF 우회 fetch 레이어 (2026-09-23): 직접 → 프록시/SSH → microlink
+
 STATE_FILE = os.path.expanduser("~/.hermes/scripts/.saveticker_summary_state.json")
-API_URL = "https://saveticker.com/api/news/list?page=1&page_size=100&sort=created_at_desc"
+# 2026-09-23: 신 API는 기본 피드가 '전체'(15분에 100건)라 요약글이 안 잡힘 →
+# label_group=2&label_name=1(큐레이션 피드, 100건 ≈ 29시간)로 조회해야 마감 리포트가 나온다.
+API_URL = ("https://saveticker.com/api/news/list?page=1&page_size=100&sort=created_at_desc"
+           "&label_group=2&label_name=1")
 
 
 def load_state():
@@ -23,70 +29,40 @@ def load_state():
         return {"last_post_id": None, "sent_titles": []}
 
 
-def save_state(state):
-    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
-        json.dump(state, f, ensure_ascii=False, indent=2)
-
-
 def fetch_json(url):
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept": "application/json, text/plain, */*",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=20) as res:
-        return json.loads(res.read().decode("utf-8"))
+    """CF 우회 레이어 경유 (직접 → 프록시/SSH → microlink)."""
+    return stf.fetch_json(url, {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+    })
 
 
 def download_image(img_url, post_id, idx):
-    """Download image from saveticker media server to /tmp. Returns local path or None."""
+    """Download image via CF-bypass layer. Returns local path or None.
+
+    NOTE: microlink 폴백은 바이너리를 못 받아오므로, 이미지는
+    SAVETICKER_SSH / SAVETICKER_PROXY 가 설정돼 있어야 실제로 받아진다.
+    """
     try:
         if img_url.startswith("/"):
             img_url = "https://saveticker.com" + img_url
+        elif img_url.startswith("//"):
+            img_url = "https:" + img_url
 
-        # HEAD request to get final URL + content-type
-        req = urllib.request.Request(
-            img_url,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                "Referer": "https://saveticker.com/",
-            },
-            method="HEAD",
-        )
-        with urllib.request.urlopen(req, timeout=10) as res:
-            final_url = res.geturl()
-            ct = res.headers.get("Content-Type", "")
+        ext = ".png"
+        low = img_url.split("?")[0].lower()
+        for cand in (".png", ".jpg", ".jpeg", ".gif", ".webp"):
+            if low.endswith(cand):
+                ext = ".jpg" if cand == ".jpeg" else cand
+                break
 
-        if not final_url:
+        data = stf.fetch_image(img_url)
+        if not data:
             return None
 
-        # Extension
-        if "png" in ct:
-            ext = ".png"
-        elif "jpeg" in ct or "jpg" in ct:
-            ext = ".jpg"
-        elif "gif" in ct:
-            ext = ".gif"
-        elif "webp" in ct:
-            ext = ".webp"
-        else:
-            ext = ".png"
-
         local_path = f"/tmp/saveticker_img_{post_id}_{idx}{ext}"
-
-        dl_req = urllib.request.Request(
-            final_url,
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                "Referer": "https://saveticker.com/",
-            },
-        )
-        with urllib.request.urlopen(dl_req, timeout=15) as src:
-            with open(local_path, "wb") as f:
-                f.write(src.read())
+        with open(local_path, "wb") as f:
+            f.write(data)
 
         if os.path.getsize(local_path) > 2000:
             return local_path
@@ -99,15 +75,10 @@ def download_image(img_url, post_id, idx):
 def fetch_article_full(post_id):
     """Fetch post HTML and extract text + images."""
     url = f"https://saveticker.com/news/{post_id}"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=20) as res:
-        html_text = res.read().decode("utf-8")
+    html_text = stf.fetch_html(url, {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    })
 
     # Extract text from <p> tags
     text_pattern = re.compile(
@@ -137,6 +108,48 @@ def fetch_article_full(post_id):
             local_images.append(local_path)
 
     return {"text": full_text, "images": local_images, "url": url}
+
+
+def process_weekly(weekly_posts, state):
+    """Handle SAVE 주간 리포트 (weekly) — images only, no text body."""
+    # Pick latest
+    latest = max(weekly_posts, key=lambda x: x.get("created_at", ""))
+    post_id = str(latest["id"])
+    title = latest["title"]
+
+    weekly_state_file = os.path.expanduser("~/.hermes/scripts/.saveticker_weekly_state.json")
+    try:
+        with open(weekly_state_file, "r", encoding="utf-8") as f:
+            wstate = json.load(f)
+    except Exception:
+        wstate = {"last_post_id": None, "sent_titles": []}
+
+    # Dedup
+    if post_id == str(wstate.get("last_post_id")) or title in wstate.get("sent_titles", []):
+        print(json.dumps({"type": "weekly", "status": "NO_NEW_POSTS", "message": "이미 전송한 주간 리포트입니다."}, ensure_ascii=False))
+        return
+
+    # Fetch article (images only for weekly)
+    try:
+        article = fetch_article_full(post_id)
+    except Exception as e:
+        print(json.dumps({"type": "weekly", "status": "ERROR", "message": f"Full article fetch failed: {e}"}, ensure_ascii=False))
+        return
+
+    # Output JSON
+    output = {
+        "type": "weekly",
+        "status": "NEW_POST",
+        "post_id": post_id,
+        "title": title,
+        "url": article["url"],
+        "created_at": latest.get("created_at", ""),
+        "content": article["text"],
+        "images": article["images"],
+    }
+    print(json.dumps(output, ensure_ascii=False, indent=2))
+    # NOTE: state is saved by saveticker_mark_sent.py (same pattern as daily)
+    # so a failed agent run can be retried.
 
 
 def main():
@@ -174,16 +187,24 @@ def main():
 
     news_list = data.get("news_list", [])
 
-    # 2) Filter: title contains 미국 증시 요약 or SAVE Daily
+    # 2) Filter: daily (미국 증시 요약/SAVE Daily) + weekly (SAVE 주간 리포트)
     summary_posts = []
+    weekly_posts = []
     for item in news_list:
         title = item.get("title", "")
-        if "미국 증시 요약" in title or "SAVE Daily" in title or "SAVE 마감 리포트" in title or "SAVE 마감리포트" in title:
-            # Prefer 원문 over 리포트 (if both exist, 원문 has text content)
+        if "SAVE 주간 리포트" in title:
+            weekly_posts.append(item)
+        elif "미국 증시 요약" in title or "SAVE Daily" in title or "SAVE 마감 리포트" in title or "SAVE 마감리포트" in title:
             summary_posts.append(item)
 
-    if not summary_posts:
-        print(json.dumps({"status": "NO_NEW_POSTS", "message": "종합탭에서 미국 증시 요약 글을 찾지 못했습니다."}, ensure_ascii=False))
+    # Prefer daily if a NEW one exists, else fall back to weekly
+    if summary_posts:
+        pass  # process daily below
+    elif weekly_posts:
+        process_weekly(weekly_posts, state)
+        return
+    else:
+        print(json.dumps({"status": "NO_NEW_POSTS", "message": "종합탭에서 미국 증시 요약/주간 리포트 글을 찾지 못했습니다."}, ensure_ascii=False))
         return
 
     # 3) Pick latest, preferring 원문 over 리포트
@@ -223,6 +244,10 @@ def main():
 
     # 4) Dedup
     if post_id == str(last_id) or title in sent_titles:
+        # Daily already sent — fall back to weekly if a new one exists
+        if weekly_posts:
+            process_weekly(weekly_posts, state)
+            return
         print(json.dumps({"status": "NO_NEW_POSTS", "message": "이미 전송한 게시물입니다."}, ensure_ascii=False))
         return
 
@@ -235,6 +260,7 @@ def main():
 
     # 6) Output JSON
     output = {
+        "type": "daily",
         "status": "NEW_POST",
         "post_id": post_id,
         "title": title,
@@ -245,14 +271,10 @@ def main():
         "images": article["images"],
     }
     print(json.dumps(output, ensure_ascii=False, indent=2))
-
-    # 7) Update state
-    state["last_post_id"] = post_id
-    sent_titles.append(title)
-    if len(sent_titles) > 20:
-        sent_titles = sent_titles[-20:]
-    state["sent_titles"] = sent_titles
-    save_state(state)
+    # NOTE: state is NOT saved here anymore. The cron agent runs
+    # saveticker_mark_sent.py AFTER producing the summary, so that a failed
+    # agent run (e.g. Broken pipe) leaves state untouched and the RETRY job
+    # can still re-send the same post. Saving here made retries impossible.
 
 
 if __name__ == "__main__":
