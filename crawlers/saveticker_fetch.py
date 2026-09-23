@@ -55,12 +55,31 @@ def _quota_add(n: int = 1, provider: str = "microlink") -> None:
     d["used"] = int(d.get("used", 0)) + (n if provider == "microlink" else 0)
     provs = d.setdefault("providers", {})
     provs[provider] = int(provs.get(provider, 0)) + n
+    # 월간 크레딧 추적 (microlink 제외 — 무료 한도가 다른 서비스들)
+    mk = time.strftime("%Y-%m")
+    if d.get("month") != mk:
+        d["month"] = mk
+        d["month_used"] = 0
+    if provider != "microlink":
+        d["month_used"] = int(d.get("month_used", 0)) + n
     d.setdefault("window_start", now)
     try:
         with open(_QUOTA_FILE, "w", encoding="utf-8") as f:
             json.dump(d, f)
     except Exception:
         pass
+
+
+def ant_month_used() -> int:
+    """이번 달 스크래핑 API 크레딧 사용량 (예산 가드용)."""
+    try:
+        with open(_QUOTA_FILE, encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception:
+        return 0
+    if d.get("month") != time.strftime("%Y-%m"):
+        return 0
+    return int(d.get("month_used", 0))
 
 
 # ---------- 외부 스크래핑 API (진짜 브라우저로 CF 챌린지 통과) ----------
@@ -91,17 +110,21 @@ def _via_scraper(url: str, kind: str = "text", timeout: int = 120,
     render = "false"   # 검증 결과: 원문 HTML/JSON에 내용이 다 들어있어 렌더링 불필요(1크레딧)
 
     if conf.get("scrapingant"):
-        try:
-            q = urllib.parse.urlencode({"url": url, "x-api-key": conf["scrapingant"],
-                                        "browser": "true" if browser else "false"})
-            with urllib.request.urlopen(f"https://api.scrapingant.com/v2/general?{q}", timeout=timeout) as res:
-                body = res.read()
-            _quota_add(provider="scrapingant")
-            if body and not _looks_blocked(body):
-                return body
-            errs.append("scrapingant:blocked")
-        except Exception as e:
-            errs.append(f"scrapingant:{type(e).__name__}")
+        budget = int(os.environ.get("SAVETICKER_ANT_MONTHLY_BUDGET", "8500") or 8500)
+        if ant_month_used() >= budget:
+            errs.append(f"scrapingant:monthly-budget({ant_month_used()}/{budget})")
+        else:
+            try:
+                q = urllib.parse.urlencode({"url": url, "x-api-key": conf["scrapingant"],
+                                            "browser": "true" if browser else "false"})
+                with urllib.request.urlopen(f"https://api.scrapingant.com/v2/general?{q}", timeout=timeout) as res:
+                    body = res.read()
+                _quota_add(provider="scrapingant")
+                if body and not _looks_blocked(body):
+                    return body
+                errs.append("scrapingant:blocked")
+            except Exception as e:
+                errs.append(f"scrapingant:{type(e).__name__}")
 
     if conf.get("scrapedo"):
         try:

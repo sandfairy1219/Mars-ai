@@ -51,9 +51,22 @@ function scraperConfigured() {
   }
 }
 
+// 월간 크레딧 예산 가드: 무료 10,000 중 8,500까지만 쓰고, 넘으면 느린 주기로 자동 복귀
+const QUOTA_CONF = path.join(os.homedir(), '.hermes/scripts/.saveticker_quota.json');
+const ANT_MONTHLY_BUDGET = 9300;
+function antBudgetOk() {
+  try {
+    const d = JSON.parse(fs.readFileSync(QUOTA_CONF, 'utf8'));
+    const mk = new Date().toISOString().slice(0, 7);
+    if (d.month !== mk) return true;
+    return (Number(d.month_used) || 0) < ANT_MONTHLY_BUDGET;
+  } catch (e) {
+    return true;
+  }
+}
+
 // 소스별 fetch 시각 기록 (주기 제한용)
 function recordFetchTime(state, source) {
-  if (!source.minIntervalMinutes) return;
   state.__meta = state.__meta || {};
   state.__meta[`${source.name}_last_fetch`] = Date.now();
   saveState(state);
@@ -62,6 +75,7 @@ function recordFetchTime(state, source) {
 // ==================== 설정 ====================
 const DEFAULT_WEBHOOK_URL = process.env.DEFAULT_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
 const CHECK_INTERVAL = (parseInt(process.env.CHECK_INTERVAL_MINUTES) || 10) * 60 * 1000;
+const DEFAULT_MIN_INTERVAL_MIN = 10;  // 소스별 기본 최소 조회 간격(분)
 const KEYWORDS = (process.env.KEYWORDS || 'launch,etf,list,new')
   .split(',')
   .map(k => k.trim().toLowerCase());
@@ -81,7 +95,7 @@ const SOURCES = [
     webhookUrl: process.env.SAVETICKER_WEBHOOK_URL,   // #세이브-속보 (1504492705340981309)
     cfBypass: true,          // 직접 fetch 실패 시 파이썬 우회 레이어 경유
     minIntervalMinutes: 85,  // microlink 무료 한도(25회/24h) 안에서 돌리기 위한 주기 (요약 몫 6회 보존)
-    relayIntervalMinutes: 10,// sp PC 릴레이가 켜져 있으면 실시간 10분 주기
+    relayIntervalMinutes: 5, // 스크래퍼(1크레딧/건) 또는 릴레이가 있으면 5분 주기
     maxPostsPerRun: 3,       // 폭주 방지
     maxAgeMinutes: 120,      // 신선도 가드: 2시간 넘은 글(쌓인 백로그)은 전송 안 함
     maxSeen: 200,            // 피드가 100건이라 최근 200개 제목까지 기억
@@ -236,18 +250,20 @@ async function checkSource(source) {
     return;
   }
 
-  // 주기 제한(소스별): SaveTicker는 CF 우회 폴백(microlink 무료 한도) 때문에 75분 주기로만 조회
+  // 주기 제한(소스별): SaveTicker는 스크래퍼(1크레딧/건)·릴레이가 있으면 5분, 없으면 85분.
+  // 나머지 소스는 루프가 5분이어도 최소 10분 간격을 유지한다.
   const _preState = loadState();
-  if (source.minIntervalMinutes) {
+  {
+    const base = source.minIntervalMinutes || DEFAULT_MIN_INTERVAL_MIN;
     const useRelay = !!(source.relayIntervalMinutes && relayUp());
-    const useScraper = !!(source.relayIntervalMinutes && !useRelay && scraperConfigured());
+    const useScraper = !!(source.relayIntervalMinutes && !useRelay && scraperConfigured() && antBudgetOk());
     const fast = useRelay || useScraper;
-    const interval = fast ? source.relayIntervalMinutes : source.minIntervalMinutes;
+    const interval = fast ? source.relayIntervalMinutes : base;
     const last = (_preState.__meta && _preState.__meta[`${source.name}_last_fetch`]) || 0;
     const elapsedMin = (Date.now() - last) / 60000;
     if (last && elapsedMin < interval) {
       const why = useRelay ? '릴레이 ON' : (useScraper ? '스크래퍼 ON' : '');
-      console.log(`⏳ [${source.name}] 주기 대기 (${elapsedMin.toFixed(0)}/${interval}분${why ? ', ' + why : ''}) — 건너뜀`);
+      console.log(`⏳ [${source.name}] 주기 대기 (${elapsedMin.toFixed(1)}/${interval}분${why ? ', ' + why : ''}) — 건너뜀`);
       return;
     }
   }
