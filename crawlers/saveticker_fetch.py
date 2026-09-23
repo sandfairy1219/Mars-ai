@@ -148,12 +148,34 @@ def fetch_html(url: str, headers: dict | None = None, timeout: int = 40) -> str:
 
 
 def fetch_image(url: str, timeout: int = 25) -> bytes | None:
-    """이미지(바이너리). SSH/프록시 없으면 None (microlink는 바이너리 불가)."""
+    """이미지(바이너리) 가져오기.
+
+    1순위 SSH 릴레이/프록시(원본 그대로) → 실패하면
+    2순위 microlink 스크린샷(무료): 원본 파일 대신 그 이미지를 렌더한 PNG를 받는다.
+    (2026-09-23 실측: saveticker 이미지 URL도 microlink 스크린샷으로 정상 확보됨)
+    """
     try:
-        return fetch_bytes(url, {"User-Agent": UA, "Referer": "https://saveticker.com/"},
+        data = fetch_bytes(url, {"User-Agent": UA, "Referer": "https://saveticker.com/"},
                            timeout, binary=True)
+        if data and len(data) > 2000:
+            return data
     except Exception:
-        return None
+        pass
+
+    try:
+        q = urllib.parse.urlencode({
+            "url": url, "meta": "false", "screenshot": "true",
+            "screenshot.type": "png", "waitUntil": "load",
+        })
+        with urllib.request.urlopen(f"{MICROLINK}?{q}", timeout=90) as res:
+            payload = json.loads(res.read().decode("utf-8"))
+        shot = ((payload.get("data") or {}).get("screenshot") or {}).get("url")
+        if shot:
+            with urllib.request.urlopen(shot, timeout=45) as res:
+                return res.read()
+    except Exception:
+        pass
+    return None
 
 
 if __name__ == "__main__":
