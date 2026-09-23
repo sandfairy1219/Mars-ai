@@ -3,6 +3,27 @@ require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const fs = require('fs');
 const path = require('path');
 const cheerio = require('cheerio');
+const os = require('os');
+const { execFileSync } = require('child_process');
+
+// CF 우회 fetch (2026-09-23): saveticker.com 이 Cloudflare 대화형 챌린지로 서버 직접 요청을 403 차단.
+// → 파이썬 우회 레이어(SSH 릴레이 → 프록시 → 직접 → microlink)로 본문을 받아온다.
+function fetchViaCfBypass(url) {
+  const script = path.join(os.homedir(), '.hermes/scripts/saveticker_fetch.py');
+  const out = execFileSync('python3', [script, url], {
+    maxBuffer: 64 * 1024 * 1024,
+    timeout: 150000,
+  });
+  return out.toString('utf8');
+}
+
+// 소스별 fetch 시각 기록 (주기 제한용)
+function recordFetchTime(state, source) {
+  if (!source.minIntervalMinutes) return;
+  state.__meta = state.__meta || {};
+  state.__meta[`${source.name}_last_fetch`] = Date.now();
+  saveState(state);
+}
 
 // ==================== 설정 ====================
 const DEFAULT_WEBHOOK_URL = process.env.DEFAULT_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
@@ -16,13 +37,16 @@ const SOURCES = [
     name: 'SaveTicker',
     enabled: process.env.SAVETICKER_ENABLED !== 'false',
     type: 'json',
-    url: process.env.SAVETICKER_URL || 'https://saveticker.com/api/news/list?page=1&page_size=20&sort=created_at_desc&label_group=2&label_name=1',
+    url: process.env.SAVETICKER_URL || 'https://saveticker.com/api/news/list?page=1&page_size=100&sort=created_at_desc&label_group=2&label_name=3',
     jsonListPath: 'news_list',
     jsonTitleField: 'title',
     jsonDateField: 'created_at',
     jsonUrlBuilder: (item) => `https://saveticker.com/news/${item.id}`,
     jsonFilter: (item) => Array.isArray(item.tag_names) && item.tag_names.includes('속보'),
     skipKeywordCheck: true,
+    cfBypass: true,          // 직접 fetch 실패 시 파이썬 우회 레이어 경유
+    minIntervalMinutes: 75,  // microlink 무료 한도(25회/24h) 안에서 돌리기 위한 주기
+    maxPostsPerRun: 3,       // 9일 공백 후 백로그 폭주 방지
   },
   {
     name: 'TossInvest',
@@ -174,6 +198,17 @@ async function checkSource(source) {
     return;
   }
 
+  // 주기 제한(소스별): SaveTicker는 CF 우회 폴백(microlink 무료 한도) 때문에 75분 주기로만 조회
+  const _preState = loadState();
+  if (source.minIntervalMinutes) {
+    const last = (_preState.__meta && _preState.__meta[`${source.name}_last_fetch`]) || 0;
+    const elapsedMin = (Date.now() - last) / 60000;
+    if (last && elapsedMin < source.minIntervalMinutes) {
+      console.log(`⏳ [${source.name}] 주기 대기 (${elapsedMin.toFixed(0)}/${source.minIntervalMinutes}분) — 건너뜀`);
+      return;
+    }
+  }
+
   console.log(`🔍 [${source.name}] 크롤링 시작: ${source.url}`);
 
   try {
@@ -195,13 +230,15 @@ async function checkSource(source) {
       Object.assign(headers, source.extraHeaders);
     }
 
-    const res = await fetch(source.url, {
-      redirect: 'follow',
-      headers
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+    let res;
+    try {
+      res = await fetch(source.url, { redirect: 'follow', headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      if (!source.cfBypass) throw err;
+      console.log(`🛡️ [${source.name}] 직접 요청 실패(${err.message}) → CF 우회 레이어 경유`);
+      const body = fetchViaCfBypass(source.url);
+      res = { ok: true, text: async () => body, json: async () => JSON.parse(body) };
     }
 
     const state = loadState();
@@ -265,7 +302,15 @@ async function checkSource(source) {
 
     if (newTitles.length === 0) {
       console.log(`✔️ [${source.name}] 새 소식 없음`);
+      recordFetchTime(state, source);
       return;
+    }
+
+    // 오랜 공백 후 백로그 폭주 방지: 최신 N건만 전송하고 나머지는 '본 것으로' 기록
+    const allNewTitles = newTitles.map(a => a.title);
+    if (source.maxPostsPerRun && newTitles.length > source.maxPostsPerRun) {
+      console.log(`🚧 [${source.name}] 신규 ${newTitles.length}건 중 최신 ${source.maxPostsPerRun}건만 전송 (나머지는 기록만)`);
+      newTitles = newTitles.slice(0, source.maxPostsPerRun);
     }
 
     console.log(`🆕 [${source.name}] ${newTitles.length}개 새 글 발견!`);
@@ -277,12 +322,13 @@ async function checkSource(source) {
     }
 
     // 상태 업데이트
-    state[source.name] = [...prevTitles, ...newTitles.map(a => a.title)];
+    state[source.name] = [...prevTitles, ...allNewTitles];
     // 오래된 제목 정리 (최근 50개만 유지)
     if (state[source.name].length > 50) {
       state[source.name] = state[source.name].slice(-50);
     }
     saveState(state);
+    recordFetchTime(state, source);
 
   } catch (err) {
     console.error(`❌ [${source.name}] 크롤링 오류:`, err.message);
