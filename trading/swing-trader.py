@@ -39,6 +39,10 @@ def load_learned_params():
         "min_cash_pct": None,     # 현금 하한. None이면 공격도(aggression) 규칙 사용
         "cap_min_mid": 0,         # 중형주 최소 보유 수 (0=강제 혼합 없음)
         "cap_min_small": 0,       # 소형주 최소 보유 수 (0=강제 혼합 없음)
+        # ─── 이하 3개도 2026-10-01 AI로 이관 (기존 하드코딩) ───
+        "max_new_per_tick": None,   # 틱당 신규 진입 수. None이면 공격도 규칙(max(4, 4+agg*6))
+        "min_position_size": 3000,  # 이보다 작은 포지션은 건너뜀 ($)
+        "min_candidate_score": 4,   # 후보 스크린: 이 점수 미만은 워치리스트에 안 올림 (0~8)
     }
     try:
         if os.path.exists(PARAMS_PATH):
@@ -1321,7 +1325,7 @@ def _scan_one(ticker):
     if rsi is None or ma20 is None or ma50 is None:
         return None
     lscore = score_long(prices, rsi, ma20, ma50, atr)
-    if lscore < 4:
+    if lscore < P.get("min_candidate_score", 4):
         return None
     # 프리마켓/애프터마켓이면 라이브 가격으로 진입가 결정 (지표는 일봉 유지)
     if _is_premarket_or_afterhours():
@@ -1451,7 +1455,20 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
             min_cash = SEED * max(0.0, min(0.9, float(_mcp)))
         except (TypeError, ValueError):
             min_cash = SEED * (0.15 + (1.0 - aggression) * 0.35)
-    max_new = max(4, int(4 + aggression * 6))                 # 최소 4~10개
+    # 틱당 신규 진입 수 — AI 지정값 우선, 없으면 공격도 규칙
+    _mn = P.get("max_new_per_tick")
+    if _mn is None:
+        max_new = max(4, int(4 + aggression * 6))             # 공격도 기반 4~10개
+    else:
+        try:
+            max_new = max(1, int(_mn))
+        except (TypeError, ValueError):
+            max_new = max(4, int(4 + aggression * 6))
+    # 최소 포지션 크기 (AI 지정) — 이보다 작으면 건너뜀
+    try:
+        min_size = float(P.get("min_position_size", 3000))
+    except (TypeError, ValueError):
+        min_size = 3000.0
     try:
         sector_limit = max(1, int(P.get("sector_limit", 3)))
     except (TypeError, ValueError):
@@ -1528,7 +1545,7 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         if portfolio["cash"] - size < min_cash:
             size = portfolio["cash"] - min_cash
         
-        if size < 3_000:
+        if size < min_size:
             continue
         
         shares = math.floor(size / c["price"])
@@ -1721,7 +1738,9 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             _bits.append("제외 " + ",".join(_alloc["avoid_tickers"][:5]))
         if _bits:
             lines.append("• 🎛️ **AI 배분 지시**: " + " | ".join(_bits))
-    lines.append(f"• 🧮 **배분 한도(AI 조정가)**: 섹터≤{P.get('sector_limit', 3)} · 종목≤{int(P.get('max_positions', MAX_POSITIONS))} · 현금하한 {('%.0f%%' % (float(P['min_cash_pct'])*100)) if P.get('min_cash_pct') is not None else '공격도 자동'} · 중형최소 {P.get('cap_min_mid',0)} · 소형최소 {P.get('cap_min_small',0)}")
+    _mn_disp = P.get('max_new_per_tick')
+    lines.append(f"• 🧮 **배분 한도(AI 조정가)**: 섹터≤{P.get('sector_limit', 3)} · 종목≤{int(P.get('max_positions', MAX_POSITIONS))} · 신규≤{('공격도 자동' if _mn_disp is None else int(_mn_disp))} · 현금하한 {('%.0f%%' % (float(P['min_cash_pct'])*100)) if P.get('min_cash_pct') is not None else '공격도 자동'} · 중형최소 {P.get('cap_min_mid',0)} · 소형최소 {P.get('cap_min_small',0)}")
+    lines.append(f"• 🎚️ **후보 스크린(AI 조정가)**: 후보점수≥{P.get('min_candidate_score',4)} · 최소포지션 ${float(P.get('min_position_size',3000)):,.0f}")
     if _AI_OVERRIDE_KEYS and _WEEKLY_BASELINE:
         _dev = []
         for _k in sorted(_AI_OVERRIDE_KEYS):
@@ -1787,7 +1806,10 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
         lines.append("👁️ **워치리스트 (스윙 셋업 후보)**")
         for w in watchlist[:10]:
             emoji = "🟢"  # LONG only
-            lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {w['score']}/8 | RSI {w['rsi']} | ${w['price']}")
+            _raw = w.get("raw_score", w["score"])
+            _tilted = w["score"] - _raw
+            _tag = f" · 배분 {_tilted:+g}" if _tilted else ""
+            lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {_raw}/8{_tag} | RSI {w['rsi']} | ${w['price']}")
         lines.append("")
     
     # Strategy note: S&P 500 벤치마크 & VIX

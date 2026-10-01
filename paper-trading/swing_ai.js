@@ -40,6 +40,9 @@ const CLAMPS = {
   min_cash_pct: [0.0, 0.6],
   cap_min_mid: [0, 4],
   cap_min_small: [0, 4],
+  max_new_per_tick: [1, 15],
+  min_position_size: [0, 20000],
+  min_candidate_score: [0, 8],
 };
 
 // ─── 래칫 브레이크 설정 ───
@@ -57,10 +60,12 @@ const LLM_KNOBS = new Set([
   'aggression_bias', 'base_position_mult', 'vix_floor', 'vix_ceiling',
   // 배분(집중도) 노브 — LLM 전용. 주간학습이 소유하지 않으므로 브레이크 없이 CLAMPS 안에서 자유.
   'sector_limit', 'max_positions', 'min_cash_pct', 'cap_min_mid', 'cap_min_small',
+  'max_new_per_tick', 'min_position_size', 'min_candidate_score',
 ]);
 // 브레이크(하루 변동 제한)는 주간학습과 소유권이 겹치는 노브에만 건다.
 // LLM 전용 배분 노브는 CLAMPS 범위 안에서 자유롭게 움직인다 (래칫 사고는 구조 파라미터에서 났다).
-const NO_BRAKE = new Set(['sector_limit', 'max_positions', 'min_cash_pct', 'cap_min_mid', 'cap_min_small']);
+const NO_BRAKE = new Set(['sector_limit', 'max_positions', 'min_cash_pct', 'cap_min_mid', 'cap_min_small',
+  'max_new_per_tick', 'min_position_size', 'min_candidate_score']);
 
 function apiKey() {
   if (process.env.OPENCODEGO_API_KEY) return process.env.OPENCODEGO_API_KEY;
@@ -286,6 +291,10 @@ async function main() {
 · max_positions (3~15, 기본 10) — 총 보유 상한.
 · min_cash_pct (0.0~0.6, null=공격도 자동) — 현금 하한을 직접 지정. null이면 기존 공격도 규칙.
 · cap_min_mid / cap_min_small (0~4, 기본 0) — 중형·소형 최소 보유 수. 0이면 강제 혼합 없음.
+· max_new_per_tick (1~15, null=공격도 자동) — 한 틱에 새로 살 종목 수.
+· min_position_size (0~20000, 기본 3000) — 이보다 작은 포지션은 건너뜀 ($).
+· min_candidate_score (0~8, 기본 4) — 워치리스트에 올릴 최소 점수(후보 스크린). 낮추면 후보가 늘고,
+  올리면 상위만 본다. 남용하면 스캔이 무거워지니 근거가 있을 때만.
 그리고 alloc 블록으로 후보 점수에 직접 개입할 수 있다:
 · sector_tilt — {"Technology": 2, "Utilities": -1} 처럼 섹터 점수 가감(-3~+3)
 · focus_tickers / avoid_tickers — 종목 최대 8개 지정(가산 +2)/제외
@@ -325,7 +334,7 @@ async function main() {
 1) "🤖 AI 판단:" 섹션 — 핵심 요약, 동의/반대, 리스크 체크 (한국어 반말). [성과 지표] 수치를 최소 1회 인용.
 2) 마지막에 \`\`\`json 블록으로 결정 (키 이름 정확히 "params"):
 \`\`\`json
-{"params": {"aggression_bias": <float>, "base_position_mult": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "sector_limit": <int>, "max_positions": <int>, "min_cash_pct": <float|null>, "cap_min_mid": <int>, "cap_min_small": <int>, "note": "<조정 사유 한 줄>"},
+{"params": {"aggression_bias": <float>, "base_position_mult": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "sector_limit": <int>, "max_positions": <int>, "min_cash_pct": <float|null>, "cap_min_mid": <int>, "cap_min_small": <int>, "max_new_per_tick": <int|null>, "min_position_size": <number>, "min_candidate_score": <int>, "note": "<조정 사유 한 줄>"},
  "alloc": {"sector_tilt": {"<섹터>": <float>}, "focus_tickers": ["<TICKER>"], "avoid_tickers": ["<TICKER>"], "exit_tickers": ["<청산할 보유종목>"]}}
 \`\`\`
 바꿀 게 없으면 현재 값 그대로 넣어라. 리포트가 비었거나 결정 불가면 {"params":{}}만 출력해라.

@@ -5,10 +5,12 @@
     "aggression_bias": 0.09,
     "vix_floor": 14,
     "vix_ceiling": 28,
-    "sector_limit": 4,
+    "sector_limit": 5,
     "max_positions": 10,
     "cap_min_mid": 0,
-    "cap_min_small": 0
+    "cap_min_small": 0,
+    "min_position_size": 3000,
+    "min_candidate_score": 4
   },
   "history": [
     {
@@ -160,6 +162,62 @@
       },
       "note": "최근20건 PF0.28로 증액 근거 없어 보수 유지, 방어주→기술 로테이션 집행",
       "ai_summary": "🤖 AI 판단: 강세 추세(QQQ 20일 +4.62%)지만 폭은 좁다(IWM -5.1%). 전체 99건 승률 45.5%·PF 1.33·기대값 +$49.96로 준수하나, 최근 20건은 승률 25%·PF 0.28·기대값 -$130.38로 급악화 — 진입 품질 문제지 보유기간 탓이 아니다(청산 81건 시간초과지만 max_hold는 손대지 않음). 그래서 공격도는 이미 낮춘 0.09 유지, base 0.8 유지가 맞다. 다만 보유 10종목이 AI가 제외한 KO·C·MO·ABEV 등 방어/배당주에 몰려 실적(D-12 C 등) 리스크와 함께"
+    },
+    {
+      "ts": "2026-10-01T23:26:37.852Z",
+      "model": "deepseek-v4.1-flash",
+      "requested": {
+        "base_position_mult": 0.8,
+        "aggression_bias": 0.09,
+        "vix_floor": 14,
+        "vix_ceiling": 28,
+        "sector_limit": 5,
+        "max_positions": 10,
+        "cap_min_mid": 0,
+        "cap_min_small": 0,
+        "min_position_size": 3000,
+        "min_candidate_score": 4
+      },
+      "applied": {
+        "base_position_mult": 0.8,
+        "aggression_bias": 0.09,
+        "vix_floor": 14,
+        "vix_ceiling": 28,
+        "sector_limit": 5,
+        "max_positions": 10,
+        "cap_min_mid": 0,
+        "cap_min_small": 0,
+        "min_position_size": 3000,
+        "min_candidate_score": 4
+      },
+      "adjusted": [],
+      "alloc": {
+        "sector_tilt": {
+          "Technology": 2,
+          "Communication Services": 1,
+          "Consumer Staples": -1,
+          "Utilities": -1
+        },
+        "focus_tickers": [
+          "TSM",
+          "MRVL",
+          "MU",
+          "SKHY",
+          "NBIS"
+        ],
+        "avoid_tickers": [
+          "KO",
+          "C",
+          "MO",
+          "ABEV",
+          "ACN"
+        ],
+        "exit_tickers": [
+          "ABEV"
+        ]
+      },
+      "note": "최근20건 PF 0.20으로 리스크노브는 바닥 유지, 좁은 기술주 장세(QQQ +4.6% vs IWM -5.1%)라 섹터집중 4→5",
+      "ai_summary": "🤖 AI 판단: 전체 102건 승률 45.1%·PF 1.31·기대값 +46.59인데 최근 20건은 승률 25%·PF 0.20·기대값 -141.26로 급락했다. 다만 손실 대부분은 WFC·EQT·MDT·U 같은 비기술주가 3일 시간초과로 잘린 것 — 이건 max_hold_days를 더 줄일 근거가 아니라 진입 품질/섹터 문제다(주간학습은 이미 30일로 복원, 그대로 둔다). 브레드스는 극단적으로 좁다: QQQ 20일 +4.62% vs IWM -5.1%, DIA -4.15%. 이건 기술주 집중을 정당화한다. MU·NBIS·TSM·MR"
     }
   ],
   "alloc": {
@@ -180,12 +238,10 @@
       "KO",
       "C",
       "MO",
-      "ABEV"
+      "ABEV",
+      "ACN"
     ],
     "exit_tickers": [
-      "C",
-      "KO",
-      "MO",
       "ABEV"
     ]
   },
