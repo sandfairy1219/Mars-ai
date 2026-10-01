@@ -43,6 +43,7 @@ const CLAMPS = {
   max_new_per_tick: [1, 15],
   min_position_size: [0, 20000],
   min_candidate_score: [0, 8],
+  industry_limit: [1, 6],
 };
 
 // ─── 래칫 브레이크 설정 ───
@@ -60,12 +61,12 @@ const LLM_KNOBS = new Set([
   'aggression_bias', 'base_position_mult', 'vix_floor', 'vix_ceiling',
   // 배분(집중도) 노브 — LLM 전용. 주간학습이 소유하지 않으므로 브레이크 없이 CLAMPS 안에서 자유.
   'sector_limit', 'max_positions', 'min_cash_pct', 'cap_min_mid', 'cap_min_small',
-  'max_new_per_tick', 'min_position_size', 'min_candidate_score',
+  'max_new_per_tick', 'min_position_size', 'min_candidate_score', 'industry_limit',
 ]);
 // 브레이크(하루 변동 제한)는 주간학습과 소유권이 겹치는 노브에만 건다.
 // LLM 전용 배분 노브는 CLAMPS 범위 안에서 자유롭게 움직인다 (래칫 사고는 구조 파라미터에서 났다).
 const NO_BRAKE = new Set(['sector_limit', 'max_positions', 'min_cash_pct', 'cap_min_mid', 'cap_min_small',
-  'max_new_per_tick', 'min_position_size', 'min_candidate_score']);
+  'max_new_per_tick', 'min_position_size', 'min_candidate_score', 'industry_limit']);
 
 function apiKey() {
   if (process.env.OPENCODEGO_API_KEY) return process.env.OPENCODEGO_API_KEY;
@@ -188,6 +189,16 @@ function validateAlloc(alloc) {
     tilt[k] = Math.max(-3, Math.min(3, Math.round(n * 10) / 10));
   }
   if (Object.keys(tilt).length) out.sector_tilt = tilt;
+  // 업종 틸트 (Semiconductors / Software - Infrastructure / Banks - Diversified ...)
+  const itilt = {};
+  for (const [k, v] of Object.entries(alloc.industry_tilt || {})) {
+    const name = String(k).replace(/\u2014/g, ' - ').trim();
+    if (!name || name.length > 44) continue;
+    const n = Number(v);
+    if (!Number.isFinite(n) || n === 0) continue;
+    itilt[name] = Math.max(-3, Math.min(3, Math.round(n * 10) / 10));
+  }
+  if (Object.keys(itilt).length) out.industry_tilt = itilt;
   const tick = (arr) => (Array.isArray(arr) ? Array.from(new Set(arr
     .map(x => String(x).toUpperCase().trim())
     .filter(x => /^[A-Z][A-Z.\-]{0,5}$/.test(x)))).slice(0, 8) : []);
@@ -286,6 +297,11 @@ async function main() {
 
 [배분 권한 — 제한을 네가 정한다 (고정 제한 없음)]
 아래는 과거 코드에 상수로 박혀 있던 배분 제한이다. 이제 전부 네가 국면에 맞게 정한다.
+업종(industry) 단위가 있다. 라벨은 Finviz 업종 분류 표기 그대로다 — 리포트의 워치리스트·보유 종목에
+'[섹터/업종]', '| 업종' 형태로 찍힌다(예: Semiconductors, Software - Infrastructure, Consumer Electronics,
+Computer Hardware, Communication Equipment, Banks - Diversified, Oil & Gas E&P, Beverages - Brewers).
+섹터 안에서도 편차가 크므로(반도체 vs 소프트웨어) 분산·집중은 업종 단위로 판단해라.
+· industry_limit (1~6, 기본 2) — 같은 업종 최대 보유 수. 반도체만 몰아 담으려면 올려라.
 · sector_limit (1~10, 기본 3) — 한 섹터에 최대 몇 종목. 기술 주도처럼 좁고 강한 장세면
   올려서 집중해라. 집중은 [성과 지표]·브레드스(QQQ vs IWM 20일)로 정당화할 것.
 · max_positions (3~15, 기본 10) — 총 보유 상한.
@@ -297,6 +313,8 @@ async function main() {
   올리면 상위만 본다. 남용하면 스캔이 무거워지니 근거가 있을 때만.
 그리고 alloc 블록으로 후보 점수에 직접 개입할 수 있다:
 · sector_tilt — {"Technology": 2, "Utilities": -1} 처럼 섹터 점수 가감(-3~+3)
+· industry_tilt — {"Semiconductors": 2, "Software - Infrastructure": 1, "Banks - Diversified": -1}
+  처럼 업종 점수 가감(-3~+3). 섹터보다 세분되므로 이쪽을 우선 활용해라.
 · focus_tickers / avoid_tickers — 종목 최대 8개 지정(가산 +2)/제외
 · exit_tickers — 보유 중인 종목을 최대 4개까지 청산 지시(틱당 최대 3건 집행, long_term 제외).
   섹터 전환을 실제로 집행할 수단이다. 남발 금지 — 배분 전환이라는 근거가 있을 때만.
@@ -334,8 +352,8 @@ async function main() {
 1) "🤖 AI 판단:" 섹션 — 핵심 요약, 동의/반대, 리스크 체크 (한국어 반말). [성과 지표] 수치를 최소 1회 인용.
 2) 마지막에 \`\`\`json 블록으로 결정 (키 이름 정확히 "params"):
 \`\`\`json
-{"params": {"aggression_bias": <float>, "base_position_mult": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "sector_limit": <int>, "max_positions": <int>, "min_cash_pct": <float|null>, "cap_min_mid": <int>, "cap_min_small": <int>, "max_new_per_tick": <int|null>, "min_position_size": <number>, "min_candidate_score": <int>, "note": "<조정 사유 한 줄>"},
- "alloc": {"sector_tilt": {"<섹터>": <float>}, "focus_tickers": ["<TICKER>"], "avoid_tickers": ["<TICKER>"], "exit_tickers": ["<청산할 보유종목>"]}}
+{"params": {"aggression_bias": <float>, "base_position_mult": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "sector_limit": <int>, "max_positions": <int>, "min_cash_pct": <float|null>, "cap_min_mid": <int>, "cap_min_small": <int>, "max_new_per_tick": <int|null>, "min_position_size": <number>, "min_candidate_score": <int>, "industry_limit": <int>, "note": "<조정 사유 한 줄>"},
+ "alloc": {"sector_tilt": {"<섹터>": <float>}, "industry_tilt": {"<업종>": <float>}, "focus_tickers": ["<TICKER>"], "avoid_tickers": ["<TICKER>"], "exit_tickers": ["<청산할 보유종목>"]}}
 \`\`\`
 바꿀 게 없으면 현재 값 그대로 넣어라. 리포트가 비었거나 결정 불가면 {"params":{}}만 출력해라.
 
@@ -410,7 +428,8 @@ function buildTail(report, aiText, applied, brakeNotes, allocApplied) {
   }
   if (allocApplied) {
     const bits = [];
-    if (allocApplied.sector_tilt) bits.push('틸트 ' + Object.entries(allocApplied.sector_tilt).map(([k, v]) => `${k}${v > 0 ? '+' : ''}${v}`).join(','));
+    if (allocApplied.sector_tilt) bits.push('섹터틸트 ' + Object.entries(allocApplied.sector_tilt).map(([k, v]) => `${k}${v > 0 ? '+' : ''}${v}`).join(','));
+    if (allocApplied.industry_tilt) bits.push('업종틸트 ' + Object.entries(allocApplied.industry_tilt).map(([k, v]) => `${k}${v > 0 ? '+' : ''}${v}`).join(','));
     if (allocApplied.focus_tickers) bits.push('지정 ' + allocApplied.focus_tickers.join(','));
     if (allocApplied.avoid_tickers) bits.push('제외 ' + allocApplied.avoid_tickers.join(','));
     if (allocApplied.exit_tickers) bits.push('청산지시 ' + allocApplied.exit_tickers.join(','));

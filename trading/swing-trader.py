@@ -43,6 +43,7 @@ def load_learned_params():
         "max_new_per_tick": None,   # 틱당 신규 진입 수. None이면 공격도 규칙(max(4, 4+agg*6))
         "min_position_size": 3000,  # 이보다 작은 포지션은 건너뜀 ($)
         "min_candidate_score": 4,   # 후보 스크린: 이 점수 미만은 워치리스트에 안 올림 (0~8)
+        "industry_limit": 2,        # 같은 업종(반도체·소프트웨어 등) 최대 보유 수 (1~6)
     }
     try:
         if os.path.exists(PARAMS_PATH):
@@ -142,12 +143,16 @@ def weekly_metrics():
 def _fmt_pf(v):
     return "\u221e" if v == float("inf") else f"{v:.2f}"
 
-# ─── 섹터 해석 (UNIVERSE에 없는 스크리너 유입 티커용) ───
-# 과거에는 UNIVERSE에 없으면 sector="Unknown"이 되어, enter_positions의 sector_limit(3)이
-# "Unknown"을 한 섹터로 묶어 서로 다른 섹터 후보를 합계 3개에서 전부 차단했다.
-SECTOR_CACHE_PATH = os.path.expanduser("~/.hermes/scripts/.sector_cache.json")
-_SECTOR_CACHE = None
-_SECTOR_LOCK = __import__("threading").Lock()
+# ─── 섹터/업종 해석 (스크리너 유입 티커 + 업종 세분화) ───
+# 2026-10-01: 섹터만으로는 분산이 안 됐다. 기술주 안에서도 반도체·소프트웨어 편차가 커서
+# 업종(industry) 단위가 필요해졌다. 업종 라벨은 Finviz 업종 분류와 같은 계열
+# (Semiconductors / Software - Infrastructure / Banks - Diversified / Oil & Gas E&P ...).
+# Finviz S&P500 맵에서 직접 긁는 건 추출기 제약으로 신뢰도가 낮아, Yahoo search API의
+# industry 필드를 쓴다(교차 확인: Grocery Stores·Computer Hardware·Semiconductors 등 라벨 일치).
+TAXONOMY_CACHE_PATH = os.path.expanduser("~/.hermes/scripts/.taxonomy_cache.json")
+_LEGACY_SECTOR_CACHE = os.path.expanduser("~/.hermes/scripts/.sector_cache.json")
+_TAXONOMY_CACHE = None
+_TAXONOMY_LOCK = __import__("threading").Lock()
 YF_SECTOR_MAP = {
     "Technology": "Technology",
     "Communication Services": "Communication Services",
@@ -162,35 +167,54 @@ YF_SECTOR_MAP = {
     "Real Estate": "Real Estate",
 }
 
-def _load_sector_cache():
-    global _SECTOR_CACHE
-    if _SECTOR_CACHE is not None:
-        return _SECTOR_CACHE
-    try:
-        with open(SECTOR_CACHE_PATH) as f:
-            _SECTOR_CACHE = json.load(f)
-    except Exception:
-        _SECTOR_CACHE = {}
-    return _SECTOR_CACHE
+def _norm_industry(label):
+    """Finviz 표기 스타일로 정규화 (Yahoo의 em-dash → ' - ')."""
+    if not label:
+        return None
+    return label.replace("\u2014", " - ").replace("  ", " ").strip()
 
-def _save_sector_cache():
+def _load_taxonomy_cache():
+    global _TAXONOMY_CACHE
+    if _TAXONOMY_CACHE is not None:
+        return _TAXONOMY_CACHE
+    _TAXONOMY_CACHE = {}
     try:
-        with _SECTOR_LOCK:
-            tmp = SECTOR_CACHE_PATH + ".tmp"
+        with open(TAXONOMY_CACHE_PATH) as f:
+            _TAXONOMY_CACHE.update(json.load(f) or {})
+    except Exception:
+        pass
+    if not _TAXONOMY_CACHE:
+        # 구 섹터 캐시는 시드로만 사용 (업종 정보는 없으므로 다음에 재조회)
+        try:
+            with open(_LEGACY_SECTOR_CACHE) as f:
+                for k, v in (json.load(f) or {}).items():
+                    if isinstance(v, str):
+                        _TAXONOMY_CACHE[k] = {"sector": v, "industry": None}
+        except Exception:
+            pass
+    return _TAXONOMY_CACHE
+
+def _save_taxonomy_cache():
+    try:
+        with _TAXONOMY_LOCK:
+            tmp = TAXONOMY_CACHE_PATH + ".tmp"
             with open(tmp, "w") as f:
-                json.dump(_SECTOR_CACHE, f, ensure_ascii=False, indent=0)
-            os.replace(tmp, SECTOR_CACHE_PATH)
+                json.dump(_TAXONOMY_CACHE, f, ensure_ascii=False, indent=0)
+            os.replace(tmp, TAXONOMY_CACHE_PATH)
     except Exception:
         pass
 
-def resolve_sector(ticker):
-    """UNIVERSE 우선, 없으면 Yahoo search API로 조회 후 디스크 캐시. 실패 시 'Unknown'."""
-    if ticker in UNIVERSE:
-        return UNIVERSE[ticker]
-    cache = _load_sector_cache()
-    if ticker in cache:
-        return cache[ticker]
-    sec = "Unknown"
+def resolve_taxonomy(ticker):
+    """ticker → {"sector":..., "industry":...}. UNIVERSE 섹터 우선, 업종은 조회·캐시."""
+    ticker = ticker.upper()
+    cache = _load_taxonomy_cache()
+    entry = cache.get(ticker)
+    base_sector = UNIVERSE.get(ticker)
+    if isinstance(entry, dict) and entry.get("industry") and (base_sector or entry.get("sector")):
+        return {"sector": base_sector or entry.get("sector") or "Unknown",
+                "industry": entry.get("industry")}
+    sector = base_sector or (entry.get("sector") if isinstance(entry, dict) else None) or "Unknown"
+    industry = entry.get("industry") if isinstance(entry, dict) else None
     try:
         url = (f"https://query1.finance.yahoo.com/v1/finance/search"
                f"?q={urllib.request.quote(ticker)}&quotesCount=1&newsCount=0")
@@ -198,14 +222,21 @@ def resolve_sector(ticker):
         with urllib.request.urlopen(req, timeout=6) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         for q in (data.get("quotes") or []):
-            if str(q.get("symbol", "")).upper() == ticker.upper() and q.get("sector"):
-                sec = YF_SECTOR_MAP.get(q["sector"], q["sector"])
-                break
+            if str(q.get("symbol", "")).upper() != ticker:
+                continue
+            if not base_sector and q.get("sector"):
+                sector = YF_SECTOR_MAP.get(q["sector"], q["sector"])
+            industry = _norm_industry(q.get("industry")) or industry
+            break
     except Exception:
         pass
-    cache[ticker] = sec
-    _save_sector_cache()
-    return sec
+    cache[ticker] = {"sector": sector, "industry": industry}
+    _save_taxonomy_cache()
+    return {"sector": sector or "Unknown", "industry": industry}
+
+def resolve_sector(ticker):
+    """호환용 — 섹터만 반환."""
+    return resolve_taxonomy(ticker)["sector"]
 
 # ─── 거래대금 필터 ───
 TOP_VOLUME_N = 250                # 거래대금 상위 250개 종목만 스캔 (API 최대치)
@@ -1336,8 +1367,9 @@ def _scan_one(ticker):
     price = round(ref_price, 2)
     if price < P.get("price_min", 2.0):
         return None
+    _tax = resolve_taxonomy(ticker)
     return {
-        "ticker": ticker, "sector": resolve_sector(ticker),
+        "ticker": ticker, "sector": _tax["sector"], "industry": _tax["industry"],
         "price": price, "rsi": round(rsi, 1),
         "ma20": round(ma20, 2), "ma50": round(ma50, 2),
         "side": "LONG", "score": lscore,
@@ -1437,9 +1469,12 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
     P = params()
     entered = []
     sector_counts = {}
+    industry_counts = {}
     cap_counts = {"large": 0, "mid": 0, "small": 0}
     for p in portfolio["positions"]:
         sector_counts[p["sector"]] = sector_counts.get(p["sector"], 0) + 1
+        _ind = p.get("industry") or "Unknown"
+        industry_counts[_ind] = industry_counts.get(_ind, 0) + 1
         tier = CAP_TIER.get(p["ticker"], "large")
         cap_counts[tier] = cap_counts.get(tier, 0) + 1
     
@@ -1478,6 +1513,10 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
     except (TypeError, ValueError):
         max_positions = MAX_POSITIONS
     try:
+        industry_limit = max(1, int(P.get("industry_limit", 2)))
+    except (TypeError, ValueError):
+        industry_limit = 2
+    try:
         min_mid = max(0, int(P.get("cap_min_mid", 0)))
         min_small = max(0, int(P.get("cap_min_small", 0)))
     except (TypeError, ValueError):
@@ -1513,6 +1552,9 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         for _, tier, c in merged:
             sec = c["sector"]
             if sector_counts.get(sec, 0) >= sector_limit:
+                continue
+            _ind = c.get("industry") or "Unknown"
+            if _ind != "Unknown" and industry_counts.get(_ind, 0) >= industry_limit:
                 continue
             if any(p["ticker"] == c["ticker"] for p in portfolio["positions"]):
                 continue
@@ -1564,7 +1606,7 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         target = round(entry * (1 + tgt_pct), 2)
         
         pos = {
-            "ticker": c["ticker"], "sector": sec, "side": c["side"],
+            "ticker": c["ticker"], "sector": sec, "industry": c.get("industry"), "side": c["side"],
             "cap_tier": tier, "entry_price": entry, "shares": shares, "date": today,
             "stop_price": stop, "target_price": target,
             "current_price": entry, "days_held": 0, "unrealized": 0.0
@@ -1572,6 +1614,8 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         portfolio["positions"].append(pos)
         portfolio["cash"] -= shares * entry
         sector_counts[sec] = sector_counts.get(sec, 0) + 1
+        _ia = c.get("industry") or "Unknown"
+        industry_counts[_ia] = industry_counts.get(_ia, 0) + 1
         cap_counts[tier] = cap_counts.get(tier, 0) + 1
         entered.append(pos)
     return entered
@@ -1731,7 +1775,9 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     if _alloc:
         _bits = []
         if _alloc.get("sector_tilt"):
-            _bits.append("틸트 " + ", ".join(f"{k}{v:+g}" for k, v in _alloc["sector_tilt"].items()))
+            _bits.append("섹터틸트 " + ", ".join(f"{k}{v:+g}" for k, v in _alloc["sector_tilt"].items()))
+        if _alloc.get("industry_tilt"):
+            _bits.append("업종틸트 " + ", ".join(f"{k}{v:+g}" for k, v in _alloc["industry_tilt"].items()))
         if _alloc.get("focus_tickers"):
             _bits.append("지정 " + ",".join(_alloc["focus_tickers"][:5]))
         if _alloc.get("avoid_tickers"):
@@ -1740,7 +1786,7 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             lines.append("• 🎛️ **AI 배분 지시**: " + " | ".join(_bits))
     _mn_disp = P.get('max_new_per_tick')
     lines.append(f"• 🧮 **배분 한도(AI 조정가)**: 섹터≤{P.get('sector_limit', 3)} · 종목≤{int(P.get('max_positions', MAX_POSITIONS))} · 신규≤{('공격도 자동' if _mn_disp is None else int(_mn_disp))} · 현금하한 {('%.0f%%' % (float(P['min_cash_pct'])*100)) if P.get('min_cash_pct') is not None else '공격도 자동'} · 중형최소 {P.get('cap_min_mid',0)} · 소형최소 {P.get('cap_min_small',0)}")
-    lines.append(f"• 🎚️ **후보 스크린(AI 조정가)**: 후보점수≥{P.get('min_candidate_score',4)} · 최소포지션 ${float(P.get('min_position_size',3000)):,.0f}")
+    lines.append(f"• 🎚️ **후보 스크린(AI 조정가)**: 후보점수≥{P.get('min_candidate_score',4)} · 최소포지션 ${float(P.get('min_position_size',3000)):,.0f} · 업종≤{P.get('industry_limit',2)}")
     if _AI_OVERRIDE_KEYS and _WEEKLY_BASELINE:
         _dev = []
         for _k in sorted(_AI_OVERRIDE_KEYS):
@@ -1798,7 +1844,8 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             current_price = p.get('current_price', p['entry_price'])
             notional = current_price * p['shares']
             weight = notional / summary['total_value'] * 100 if summary['total_value'] > 0 else 0
-            lines.append(f"{emoji} {p['ticker']} {p['side']} | 매수가: ${p['entry_price']} 현재: ${current_price} | P&L: ${unreal:+,} ({pct:+.1f}%) | 비중 {weight:.1f}% | {p.get('days_held', 0)}일")
+            _ind_disp = f"/{p['industry']}" if p.get("industry") else ""
+            lines.append(f"{emoji} {p['ticker']} {p['side']} [{p['sector']}{_ind_disp}] | 매수가: ${p['entry_price']} 현재: ${current_price} | P&L: ${unreal:+,} ({pct:+.1f}%) | 비중 {weight:.1f}% | {p.get('days_held', 0)}일")
         lines.append("")
     
     # Watchlist
@@ -1809,7 +1856,8 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             _raw = w.get("raw_score", w["score"])
             _tilted = w["score"] - _raw
             _tag = f" · 배분 {_tilted:+g}" if _tilted else ""
-            lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {_raw}/8{_tag} | RSI {w['rsi']} | ${w['price']}")
+            _ind_w = f" | {w.get('industry')}" if w.get("industry") else ""
+            lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {_raw}/8{_tag}{_ind_w} | RSI {w['rsi']} | ${w['price']}")
         lines.append("")
     
     # Strategy note: S&P 500 벤치마크 & VIX
@@ -1871,10 +1919,12 @@ def main():
         portfolio = load_portfolio()
         # 스크리너로 편입된 종목의 섹터가 Unknown이면 재해석 (섹터 한도 왜곡 방지)
         for _p in portfolio["positions"]:
-            if _p.get("sector") in (None, "Unknown"):
-                _ns = resolve_sector(_p["ticker"])
-                if _ns != "Unknown":
-                    _p["sector"] = _ns
+            if _p.get("sector") in (None, "Unknown") or not _p.get("industry"):
+                _tx = resolve_taxonomy(_p["ticker"])
+                if _tx["sector"] != "Unknown":
+                    _p["sector"] = _tx["sector"]
+                if _tx.get("industry") and not _p.get("industry"):
+                    _p["industry"] = _tx["industry"]
         
         # Market context (lightweight)
         ctx = market_context()
@@ -1976,10 +2026,13 @@ def main():
                 _avoid = {str(t).upper() for t in (_alloc.get("avoid_tickers") or [])}
                 if _avoid:
                     watchlist = [w for w in watchlist if w["ticker"].upper() not in _avoid]
+                _itilt = {k: float(v) for k, v in (_alloc.get("industry_tilt") or {}).items()}
                 for w in watchlist:
                     w["raw_score"] = w["score"]      # 배분 개입 전 원점수 (사이즈 보너스는 원점수 기준)
                     if _tilt and w.get("sector") in _tilt:
                         w["score"] += _tilt[w["sector"]]
+                    if _itilt and w.get("industry") in _itilt:
+                        w["score"] += _itilt[w["industry"]]      # 업종 틸트(섹터보다 세분)
                     if _focus and w["ticker"].upper() in _focus:
                         w["score"] += 2          # 지정 종목 가산
             watchlist.sort(key=lambda x: x["score"], reverse=True)

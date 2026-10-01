@@ -1,0 +1,346 @@
+{
+"TSM": {
+"sector": "Technology",
+"industry": "Semiconductors"
+},
+"MRVL": {
+"sector": "Technology",
+"industry": "Semiconductors"
+},
+"SKHY": {
+"sector": "Technology",
+"industry": "Semiconductors"
+},
+"NBIS": {
+"sector": "Communication Services",
+"industry": "Internet Content & Information"
+},
+"CRWV": {
+"sector": "Technology",
+"industry": "Software - Infrastructure"
+},
+"SPCX": {
+"sector": "Industrials",
+"industry": "Aerospace & Defense"
+},
+"INTC": {
+"sector": "Technology",
+"industry": null
+},
+"SNDK": {
+"sector": "Technology",
+"industry": null
+},
+"BE": {
+"sector": "Industrials",
+"industry": "Electrical Equipment & Parts"
+},
+"MSTR": {
+"sector": "Technology",
+"industry": "Software - Application"
+},
+"RKLB": {
+"sector": "Industrials",
+"industry": null
+},
+"APH": {
+"sector": "Technology",
+"industry": "Electronic Components"
+},
+"BMNR": {
+"sector": "Financials",
+"industry": null
+},
+"IONQ": {
+"sector": "Technology",
+"industry": null
+},
+"WBD": {
+"sector": "Communication Services",
+"industry": "Entertainment"
+},
+"AXTI": {
+"sector": "Technology",
+"industry": null
+},
+"NOK": {
+"sector": "Technology",
+"industry": "Communication Equipment"
+},
+"ON": {
+"sector": "Technology",
+"industry": null
+},
+"HL": {
+"sector": "Materials",
+"industry": "Other Precious Metals & Mining"
+},
+"SHEL": {
+"sector": "Energy",
+"industry": "Oil & Gas Integrated"
+},
+"STM": {
+"sector": "Technology",
+"industry": null
+},
+"CTSH": {
+"sector": "Technology",
+"industry": "Information Technology Services"
+},
+"BP": {
+"sector": "Unknown",
+"industry": null
+},
+"PBR": {
+"sector": "Energy",
+"industry": "Oil & Gas Integrated"
+},
+"B": {
+"sector": "Materials",
+"industry": null
+},
+"HAL": {
+"sector": "Energy",
+"industry": "Oil & Gas Equipment & Services"
+},
+"KDP": {
+"sector": "Consumer Staples",
+"industry": null
+},
+"RGTI": {
+"sector": "Technology",
+"industry": null
+},
+"CNH": {
+"sector": "Industrials",
+"industry": null
+},
+"CVE": {
+"sector": "Energy",
+"industry": "Oil & Gas Integrated"
+},
+"PR": {
+"sector": "Energy",
+"industry": null
+},
+"PURR": {
+"sector": "Financials",
+"industry": null
+},
+"SNAP": {
+"sector": "Communication Services",
+"industry": "Internet Content & Information"
+},
+"VG": {
+"sector": "Energy",
+"industry": "Oil & Gas Midstream"
+},
+"ITUB": {
+"sector": "Financials",
+"industry": "Banks - Regional"
+},
+"ET": {
+"sector": "Energy",
+"industry": "Oil & Gas Midstream"
+},
+"MOS": {
+"sector": "Materials",
+"industry": "Agricultural Inputs"
+},
+"SAN": {
+"sector": "Financials",
+"industry": "Banks - Diversified"
+},
+"XP": {
+"sector": "Financials",
+"industry": "Capital Markets"
+},
+"AVTR": {
+"sector": "Health Care",
+"industry": "Medical Instruments & Supplies"
+},
+"AES": {
+"sector": "Utilities",
+"industry": "Utilities - Diversified"
+},
+"VFC": {
+"sector": "Consumer Discretionary",
+"industry": null
+},
+"BBD": {
+"sector": "Financials",
+"industry": null
+},
+"KEEL": {
+"sector": "Technology",
+"industry": null
+},
+"ABCL": {
+"sector": "Health Care",
+"industry": null
+},
+"AMC": {
+"sector": "Communication Services",
+"industry": null
+},
+"BULL": {
+"sector": "Technology",
+"industry": null
+},
+"IBRX": {
+"sector": "Health Care",
+"industry": "Biotechnology"
+},
+"SMMT": {
+"sector": "Health Care",
+"industry": "Biotechnology"
+},
+"RXRX": {
+"sector": "Health Care",
+"industry": "Biotechnology"
+},
+"BTE": {
+"sector": "Energy",
+"industry": "Oil & Gas E&P"
+},
+"ABEV": {
+"sector": "Consumer Staples",
+"industry": "Beverages - Brewers"
+},
+"SAIL": {
+"sector": "Technology",
+"industry": null
+},
+"MAT": {
+"sector": "Consumer Discretionary",
+"industry": null
+},
+"LUMN": {
+"sector": "Communication Services",
+"industry": "Telecom Services"
+},
+"GGB": {
+"sector": "Materials",
+"industry": "Steel"
+},
+"MO": {
+"sector": "Consumer Staples",
+"industry": "Tobacco"
+},
+"MU": {
+"sector": "Technology",
+"industry": "Semiconductors"
+},
+"MSFT": {
+"sector": "Technology",
+"industry": "Software - Infrastructure"
+},
+"S": {
+"sector": "Technology",
+"industry": "Software - Infrastructure"
+},
+"HPE": {
+"sector": "Technology",
+"industry": "Communication Equipment"
+},
+"KO": {
+"sector": "Consumer Staples",
+"industry": "Beverages - Non-Alcoholic"
+},
+"C": {
+"sector": "Financials",
+"industry": "Banks - Diversified"
+},
+"PTEN": {
+"sector": "Energy",
+"industry": "Oil & Gas Drilling"
+},
+"OXY": {
+"sector": "Energy",
+"industry": "Oil & Gas E&P"
+},
+"KR": {
+"sector": "Consumer Staples",
+"industry": "Grocery Stores"
+},
+"NVDA": {
+"sector": "Technology",
+"industry": "Semiconductors"
+},
+"AAPL": {
+"sector": "Technology",
+"industry": "Consumer Electronics"
+},
+"PLTR": {
+"sector": "Technology",
+"industry": "Software - Infrastructure"
+},
+"ANET": {
+"sector": "Technology",
+"industry": "Computer Hardware"
+},
+"META": {
+"sector": "Technology",
+"industry": "Internet Content & Information"
+},
+"AMD": {
+"sector": "Technology",
+"industry": "Semiconductors"
+},
+"LRCX": {
+"sector": "Technology",
+"industry": "Semiconductor Equipment & Materials"
+},
+"NOW": {
+"sector": "Technology",
+"industry": "Software - Application"
+},
+"QCOM": {
+"sector": "Technology",
+"industry": "Semiconductors"
+},
+"XOM": {
+"sector": "Energy",
+"industry": "Oil & Gas Integrated"
+},
+"SMCI": {
+"sector": "Technology",
+"industry": "Computer Hardware"
+},
+"MRK": {
+"sector": "Health Care",
+"industry": "Drug Manufacturers - General"
+},
+"T": {
+"sector": "Communication Services",
+"industry": "Telecom Services"
+},
+"ACN": {
+"sector": "Technology",
+"industry": "Information Technology Services"
+},
+"PFE": {
+"sector": "Health Care",
+"industry": "Drug Manufacturers - General"
+},
+"VZ": {
+"sector": "Communication Services",
+"industry": "Telecom Services"
+},
+"SLB": {
+"sector": "Energy",
+"industry": "Oil & Gas Equipment & Services"
+},
+"HPQ": {
+"sector": "Technology",
+"industry": "Computer Hardware"
+},
+"U": {
+"sector": "Technology",
+"industry": "Software - Application"
+},
+"GME": {
+"sector": "Consumer Discretionary",
+"industry": "Specialty Retail"
+}
+}
