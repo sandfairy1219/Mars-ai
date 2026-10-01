@@ -1416,6 +1416,61 @@ def scan_tickers(tickers, is_full=False):
                 pass
     return results
 
+def thesis_drift(pos):
+    """thesis-drift 경량판: 진입 시점 사실값 vs 현재 사실값.
+
+    반환 status ∈ {Unchanged, Weakened, Improved, 기준선 없음, 데이터 없음}
+    가격 변동만으로는 Weakened가 되지 않는다(스킬 원칙).
+    """
+    th = pos.get("thesis") or {}
+    if not th:
+        return {"status": "기준선 없음", "reasons": ["thesis 미기록(구버전 진입) — 소급 생성하지 않음"]}
+    prices = fetch_chart(pos["ticker"])
+    if not prices or len(prices) < 50:
+        return {"status": "데이터 없음", "reasons": []}
+    rsi = calc_rsi(prices)
+    ma20 = calc_ma(prices, 20)
+    ma50 = calc_ma(prices, 50)
+    atr = calc_atr(prices)
+    if rsi is None or ma20 is None or ma50 is None:
+        return {"status": "데이터 없음", "reasons": []}
+    now_score = score_long(prices, rsi, ma20, ma50, atr)
+    now_rel = None
+    if len(prices) >= 21:
+        now_rel = round((prices[-1] - prices[-21]) / prices[-21] * 100 - (_BENCH_20D or 0.0), 2)
+    now_q = None
+    if quality_report is not None:
+        try:
+            now_q = quality_report(pos["ticker"], sector=pos.get("sector")).get("score")
+        except Exception:
+            now_q = None
+
+    e_score, e_rel, e_q = th.get("entry_score"), th.get("entry_rel_20d"), th.get("entry_quality")
+    weak, strong = [], []
+    if e_score is not None and now_score <= e_score - 2:
+        weak.append(f"기술점수 {e_score}→{now_score}")
+    elif e_score is not None and now_score >= e_score + 2:
+        strong.append(f"기술점수 {e_score}→{now_score}")
+    if e_rel is not None and now_rel is not None:
+        if e_rel > 0 and now_rel < 0:
+            weak.append(f"상대강도 {e_rel:+.1f}%p→{now_rel:+.1f}%p (추세 반전)")
+        elif e_rel < 0 and now_rel > 0:
+            strong.append(f"상대강도 {e_rel:+.1f}%p→{now_rel:+.1f}%p")
+    if e_q is not None and now_q is not None and now_q != e_q:
+        (weak if now_q < e_q else strong).append(f"퀄리티 {e_q}→{now_q}/7")
+    cur = pos.get("current_price") or prices[-1]
+    if pos.get("stop_price"):
+        dist_stop = (cur - pos["stop_price"]) / cur * 100 if cur else 0
+        if dist_stop < 2.0:
+            weak.append(f"스톱까지 {dist_stop:.1f}%")
+
+    if weak:
+        return {"status": "Weakened", "reasons": weak}
+    if strong:
+        return {"status": "Improved", "reasons": strong}
+    return {"status": "Unchanged", "reasons": []}
+
+
 def ai_apply_exits(portfolio, today, max_exits=3):
     """AI 배분 지시(alloc.exit_tickers)에 따른 청산. 하루 최대 max_exits건, long_term 제외.
 
@@ -1653,6 +1708,12 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
                         f"· 상대강도 {_rel if _rel is not None else '?'}%p "
                         f"· {sec}/{c.get('industry') or '?'} · 퀄리티 {_q.get('score','?')}/{_q.get('measured','?')}"),
                 "quality": _q.get("score"),
+                # thesis-drift 기준선: 진입 시점 '사실값'. 가격이 아니라 이 값들이 변해야 논문 변화다.
+                # 드리프트 비교는 틸트 제외한 원점수로 (틸트는 매일 바뀌는 배분값이라 기준선이 못 됨)
+                "entry_score": c.get("raw_score", c["score"]),
+                "entry_rel_20d": _rel,
+                "entry_quality": _q.get("score"),
+                "entry_tilted": bool(c.get("score", 0) != c.get("raw_score", c.get("score"))),
                 "invalidation": f"스톱 ${stop} 이탈 / 목표 ${target} 도달 / 업종 틸트 소멸",
             },
         }
@@ -1836,6 +1897,15 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     if _qm2:
         _avgq = sum(p["quality"] for p in _qm2) / len(_qm2)
         lines.append(f"• 🏅 **보유 퀄리티 평균**: {_avgq:.1f}/7 (품질 데이터 {len(_qm2)}/{len(positions or [])}종목)")
+    # thesis-drift 요약 (ai-berkshire 이식): 사실 변화만 인정, 가격 변화는 논문 변화 아님
+    if positions:
+        _dr = {p["ticker"]: thesis_drift(p) for p in positions}
+        _w = {k: v for k, v in _dr.items() if v["status"] == "Weakened"}
+        _nb = sum(1 for v in _dr.values() if v["status"] == "기준선 없음")
+        _hd = sum(1 for v in _dr.values() if v["status"] in ("Unchanged", "Improved"))
+        lines.append(f"• 🧭 **논문 상태(thesis-drift)**: 훼손 {len(_w)} · 유지 {_hd} · 기준선없음 {_nb}")
+        for k, v in _w.items():
+            lines.append(f"   ↳ {k} 훼손: {'; '.join(v['reasons'][:3])}")
     if _AI_OVERRIDE_KEYS and _WEEKLY_BASELINE:
         _dev = []
         for _k in sorted(_AI_OVERRIDE_KEYS):
