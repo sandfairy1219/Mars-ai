@@ -14,7 +14,8 @@
       "current_price": 11.28,
       "days_held": 0,
       "unrealized": 86.56,
-      "industry": "Oil & Gas Drilling"
+      "industry": "Oil & Gas Drilling",
+      "quality": 3
     },
     {
       "ticker": "OXY",
@@ -26,10 +27,11 @@
       "date": "2026-10-01",
       "stop_price": 53.64,
       "target_price": 65.02,
-      "current_price": 57.81,
+      "current_price": 57.84,
       "days_held": 0,
-      "unrealized": 4.1,
-      "industry": "Oil & Gas E&P"
+      "unrealized": 6.88,
+      "industry": "Oil & Gas E&P",
+      "quality": 7
     },
     {
       "ticker": "S",
@@ -44,7 +46,8 @@
       "current_price": 24.74,
       "days_held": 0,
       "unrealized": -1.66,
-      "industry": "Software - Infrastructure"
+      "industry": "Software - Infrastructure",
+      "quality": 3
     },
     {
       "ticker": "HPE",
@@ -56,10 +59,11 @@
       "date": "2026-10-01",
       "stop_price": 59.78,
       "target_price": 75.25,
-      "current_price": 65.04,
+      "current_price": 64.97,
       "days_held": 0,
-      "unrealized": -17.82,
-      "industry": "Communication Equipment"
+      "unrealized": -24.08,
+      "industry": "Communication Equipment",
+      "quality": 6
     },
     {
       "ticker": "KR",
@@ -74,7 +78,8 @@
       "current_price": 59.48,
       "days_held": 0,
       "unrealized": 0.0,
-      "industry": "Grocery Stores"
+      "industry": "Grocery Stores",
+      "quality": 6
     },
     {
       "ticker": "MSFT",
@@ -86,10 +91,11 @@
       "date": "2026-10-01",
       "stop_price": 484.63,
       "target_price": 581.33,
-      "current_price": 514.87,
+      "current_price": 514.49,
       "days_held": 0,
-      "unrealized": -8.82,
-      "industry": "Software - Infrastructure"
+      "unrealized": -14.14,
+      "industry": "Software - Infrastructure",
+      "quality": 7
     },
     {
       "ticker": "MU",
@@ -101,10 +107,11 @@
       "date": "2026-10-01",
       "stop_price": 1026.2,
       "target_price": 1230.95,
-      "current_price": 1091.53,
+      "current_price": 1092.01,
       "days_held": 0,
-      "unrealized": -0.38,
-      "industry": "Semiconductors"
+      "unrealized": 5.4,
+      "industry": "Semiconductors",
+      "quality": 7
     },
     {
       "ticker": "NBIS",
@@ -116,10 +123,11 @@
       "date": "2026-10-01",
       "stop_price": 219.86,
       "target_price": 263.72,
-      "current_price": 234.0,
+      "current_price": 233.46,
       "days_held": 0,
-      "unrealized": 7.98,
-      "industry": "Internet Content & Information"
+      "unrealized": -22.8,
+      "industry": "Internet Content & Information",
+      "quality": 2
     },
     {
       "ticker": "MRVL",
@@ -131,10 +139,11 @@
       "date": "2026-10-01",
       "stop_price": 253.53,
       "target_price": 304.12,
-      "current_price": 269.19,
+      "current_price": 269.49,
       "days_held": 0,
-      "unrealized": -13.23,
-      "industry": "Semiconductors"
+      "unrealized": -5.13,
+      "industry": "Semiconductors",
+      "quality": 7
     },
     {
       "ticker": "SNAP",
@@ -147,9 +156,10 @@
       "date": "2026-10-01",
       "stop_price": 5.37,
       "target_price": 6.44,
-      "current_price": 5.71,
+      "current_price": 5.68,
       "days_held": 0,
-      "unrealized": 0.13
+      "unrealized": -39.46,
+      "quality": 3
     }
   ],
   "watchlist": [
@@ -157,7 +167,7 @@
       "ticker": "TSM",
       "sector": "Technology",
       "industry": "Semiconductors",
-      "price": 459.14,
+      "price": 459.15,
       "rsi": 66.6,
       "ma20": 438.33,
       "ma50": 423.75,
@@ -165,13 +175,18 @@
       "score": 12.0,
       "dist_ma20": 4.54,
       "atr_pct": 1.22,
+      "rel_20d": 10.67,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
       "raw_score": 6
     },
     {
       "ticker": "SKHY",
       "sector": "Technology",
       "industry": "Semiconductors",
-      "price": 192.16,
+      "price": 191.7,
       "rsi": 52.2,
       "ma20": 184.84,
       "ma50": 166.04,
@@ -179,27 +194,18 @@
       "score": 12.0,
       "dist_ma20": 4.48,
       "atr_pct": 2.81,
+      "rel_20d": 17.44,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
       "raw_score": 6
-    },
-    {
-      "ticker": "NVDA",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 231.48,
-      "rsi": 66.1,
-      "ma20": 223.51,
-      "ma50": 217.77,
-      "side": "LONG",
-      "score": 9.0,
-      "dist_ma20": 3.18,
-      "atr_pct": 1.21,
-      "raw_score": 5
     },
     {
       "ticker": "AMD",
       "sector": "Technology",
       "industry": "Semiconductors",
-      "price": 617.0,
+      "price": 616.76,
       "rsi": 73.8,
       "ma20": 557.6,
       "ma50": 511.65,
@@ -207,13 +213,37 @@
       "score": 9.0,
       "dist_ma20": 9.44,
       "atr_pct": 2.43,
+      "rel_20d": 34.87,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "raw_score": 5
+    },
+    {
+      "ticker": "NVDA",
+      "sector": "Technology",
+      "industry": "Semiconductors",
+      "price": 231.47,
+      "rsi": 66.1,
+      "ma20": 223.51,
+      "ma50": 217.77,
+      "side": "LONG",
+      "score": 9.0,
+      "dist_ma20": 3.18,
+      "atr_pct": 1.21,
+      "rel_20d": 3.02,
+      "quality": {
+        "score": 6,
+        "measured": 7
+      },
       "raw_score": 5
     },
     {
       "ticker": "CRWV",
       "sector": "Technology",
       "industry": "Software - Infrastructure",
-      "price": 88.41,
+      "price": 88.4,
       "rsi": 49.4,
       "ma20": 86.94,
       "ma50": 86.53,
@@ -221,13 +251,18 @@
       "score": 9.0,
       "dist_ma20": 1.84,
       "atr_pct": 2.64,
+      "rel_20d": 9.59,
+      "quality": {
+        "score": 1,
+        "measured": 6
+      },
       "raw_score": 6
     },
     {
       "ticker": "QCOM",
       "sector": "Technology",
       "industry": "Semiconductors",
-      "price": 182.7,
+      "price": 182.77,
       "rsi": 50.1,
       "ma20": 184.48,
       "ma50": 171.17,
@@ -235,27 +270,18 @@
       "score": 9.0,
       "dist_ma20": 1.31,
       "atr_pct": 3.12,
+      "rel_20d": 7.29,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
       "raw_score": 5
-    },
-    {
-      "ticker": "AAPL",
-      "sector": "Technology",
-      "industry": "Consumer Electronics",
-      "price": 330.62,
-      "rsi": 47.5,
-      "ma20": 331.62,
-      "ma50": 322.18,
-      "side": "LONG",
-      "score": 8.0,
-      "dist_ma20": 0.39,
-      "atr_pct": 0.86,
-      "raw_score": 6
     },
     {
       "ticker": "PLTR",
       "sector": "Technology",
       "industry": "Software - Infrastructure",
-      "price": 190.5,
+      "price": 190.6,
       "rsi": 82.1,
       "ma20": 179.88,
       "ma50": 168.47,
@@ -263,13 +289,37 @@
       "score": 8.0,
       "dist_ma20": 5.35,
       "atr_pct": 1.34,
+      "rel_20d": 12.29,
+      "quality": {
+        "score": 6,
+        "measured": 7
+      },
       "raw_score": 5
+    },
+    {
+      "ticker": "AAPL",
+      "sector": "Technology",
+      "industry": "Consumer Electronics",
+      "price": 330.7,
+      "rsi": 47.5,
+      "ma20": 331.62,
+      "ma50": 322.18,
+      "side": "LONG",
+      "score": 8.0,
+      "dist_ma20": 0.39,
+      "atr_pct": 0.86,
+      "rel_20d": 1.8,
+      "quality": {
+        "score": 6,
+        "measured": 7
+      },
+      "raw_score": 6
     },
     {
       "ticker": "APH",
       "sector": "Technology",
       "industry": "Electronic Components",
-      "price": 86.35,
+      "price": 85.0,
       "rsi": 54.7,
       "ma20": 81.67,
       "ma50": 80.98,
@@ -277,13 +327,18 @@
       "score": 8.0,
       "dist_ma20": 4.67,
       "atr_pct": 1.55,
+      "rel_20d": 7.18,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
       "raw_score": 6
     },
     {
       "ticker": "META",
       "sector": "Technology",
       "industry": "Internet Content & Information",
-      "price": 726.25,
+      "price": 726.27,
       "rsi": 64.3,
       "ma20": 690.05,
       "ma50": 622.6,
@@ -291,27 +346,18 @@
       "score": 7.0,
       "dist_ma20": 4.94,
       "atr_pct": 2.67,
-      "raw_score": 5
-    },
-    {
-      "ticker": "LRCX",
-      "sector": "Technology",
-      "industry": "Semiconductor Equipment & Materials",
-      "price": 341.61,
-      "rsi": 69.2,
-      "ma20": 302.68,
-      "ma50": 305.5,
-      "side": "LONG",
-      "score": 7.0,
-      "dist_ma20": 11.0,
-      "atr_pct": 2.29,
+      "rel_20d": 22.6,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
       "raw_score": 5
     },
     {
       "ticker": "MSTR",
       "sector": "Technology",
       "industry": "Software - Application",
-      "price": 160.87,
+      "price": 160.81,
       "rsi": 68.0,
       "ma20": 146.95,
       "ma50": 122.28,
@@ -319,6 +365,30 @@
       "score": 7.0,
       "dist_ma20": 8.45,
       "atr_pct": 3.64,
+      "rel_20d": 30.44,
+      "quality": {
+        "score": 2,
+        "measured": 6
+      },
+      "raw_score": 5
+    },
+    {
+      "ticker": "LRCX",
+      "sector": "Technology",
+      "industry": "Semiconductor Equipment & Materials",
+      "price": 341.5,
+      "rsi": 69.2,
+      "ma20": 302.68,
+      "ma50": 305.5,
+      "side": "LONG",
+      "score": 7.0,
+      "dist_ma20": 11.0,
+      "atr_pct": 2.29,
+      "rel_20d": 18.11,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
       "raw_score": 5
     },
     {
@@ -333,13 +403,18 @@
       "score": 7.0,
       "dist_ma20": 0.7,
       "atr_pct": 2.18,
+      "rel_20d": 0.91,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
       "raw_score": 5
     },
     {
       "ticker": "SMCI",
       "sector": "Technology",
       "industry": "Computer Hardware",
-      "price": 41.99,
+      "price": 41.91,
       "rsi": 55.1,
       "ma20": 39.88,
       "ma50": 36.27,
@@ -347,6 +422,11 @@
       "score": 7.0,
       "dist_ma20": 4.87,
       "atr_pct": 3.06,
+      "rel_20d": 13.45,
+      "quality": {
+        "score": 4,
+        "measured": 7
+      },
       "raw_score": 5
     },
     {
@@ -361,13 +441,18 @@
       "score": 7.0,
       "dist_ma20": 0.32,
       "atr_pct": 2.95,
+      "rel_20d": 5.54,
+      "quality": {
+        "score": 5,
+        "measured": 7
+      },
       "raw_score": 5
     },
     {
       "ticker": "HPQ",
       "sector": "Technology",
       "industry": "Computer Hardware",
-      "price": 32.05,
+      "price": 32.3,
       "rsi": 34.4,
       "ma20": 32.55,
       "ma50": 30.43,
@@ -375,20 +460,11 @@
       "score": 7.0,
       "dist_ma20": 1.25,
       "atr_pct": 2.38,
-      "raw_score": 5
-    },
-    {
-      "ticker": "CTSH",
-      "sector": "Technology",
-      "industry": "Information Technology Services",
-      "price": 60.99,
-      "rsi": 52.6,
-      "ma20": 59.9,
-      "ma50": 58.57,
-      "side": "LONG",
-      "score": 7.0,
-      "dist_ma20": 1.61,
-      "atr_pct": 1.98,
+      "rel_20d": 0.65,
+      "quality": {
+        "score": 5,
+        "measured": 6
+      },
       "raw_score": 5
     },
     {
@@ -403,27 +479,37 @@
       "score": 7.0,
       "dist_ma20": 3.19,
       "atr_pct": 2.29,
+      "rel_20d": 7.14,
+      "quality": {
+        "score": 3,
+        "measured": 6
+      },
       "raw_score": 5
     },
     {
-      "ticker": "SNAP",
-      "sector": "Communication Services",
-      "industry": "Internet Content & Information",
-      "price": 5.71,
-      "rsi": 49.2,
-      "ma20": 5.54,
-      "ma50": 5.33,
+      "ticker": "CTSH",
+      "sector": "Technology",
+      "industry": "Information Technology Services",
+      "price": 60.99,
+      "rsi": 52.6,
+      "ma20": 59.9,
+      "ma50": 58.57,
       "side": "LONG",
       "score": 7.0,
-      "dist_ma20": 1.99,
-      "atr_pct": 2.31,
-      "raw_score": 6
+      "dist_ma20": 1.61,
+      "atr_pct": 1.98,
+      "rel_20d": -3.82,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "raw_score": 5
     },
     {
       "ticker": "SPCX",
       "sector": "Industrials",
       "industry": "Aerospace & Defense",
-      "price": 148.75,
+      "price": 148.76,
       "rsi": 46.4,
       "ma20": 149.67,
       "ma50": 138.14,
@@ -431,6 +517,30 @@
       "score": 6,
       "dist_ma20": 1.08,
       "atr_pct": 2.1,
+      "rel_20d": 5.38,
+      "quality": {
+        "score": 2,
+        "measured": 4
+      },
+      "raw_score": 6
+    },
+    {
+      "ticker": "XOM",
+      "sector": "Energy",
+      "industry": "Oil & Gas Integrated",
+      "price": 163.95,
+      "rsi": 46.1,
+      "ma20": 162.69,
+      "ma50": 160.4,
+      "side": "LONG",
+      "score": 6,
+      "dist_ma20": 0.69,
+      "atr_pct": 1.21,
+      "rel_20d": -0.05,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
       "raw_score": 6
     }
   ],
@@ -2296,17 +2406,17 @@
   "total_invested": 0.0,
   "spy_baseline_price": 741.75,
   "spy_baseline_date": "2026-06-15",
-  "spy_current_price": 764.45,
+  "spy_current_price": 764.48,
   "qqq_current_price": 706.52,
   "qqq_baseline_price": 706.52,
   "qqq_baseline_date": "2026-06-27",
-  "nasdaq_current_price": 743.2,
+  "nasdaq_current_price": 743.25,
   "nasdaq_baseline_price": 709.43,
   "nasdaq_baseline_date": "2026-07-08",
-  "dia_current_price": 508.95,
+  "dia_current_price": 508.66,
   "dia_baseline_price": 517.84,
   "dia_baseline_date": "2026-07-24",
-  "iwm_current_price": 279.43,
+  "iwm_current_price": 279.5,
   "iwm_baseline_price": 293.26,
   "iwm_baseline_date": "2026-07-24"
 }

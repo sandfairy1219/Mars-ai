@@ -8,6 +8,17 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 # 기존 순서(매매 실행 → AI 판단)는 AI 결정이 항상 다음 틱에야 적용됐다.
 CONTEXT_ONLY = ("--context-only" in sys.argv) or ("--no-trade" in sys.argv)
 
+# ─── 펀더멘털/퀄리티 레이어 (fundamentals.py — quality-stock-screen + financial-data-rigor) ───
+# 실패해도 봇은 기술 점수만으로 돌아간다.
+try:
+    _HERE = os.path.dirname(os.path.abspath(__file__))
+    if _HERE not in sys.path:
+        sys.path.insert(0, _HERE)
+    from fundamentals import quality_report, summary_line as quality_summary  # noqa: E402
+except Exception:
+    quality_report = None
+    quality_summary = None
+
 # ─── CONFIG ───
 SEED = 100_000.0
 PORTFOLIO_PATH = "/home/ubuntu/marsAI/paper-trading/swing-portfolio.json"
@@ -44,6 +55,7 @@ def load_learned_params():
         "min_position_size": 3000,  # 이보다 작은 포지션은 건너뜀 ($)
         "min_candidate_score": 4,   # 후보 스크린: 이 점수 미만은 워치리스트에 안 올림 (0~8)
         "industry_limit": 2,        # 같은 업종(반도체·소프트웨어 등) 최대 보유 수 (1~6)
+        "quality_min": 0,           # 퀄리티 스크린 통과 최소 점수 (0~7, 0=게이트 없음)
     }
     try:
         if os.path.exists(PARAMS_PATH):
@@ -1368,13 +1380,25 @@ def _scan_one(ticker):
     if price < P.get("price_min", 2.0):
         return None
     _tax = resolve_taxonomy(ticker)
+    _rel20 = None
+    if len(prices) >= 21:
+        _rel20 = round((prices[-1] - prices[-21]) / prices[-21] * 100 - (_BENCH_20D or 0.0), 2)
+    # 퀄리티 스크린 (캐시 히트가 대부분 — 첫 실행만 네트워크)
+    _q = None
+    if quality_report is not None:
+        try:
+            _q = quality_report(ticker, sector=_tax["sector"])
+        except Exception:
+            _q = None
     return {
         "ticker": ticker, "sector": _tax["sector"], "industry": _tax["industry"],
         "price": price, "rsi": round(rsi, 1),
         "ma20": round(ma20, 2), "ma50": round(ma50, 2),
         "side": "LONG", "score": lscore,
         "dist_ma20": round(abs(prices[-1]-ma20)/prices[-1]*100, 2),
-        "atr_pct": round(atr/prices[-1]*100, 2) if atr else 0
+        "atr_pct": round(atr/prices[-1]*100, 2) if atr else 0,
+        "rel_20d": _rel20,
+        "quality": None if not _q else {"score": _q.get("score"), "measured": _q.get("measured")},
     }
 
 def scan_tickers(tickers, is_full=False):
@@ -1517,6 +1541,10 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
     except (TypeError, ValueError):
         industry_limit = 2
     try:
+        quality_min = max(0, min(7, int(P.get("quality_min", 0) or 0)))
+    except (TypeError, ValueError):
+        quality_min = 0
+    try:
         min_mid = max(0, int(P.get("cap_min_mid", 0)))
         min_small = max(0, int(P.get("cap_min_small", 0)))
     except (TypeError, ValueError):
@@ -1556,6 +1584,11 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
             _ind = c.get("industry") or "Unknown"
             if _ind != "Unknown" and industry_counts.get(_ind, 0) >= industry_limit:
                 continue
+            # 퀄리티 게이트 (0=off). 측정 불가(measured 0)면 통과시킨다 — 데이터 부재로 배제하지 않음
+            if quality_min > 0:
+                _q = c.get("quality") or {}
+                if (_q.get("measured") or 0) > 0 and (_q.get("score") or 0) < quality_min:
+                    continue
             if any(p["ticker"] == c["ticker"] for p in portfolio["positions"]):
                 continue
             if any(e["ticker"] == c["ticker"] for e in entered):
@@ -1605,11 +1638,23 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         stop = round(entry * (1 - stop_pct), 2)
         target = round(entry * (1 + tgt_pct), 2)
         
+        _q = c.get("quality") or {}
+        _rel = c.get("rel_20d")
         pos = {
             "ticker": c["ticker"], "sector": sec, "industry": c.get("industry"), "side": c["side"],
             "cap_tier": tier, "entry_price": entry, "shares": shares, "date": today,
             "stop_price": stop, "target_price": target,
-            "current_price": entry, "days_held": 0, "unrealized": 0.0
+            "current_price": entry, "days_held": 0, "unrealized": 0.0,
+            "quality": None if not _q else _q.get("score"),
+            # thesis-tracker: 왜 샀고 어떤 조건이면 파는지 — 청산·주간 리뷰가 이 기록을 검증한다
+            "thesis": {
+                "date": today,
+                "why": (f"기술 {c['score']}/8 · RSI {c['rsi']} · MA20>MA50 "
+                        f"· 상대강도 {_rel if _rel is not None else '?'}%p "
+                        f"· {sec}/{c.get('industry') or '?'} · 퀄리티 {_q.get('score','?')}/{_q.get('measured','?')}"),
+                "quality": _q.get("score"),
+                "invalidation": f"스톱 ${stop} 이탈 / 목표 ${target} 도달 / 업종 틸트 소멸",
+            },
         }
         portfolio["positions"].append(pos)
         portfolio["cash"] -= shares * entry
@@ -1786,7 +1831,11 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             lines.append("• 🎛️ **AI 배분 지시**: " + " | ".join(_bits))
     _mn_disp = P.get('max_new_per_tick')
     lines.append(f"• 🧮 **배분 한도(AI 조정가)**: 섹터≤{P.get('sector_limit', 3)} · 종목≤{int(P.get('max_positions', MAX_POSITIONS))} · 신규≤{('공격도 자동' if _mn_disp is None else int(_mn_disp))} · 현금하한 {('%.0f%%' % (float(P['min_cash_pct'])*100)) if P.get('min_cash_pct') is not None else '공격도 자동'} · 중형최소 {P.get('cap_min_mid',0)} · 소형최소 {P.get('cap_min_small',0)}")
-    lines.append(f"• 🎚️ **후보 스크린(AI 조정가)**: 후보점수≥{P.get('min_candidate_score',4)} · 최소포지션 ${float(P.get('min_position_size',3000)):,.0f} · 업종≤{P.get('industry_limit',2)}")
+    lines.append(f"• 🎚️ **후보 스크린(AI 조정가)**: 후보점수≥{P.get('min_candidate_score',4)} · 최소포지션 ${float(P.get('min_position_size',3000)):,.0f} · 업종≤{P.get('industry_limit',2)} · 퀄리티≥{P.get('quality_min',0) or '게이트 없음'}")
+    _qm2 = [p for p in (positions or []) if p.get("quality") is not None]
+    if _qm2:
+        _avgq = sum(p["quality"] for p in _qm2) / len(_qm2)
+        lines.append(f"• 🏅 **보유 퀄리티 평균**: {_avgq:.1f}/7 (품질 데이터 {len(_qm2)}/{len(positions or [])}종목)")
     if _AI_OVERRIDE_KEYS and _WEEKLY_BASELINE:
         _dev = []
         for _k in sorted(_AI_OVERRIDE_KEYS):
@@ -1845,7 +1894,8 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             notional = current_price * p['shares']
             weight = notional / summary['total_value'] * 100 if summary['total_value'] > 0 else 0
             _ind_disp = f"/{p['industry']}" if p.get("industry") else ""
-            lines.append(f"{emoji} {p['ticker']} {p['side']} [{p['sector']}{_ind_disp}] | 매수가: ${p['entry_price']} 현재: ${current_price} | P&L: ${unreal:+,} ({pct:+.1f}%) | 비중 {weight:.1f}% | {p.get('days_held', 0)}일")
+            _q_disp = f" | 품질 {p['quality']}/7" if p.get("quality") is not None else ""
+            lines.append(f"{emoji} {p['ticker']} {p['side']} [{p['sector']}{_ind_disp}] | 매수가: ${p['entry_price']} 현재: ${current_price} | P&L: ${unreal:+,} ({pct:+.1f}%) | 비중 {weight:.1f}% | {p.get('days_held', 0)}일{_q_disp}")
         lines.append("")
     
     # Watchlist
@@ -1857,6 +1907,9 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             _tilted = w["score"] - _raw
             _tag = f" · 배분 {_tilted:+g}" if _tilted else ""
             _ind_w = f" | {w.get('industry')}" if w.get("industry") else ""
+            _q = w.get("quality") or {}
+            if _q.get("measured"):
+                _ind_w += f" | 품질 {_q.get('score')}/{_q.get('measured')}"
             lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {_raw}/8{_tag}{_ind_w} | RSI {w['rsi']} | ${w['price']}")
         lines.append("")
     
@@ -1925,6 +1978,11 @@ def main():
                     _p["sector"] = _tx["sector"]
                 if _tx.get("industry") and not _p.get("industry"):
                     _p["industry"] = _tx["industry"]
+            if _p.get("quality") is None and quality_report is not None:
+                try:
+                    _p["quality"] = quality_report(_p["ticker"], sector=_p.get("sector")).get("score")
+                except Exception:
+                    pass
         
         # Market context (lightweight)
         ctx = market_context()
