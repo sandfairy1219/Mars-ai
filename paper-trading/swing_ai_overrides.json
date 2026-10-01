@@ -4,7 +4,11 @@
     "base_position_mult": 0.8,
     "aggression_bias": 0.09,
     "vix_floor": 14,
-    "vix_ceiling": 28
+    "vix_ceiling": 28,
+    "sector_limit": 4,
+    "max_positions": 10,
+    "cap_min_mid": 0,
+    "cap_min_small": 0
   },
   "history": [
     {
@@ -52,7 +56,138 @@
       "adjusted": [],
       "note": "최근20건 PF 0.33·기대값 -$133.61 악화 + 보유 다수가 실적임박(D-12~29)이라 신규 진입 사이즈만 하한 0.8로 축소, 방향은 강세 유지",
       "ai_summary": "🤖 AI 판단: 최근 20건 승률 25%·PF 0.33·기대값 -$133.61로 급격히 악화됐는데, 전체 96건은 승률 44.8%·PF 1.31·기대값 +$48.95로 기준선은 유지 중. 즉 기준값 훼손이 아니라 최근 진입 품질 문제다. 청산사유는 시간초과 81·평균보유 10.0일인데, 이건 결과지 원인이 아니라 max_hold_days 손댈 근거 아님(금기 준수, 요청도 안 함). 리스크: 보유 9종목 중 C·JNJ(D-12), KO·CNP(D-26), MO·ABEV(D-28), BP(D-29), PTEN(D-20) 등 실적임박"
+    },
+    {
+      "ts": "2026-10-01T23:19:32.980Z",
+      "model": "deepseek-v4.1-flash",
+      "requested": {
+        "base_position_mult": 0.8,
+        "aggression_bias": 0.09,
+        "vix_floor": 14,
+        "vix_ceiling": 28,
+        "sector_limit": 4,
+        "max_positions": 10,
+        "cap_min_mid": 0,
+        "cap_min_small": 0
+      },
+      "applied": {
+        "base_position_mult": 0.8,
+        "aggression_bias": 0.09,
+        "vix_floor": 14,
+        "vix_ceiling": 28,
+        "sector_limit": 4,
+        "max_positions": 10,
+        "cap_min_mid": 0,
+        "cap_min_small": 0
+      },
+      "adjusted": [],
+      "alloc": {
+        "sector_tilt": {
+          "Technology": 2,
+          "Communication Services": 1,
+          "Consumer Staples": -1,
+          "Utilities": -1
+        },
+        "focus_tickers": [
+          "TSM",
+          "MRVL",
+          "MU",
+          "SKHY",
+          "NBIS",
+          "CRWV",
+          "ACN"
+        ],
+        "avoid_tickers": [
+          "KO",
+          "C",
+          "MO",
+          "ABEV"
+        ]
+      },
+      "note": "최근20건 PF 0.28 악화·C/TSM 실적임박으로 공격도 하한 유지, QQQ>IWM 9.7%p 기술 주도라 섹터리밋 4로 집중 확대",
+      "ai_summary": "🤖 AI 판단: 전체 99건 승률 45.5%·PF 1.33·기대값 +$49.96로 누적은 우상향이나, 최근 20건은 승률 25.0%·PF 0.28·기대값 -$130.38로 급격히 무너졌다. 청산사유는 시간초과 81건(평균보유 9.7일)인데, 이건 진입품질 문제라 max_hold_days를 더 줄이는 근거는 안 된다(금기 준수). 다만 최근 악화는 실재하므로 공격도·진입크기는 이미 하한(0.09/0.8)이라 추가 조임 여지 없음. 시장은 QQQ 20일 +4.62% vs IWM -5.1%로 약 9.7%p 벌어진 좁고 강한 기술 주도 "
+    },
+    {
+      "ts": "2026-10-01T23:21:53.420Z",
+      "model": "deepseek-v4.1-flash",
+      "requested": {
+        "base_position_mult": 0.8,
+        "aggression_bias": 0.09,
+        "vix_floor": 14,
+        "vix_ceiling": 28,
+        "sector_limit": 4,
+        "max_positions": 10,
+        "cap_min_mid": 0,
+        "cap_min_small": 0
+      },
+      "applied": {
+        "base_position_mult": 0.8,
+        "aggression_bias": 0.09,
+        "vix_floor": 14,
+        "vix_ceiling": 28,
+        "sector_limit": 4,
+        "max_positions": 10,
+        "cap_min_mid": 0,
+        "cap_min_small": 0
+      },
+      "adjusted": [],
+      "alloc": {
+        "sector_tilt": {
+          "Technology": 2,
+          "Communication Services": 1,
+          "Consumer Staples": -1,
+          "Utilities": -1
+        },
+        "focus_tickers": [
+          "TSM",
+          "MRVL",
+          "MU",
+          "SKHY",
+          "NBIS"
+        ],
+        "avoid_tickers": [
+          "KO",
+          "C",
+          "MO",
+          "ABEV"
+        ],
+        "exit_tickers": [
+          "C",
+          "KO",
+          "MO",
+          "ABEV"
+        ]
+      },
+      "note": "최근20건 PF0.28로 증액 근거 없어 보수 유지, 방어주→기술 로테이션 집행",
+      "ai_summary": "🤖 AI 판단: 강세 추세(QQQ 20일 +4.62%)지만 폭은 좁다(IWM -5.1%). 전체 99건 승률 45.5%·PF 1.33·기대값 +$49.96로 준수하나, 최근 20건은 승률 25%·PF 0.28·기대값 -$130.38로 급악화 — 진입 품질 문제지 보유기간 탓이 아니다(청산 81건 시간초과지만 max_hold는 손대지 않음). 그래서 공격도는 이미 낮춘 0.09 유지, base 0.8 유지가 맞다. 다만 보유 10종목이 AI가 제외한 KO·C·MO·ABEV 등 방어/배당주에 몰려 실적(D-12 C 등) 리스크와 함께"
     }
   ],
+  "alloc": {
+    "sector_tilt": {
+      "Technology": 2,
+      "Communication Services": 1,
+      "Consumer Staples": -1,
+      "Utilities": -1
+    },
+    "focus_tickers": [
+      "TSM",
+      "MRVL",
+      "MU",
+      "SKHY",
+      "NBIS"
+    ],
+    "avoid_tickers": [
+      "KO",
+      "C",
+      "MO",
+      "ABEV"
+    ],
+    "exit_tickers": [
+      "C",
+      "KO",
+      "MO",
+      "ABEV"
+    ]
+  },
   "_note": "2026-10-01 sp 요청으로 래칫 사고 롤백. max_hold_days가 주간학습 값 30에서 3까지 단조 하향된 뒤 되돌아오지 않았고, 3일 컷 도입(9/04) 이후 실현손익이 +$4,729(이전 45건) → -$31(이후 51건)로 붕괴. swing_ai.js에 주간학습 기준값 ±20% 래칫 브레이크 추가와 함께 복원. 파라미터를 더 이상 '이전 틱 대비'가 아니라 '주간학습 기준값 대비'로만 움직인다. | ③ 소유권 분리 적용: 구조 파라미터(max_hold_days·score_min·price_min·stop_mult·target_mult)는 주간학습 전용이 되어 오버라이드에서 제거. LLM은 리스크 노브(aggression_bias·base_position_mult·vix_floor·vix_ceiling)만 조정한다. swing_ai.js는 이제 판단 → 반영 → 매매 순서로 같은 틱 안에서 실행한다."
 }

@@ -33,6 +33,12 @@ def load_learned_params():
         "stop_mult": 1.0, "target_mult": 1.0, "base_position_mult": 1.0,
         "aggression_bias": 0.0, "vix_floor": 15.0, "vix_ceiling": 30.0,
         "aggr_5d_bull": 3.0, "aggr_5d_bear": -3.0,
+        # ─── 배분 파라미터 (2026-10-01: 하드코딩 → AI가 정하는 값으로 이관) ───
+        "sector_limit": 3,        # 한 섹터 최대 보유 수 (1~10). AI가 국면에 따라 조정
+        "max_positions": MAX_POSITIONS,   # 총 보유 상한 (3~15)
+        "min_cash_pct": None,     # 현금 하한. None이면 공격도(aggression) 규칙 사용
+        "cap_min_mid": 0,         # 중형주 최소 보유 수 (0=강제 혼합 없음)
+        "cap_min_small": 0,       # 소형주 최소 보유 수 (0=강제 혼합 없음)
     }
     try:
         if os.path.exists(PARAMS_PATH):
@@ -65,6 +71,20 @@ def load_learned_params():
 
 def params():
     return load_learned_params()
+
+# ─── AI 배분 지시 (섹터 틸트·종목 지정/제외) — swing_ai.js가 당일 유효로 저장 ───
+def load_ai_alloc():
+    """swing_ai_overrides.json의 alloc(섹터 틸트·focus/avoid) 을 로드. 날짜가 오늘일 때만."""
+    try:
+        _p = os.path.expanduser("~/.hermes/scripts/swing_ai_overrides.json")
+        with open(_p) as f:
+            ov = json.load(f)
+        if ov.get("date") != datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"):
+            return {}
+        alloc = ov.get("alloc") or {}
+        return alloc if isinstance(alloc, dict) else {}
+    except Exception:
+        return {}
 
 # ─── 성과 지표 (AI 판단 근거 주입 — LLM이 실적을 못 보는 문제 수정) ───
 def _stats(rows):
@@ -1336,6 +1356,41 @@ def scan_tickers(tickers, is_full=False):
                 pass
     return results
 
+def ai_apply_exits(portfolio, today, max_exits=3):
+    """AI 배분 지시(alloc.exit_tickers)에 따른 청산. 하루 최대 max_exits건, long_term 제외.
+
+    2026-10-01 도입 — 배분 권한을 LLM에 넘기면서, '섹터 전환'을 실제로 집행할 수단이 필요해졌다.
+    봇의 기계적 청산(스톱·목표·시간)과 별개로 AI가 지정한 종목만 닫는다. 근거는 판단문에 남는다.
+    """
+    alloc = load_ai_alloc()
+    want = {str(t).upper() for t in (alloc.get("exit_tickers") or [])}
+    if not want:
+        return []
+    closed, keep = [], []
+    for pos in portfolio["positions"]:
+        if len(closed) >= max_exits or pos.get("long_term") or pos["ticker"].upper() not in want:
+            keep.append(pos)
+            continue
+        prices = fetch_chart(pos["ticker"])
+        if not prices:
+            keep.append(pos)
+            continue
+        if _is_premarket_or_afterhours():
+            live = fetch_live_price(pos["ticker"])
+            cur = live if live is not None else prices[-1]
+        else:
+            cur = prices[-1]
+        days_held = (datetime.datetime.strptime(today, "%Y-%m-%d") - datetime.datetime.strptime(pos["date"], "%Y-%m-%d")).days
+        pnl = (cur - pos["entry_price"]) * pos["shares"]
+        closed.append({**pos, "exit_price": round(cur, 2), "exit_date": today,
+                       "pnl": round(pnl, 2), "days_held": days_held,
+                       "exit_reason": "AI 배분 청산 (섹터 전환 지시)"})
+        portfolio["cash"] += pos["shares"] * cur
+    portfolio["positions"] = keep
+    portfolio["history"].extend(closed)
+    return closed
+
+
 def update_positions(portfolio, today):
     """Check stops and targets. Return list of closed positions."""
     closed = []
@@ -1385,16 +1440,31 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         cap_counts[tier] = cap_counts.get(tier, 0) + 1
     
     # ─── 유동적 매다러 계산 ───
-    min_cash = SEED * (0.15 + (1.0 - aggression) * 0.35)   # 월활: 15%~50%
+    # ─── 배분 규칙 (2026-10-01: 하드코딩 제한 제거 → AI 파라미터가 결정) ───
+    # 과거엔 sector_limit 2~3 / min_mid·min_small 1(강제 캡티어 혼합)이 상수였다. 이제 LLM이
+    # 국면(브레드스·주도 섹터)을 보고 직접 정한다. 미지정 시 아래 보수적 기본값.
+    _mcp = P.get("min_cash_pct")
+    if _mcp is None:
+        min_cash = SEED * (0.15 + (1.0 - aggression) * 0.35)   # 공격도 기반 (15%~50%)
+    else:
+        try:
+            min_cash = SEED * max(0.0, min(0.9, float(_mcp)))
+        except (TypeError, ValueError):
+            min_cash = SEED * (0.15 + (1.0 - aggression) * 0.35)
     max_new = max(4, int(4 + aggression * 6))                 # 최소 4~10개
-    sector_limit = 3 if aggression > 0.65 else 2
-    small_limit = 4 if aggression > 0.65 else (3 if aggression > 0.35 else 2)
-    mid_limit = 5 if aggression > 0.65 else 4
-    large_limit = max(1, int(MAX_POSITIONS * 0.60))
-    
-    # Ensure at least 1 mid and 1 small if candidates exist and aggression allows
-    min_mid = 1 if aggression > 0.25 else 0
-    min_small = 1 if aggression > 0.25 else 0
+    try:
+        sector_limit = max(1, int(P.get("sector_limit", 3)))
+    except (TypeError, ValueError):
+        sector_limit = 3
+    try:
+        max_positions = max(1, int(P.get("max_positions", MAX_POSITIONS)))
+    except (TypeError, ValueError):
+        max_positions = MAX_POSITIONS
+    try:
+        min_mid = max(0, int(P.get("cap_min_mid", 0)))
+        min_small = max(0, int(P.get("cap_min_small", 0)))
+    except (TypeError, ValueError):
+        min_mid = min_small = 0
     
     # Split candidates by tier and sort each by score desc
     by_tier = {"large": [], "mid": [], "small": []}
@@ -1434,7 +1504,7 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
             return c
         return None
     
-    while len(entered) < max_new and len(portfolio["positions"]) + len(entered) < MAX_POSITIONS:
+    while len(entered) < max_new and len(portfolio["positions"]) + len(entered) < max_positions:
         c = pick_next()
         if not c:
             break
@@ -1445,9 +1515,10 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         # ─── Position size (학습 배수 반영) ───
         base = DEFAULT_BASE_POSITION * (0.3 + aggression * 0.8) * P.get("base_position_mult", 1.0)  # $3K ~ $11K × 배수
         # Score bonus
-        if c["score"] >= 8: base += 6_000
-        elif c["score"] >= 7: base += 3_000
-        elif c["score"] <= 4: base *= 0.6
+        _qs = c.get("raw_score", c["score"])     # 배분 틸트 제외한 원점수로 사이즈 보너스 계산
+        if _qs >= 8: base += 6_000
+        elif _qs >= 7: base += 3_000
+        elif _qs <= 4: base *= 0.6
         
         # Cap tier sizing
         tier_mult = {"large": 1.0, "mid": 0.75, "small": 0.55}[tier]
@@ -1635,10 +1706,22 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     lines.append(f"• vs Russell 2000: {vsi_emoji} {vs_iwm:+.1f}%p (포트 {summary['return_pct']}% vs IWM {iwm_ret}%)")
     lines.append(f"• 현금: ${summary['cash']:,} ({cash_ratio:.1f}%) | 투자금: ${summary['invested']:,} ({invested_ratio:.1f}%)")
     lines.append(f"• 미실현: ${summary['unrealized']:,} | 실현수익: ${summary['realized']:,}")
-    lines.append(f"• 보유 종목: {summary['open_count']}/{MAX_POSITIONS}")
     P = params()
+    lines.append(f"• 보유 종목: {summary['open_count']}/{int(P.get('max_positions', MAX_POSITIONS))}")
     _src = "AI 당일" if _AI_OVERRIDE_KEYS else "주간학습"
     lines.append(f"• 🧠 **학습 파라미터** (출처 {_src}): score≥{P['score_min']} | hold≤{P['max_hold_days']}일 | stop×{P['stop_mult']:.2f} | tgt×{P['target_mult']:.2f} | bias {P['aggression_bias']:+.2f} | 최소가 ${P['price_min']:.2f}")
+    _alloc = load_ai_alloc()
+    if _alloc:
+        _bits = []
+        if _alloc.get("sector_tilt"):
+            _bits.append("틸트 " + ", ".join(f"{k}{v:+g}" for k, v in _alloc["sector_tilt"].items()))
+        if _alloc.get("focus_tickers"):
+            _bits.append("지정 " + ",".join(_alloc["focus_tickers"][:5]))
+        if _alloc.get("avoid_tickers"):
+            _bits.append("제외 " + ",".join(_alloc["avoid_tickers"][:5]))
+        if _bits:
+            lines.append("• 🎛️ **AI 배분 지시**: " + " | ".join(_bits))
+    lines.append(f"• 🧮 **배분 한도(AI 조정가)**: 섹터≤{P.get('sector_limit', 3)} · 종목≤{int(P.get('max_positions', MAX_POSITIONS))} · 현금하한 {('%.0f%%' % (float(P['min_cash_pct'])*100)) if P.get('min_cash_pct') is not None else '공격도 자동'} · 중형최소 {P.get('cap_min_mid',0)} · 소형최소 {P.get('cap_min_small',0)}")
     if _AI_OVERRIDE_KEYS and _WEEKLY_BASELINE:
         _dev = []
         for _k in sorted(_AI_OVERRIDE_KEYS):
@@ -1843,6 +1926,8 @@ def main():
         
         # Update existing positions (check stops/targets/time)
         closed = update_positions(portfolio, today)
+        # AI 배분 지시에 따른 청산 (최대 3건/틱) — 슬롯·현금을 만들어 섹터 전환을 집행
+        closed.extend(ai_apply_exits(portfolio, today))
         
         # Scan for setups
         results = scan_tickers(scan_targets, is_full)
@@ -1861,6 +1946,20 @@ def main():
                     if w["sector"] in DEFENSIVE:
                         w["score"] += 2  # 방어 섹터 롱 보너스
             
+            # ── AI 배분 지시 적용 (섹터 틸트 · 종목 지정/제외) ──
+            _alloc = load_ai_alloc()
+            if _alloc:
+                _tilt = {k: float(v) for k, v in (_alloc.get("sector_tilt") or {}).items()}
+                _focus = {str(t).upper() for t in (_alloc.get("focus_tickers") or [])}
+                _avoid = {str(t).upper() for t in (_alloc.get("avoid_tickers") or [])}
+                if _avoid:
+                    watchlist = [w for w in watchlist if w["ticker"].upper() not in _avoid]
+                for w in watchlist:
+                    w["raw_score"] = w["score"]      # 배분 개입 전 원점수 (사이즈 보너스는 원점수 기준)
+                    if _tilt and w.get("sector") in _tilt:
+                        w["score"] += _tilt[w["sector"]]
+                    if _focus and w["ticker"].upper() in _focus:
+                        w["score"] += 2          # 지정 종목 가산
             watchlist.sort(key=lambda x: x["score"], reverse=True)
             portfolio["watchlist"] = watchlist[:20]
         else:

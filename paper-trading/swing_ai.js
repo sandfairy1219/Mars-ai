@@ -34,6 +34,12 @@ const CLAMPS = {
   vix_ceiling: [20, 50],
   aggr_5d_bull: [0, 10],
   aggr_5d_bear: [-10, 0],
+  // ─── 배분 파라미터 (2026-10-01: 하드코딩 제한 → AI 결정) ───
+  sector_limit: [1, 10],
+  max_positions: [3, 15],
+  min_cash_pct: [0.0, 0.6],
+  cap_min_mid: [0, 4],
+  cap_min_small: [0, 4],
 };
 
 // ─── 래칫 브레이크 설정 ───
@@ -47,7 +53,14 @@ const ABS_PARAMS = new Set(['aggression_bias', 'aggr_5d_bull', 'aggr_5d_bear']);
 // 래칫의 근본 원인이 LLM이 구조를 흔든 것이었으므로, LLM에게 남기는 것은
 // "오늘 얼마나 실어 나를까"(리스크 노브)뿐이다.
 const LLM_LOCKED = new Set(['max_hold_days', 'score_min', 'price_min', 'stop_mult', 'target_mult']);
-const LLM_KNOBS = new Set(['aggression_bias', 'base_position_mult', 'vix_floor', 'vix_ceiling']);
+const LLM_KNOBS = new Set([
+  'aggression_bias', 'base_position_mult', 'vix_floor', 'vix_ceiling',
+  // 배분(집중도) 노브 — LLM 전용. 주간학습이 소유하지 않으므로 브레이크 없이 CLAMPS 안에서 자유.
+  'sector_limit', 'max_positions', 'min_cash_pct', 'cap_min_mid', 'cap_min_small',
+]);
+// 브레이크(하루 변동 제한)는 주간학습과 소유권이 겹치는 노브에만 건다.
+// LLM 전용 배분 노브는 CLAMPS 범위 안에서 자유롭게 움직인다 (래칫 사고는 구조 파라미터에서 났다).
+const NO_BRAKE = new Set(['sector_limit', 'max_positions', 'min_cash_pct', 'cap_min_mid', 'cap_min_small']);
 
 function apiKey() {
   if (process.env.OPENCODEGO_API_KEY) return process.env.OPENCODEGO_API_KEY;
@@ -154,6 +167,31 @@ function extractDecision(text) {
   }
 }
 
+// ─── AI 배분 지시 검증 (섹터 틸트 · 종목 지정/제외) ───
+const KNOWN_SECTORS = new Set(['Technology', 'Communication Services', 'Consumer Discretionary',
+  'Consumer Staples', 'Financials', 'Health Care', 'Industrials', 'Energy', 'Utilities',
+  'Materials', 'Real Estate', 'Unknown']);
+
+function validateAlloc(alloc) {
+  if (!alloc || typeof alloc !== 'object') return null;
+  const out = {};
+  const tilt = {};
+  for (const [k, v] of Object.entries(alloc.sector_tilt || {})) {
+    if (!KNOWN_SECTORS.has(k)) continue;
+    const n = Number(v);
+    if (!Number.isFinite(n) || n === 0) continue;
+    tilt[k] = Math.max(-3, Math.min(3, Math.round(n * 10) / 10));
+  }
+  if (Object.keys(tilt).length) out.sector_tilt = tilt;
+  const tick = (arr) => (Array.isArray(arr) ? Array.from(new Set(arr
+    .map(x => String(x).toUpperCase().trim())
+    .filter(x => /^[A-Z][A-Z.\-]{0,5}$/.test(x)))).slice(0, 8) : []);
+  const f = tick(alloc.focus_tickers); if (f.length) out.focus_tickers = f;
+  const a = tick(alloc.avoid_tickers); if (a.length) out.avoid_tickers = a;
+  const x = tick(alloc.exit_tickers).slice(0, 4); if (x.length) out.exit_tickers = x;
+  return Object.keys(out).length ? out : null;
+}
+
 function clampAndValidate(params) {
   const out = {};
   const clamped = [];
@@ -179,6 +217,7 @@ function applyBrake(clean, baseline) {
   const applied = {};
   const adjustments = [];
   for (const [k, v] of Object.entries(clean)) {
+    if (NO_BRAKE.has(k)) { applied[k] = v; continue; }
     const rawBase = baseline ? baseline[k] : undefined;
     if (rawBase === undefined || rawBase === null || !Number.isFinite(Number(rawBase))) {
       applied[k] = v;
@@ -240,6 +279,20 @@ async function main() {
   이 값들에 대한 의견은 판단문(텍스트)에만 쓰고 JSON에는 절대 넣지 마라.
   (과거 이 5개를 매 틱 흔들어 max_hold_days가 16일→3일까지 내려간 사고가 있었다.)
 
+[배분 권한 — 제한을 네가 정한다 (고정 제한 없음)]
+아래는 과거 코드에 상수로 박혀 있던 배분 제한이다. 이제 전부 네가 국면에 맞게 정한다.
+· sector_limit (1~10, 기본 3) — 한 섹터에 최대 몇 종목. 기술 주도처럼 좁고 강한 장세면
+  올려서 집중해라. 집중은 [성과 지표]·브레드스(QQQ vs IWM 20일)로 정당화할 것.
+· max_positions (3~15, 기본 10) — 총 보유 상한.
+· min_cash_pct (0.0~0.6, null=공격도 자동) — 현금 하한을 직접 지정. null이면 기존 공격도 규칙.
+· cap_min_mid / cap_min_small (0~4, 기본 0) — 중형·소형 최소 보유 수. 0이면 강제 혼합 없음.
+그리고 alloc 블록으로 후보 점수에 직접 개입할 수 있다:
+· sector_tilt — {"Technology": 2, "Utilities": -1} 처럼 섹터 점수 가감(-3~+3)
+· focus_tickers / avoid_tickers — 종목 최대 8개 지정(가산 +2)/제외
+· exit_tickers — 보유 중인 종목을 최대 4개까지 청산 지시(틱당 최대 3건 집행, long_term 제외).
+  섹터 전환을 실제로 집행할 수단이다. 남발 금지 — 배분 전환이라는 근거가 있을 때만.
+배분은 네 판단이지만, 조정 사유(note)에 근거를 남겨라.
+
 [조정 한계 — 하드 룰, 위반하면 시스템이 자동으로 잘라낸다]
 - 모든 조정은 "주간학습 기준값" 대비 ±20% 이내. aggression_bias는 ±0.15 절대 이내.
 - 이전 틱 값 대비가 아니다. 하루에 6번 실행돼도 누적 조정은 기준값 ±20%를 넘을 수 없다.
@@ -272,7 +325,8 @@ async function main() {
 1) "🤖 AI 판단:" 섹션 — 핵심 요약, 동의/반대, 리스크 체크 (한국어 반말). [성과 지표] 수치를 최소 1회 인용.
 2) 마지막에 \`\`\`json 블록으로 결정 (키 이름 정확히 "params"):
 \`\`\`json
-{"params": {"aggression_bias": <float>, "base_position_mult": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "note": "<조정 사유 한 줄>"}}
+{"params": {"aggression_bias": <float>, "base_position_mult": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "sector_limit": <int>, "max_positions": <int>, "min_cash_pct": <float|null>, "cap_min_mid": <int>, "cap_min_small": <int>, "note": "<조정 사유 한 줄>"},
+ "alloc": {"sector_tilt": {"<섹터>": <float>}, "focus_tickers": ["<TICKER>"], "avoid_tickers": ["<TICKER>"], "exit_tickers": ["<청산할 보유종목>"]}}
 \`\`\`
 바꿀 게 없으면 현재 값 그대로 넣어라. 리포트가 비었거나 결정 불가면 {"params":{}}만 출력해라.
 
@@ -289,11 +343,13 @@ ${contextReport.slice(0, 12000)}`;
   // 3) 결정 추출·검증·클램프·브레이크·저장
   let applied = [];
   let brakeNotes = [];
+  let allocApplied = null;
   const decision = extractDecision(aiText);
   if (decision && decision.params) {
     const { clean, clamped, rejected } = clampAndValidate(decision.params);
     const { applied: braked, adjustments } = applyBrake(clean, baseline);
     brakeNotes = [...rejected, ...clamped, ...adjustments];
+    allocApplied = validateAlloc(decision.alloc);
     if (Object.keys(braked).length > 0) {
       const old = readOverridesFile();
       const prev = {};
@@ -305,10 +361,14 @@ ${contextReport.slice(0, 12000)}`;
         requested: clean,
         applied: braked,
         adjusted: brakeNotes,
+        alloc: allocApplied,
         note: String(decision.params.note || '').slice(0, 200),
         ai_summary: aiText.replace(/\s+/g, ' ').slice(0, 300),
       });
+      const prevAlloc = (old.date === todayUTC() && old.alloc) ? old.alloc : null;
+      const mergedAlloc = allocApplied || prevAlloc;
       const merged = { date: todayUTC(), params: { ...prev, ...braked }, history: hist };
+      if (mergedAlloc) merged.alloc = mergedAlloc;
       if (old._note) merged._note = old._note;
       fs.writeFileSync(OVERRIDES, JSON.stringify(merged, null, 2));
       applied = Object.entries(braked).map(([k, v]) => `${k}=${v}`);
@@ -325,11 +385,11 @@ ${contextReport.slice(0, 12000)}`;
   if (!report) report = contextReport;
 
   // 5) 최종 출력
-  console.log(buildTail(report, aiText, applied, brakeNotes));
+  console.log(buildTail(report, aiText, applied, brakeNotes, allocApplied));
 }
 
 // 최종 출력 조립 (테스트 가능하도록 분리)
-function buildTail(report, aiText, applied, brakeNotes) {
+function buildTail(report, aiText, applied, brakeNotes, allocApplied) {
   let out = report;
   if (!out.includes('🤖 AI 판단')) {
     out += '\n\n---\n' + aiText.trim();
@@ -338,6 +398,14 @@ function buildTail(report, aiText, applied, brakeNotes) {
     out += `\n\n⚙️ **AI 결정 반영 완료** (${todayUTC()}): ${applied.join(', ')}`;
   } else if (!aiText.includes('실패')) {
     out += '\n\n⚙️ AI 결정: 파라미터 유지 (변경 없음)';
+  }
+  if (allocApplied) {
+    const bits = [];
+    if (allocApplied.sector_tilt) bits.push('틸트 ' + Object.entries(allocApplied.sector_tilt).map(([k, v]) => `${k}${v > 0 ? '+' : ''}${v}`).join(','));
+    if (allocApplied.focus_tickers) bits.push('지정 ' + allocApplied.focus_tickers.join(','));
+    if (allocApplied.avoid_tickers) bits.push('제외 ' + allocApplied.avoid_tickers.join(','));
+    if (allocApplied.exit_tickers) bits.push('청산지시 ' + allocApplied.exit_tickers.join(','));
+    if (bits.length) out += `\n\n🎛️ **AI 배분 지시 반영**: ${bits.join(' | ')}`;
   }
   if (brakeNotes.length) {
     out += `\n\n⚠️ **브레이크 발동 — 요청이 잘렸다** (래칫 방지): ${brakeNotes.join(' | ')}`;
@@ -352,4 +420,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { clampAndValidate, applyBrake, fmtParams, readWeeklyParams, buildTail, LLM_LOCKED, LLM_KNOBS, BRAKE_PCT, BRAKE_ABS };
+module.exports = { clampAndValidate, applyBrake, validateAlloc, fmtParams, readWeeklyParams, buildTail, LLM_LOCKED, LLM_KNOBS, NO_BRAKE, BRAKE_PCT, BRAKE_ABS };

@@ -39,6 +39,12 @@ def main():
         run("git", "config", "user.email", "mars-agent@users.noreply.github.com")
         run("git", "config", "user.name", "Mars Dashboard Bot")
 
+        # wordle/ 등 대시보드 외 정적 자산 보존 — 원격 gh-pages에서 wordle 폴더만 골라 복사(force push 유실 방지)
+        run("git", "fetch", "--depth", "1", "origin", "gh-pages")
+        r = subprocess.run(["git", "ls-tree", "origin/gh-pages", "--name-only"], cwd=td, capture_output=True, text=True)
+        if "wordle" in r.stdout.split():
+            run("git", "checkout", "origin/gh-pages", "--", "wordle")
+
         with open(os.path.join(td, "summary.json"), "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False)
         with open(os.path.join(td, "index.html"), "w", encoding="utf-8") as f:
