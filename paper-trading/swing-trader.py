@@ -14,10 +14,12 @@ DEFAULT_BASE_POSITION = 10_000.0
 # ─── 자가학습 파라미터 (weekly_learning.py가 매주 튜닝) ───
 PARAMS_PATH = os.path.expanduser("~/.hermes/scripts/swing_params.json")
 _LEARNED_PARAMS = None
+_WEEKLY_BASELINE = {}      # weekly_learning 원본값 (AI 오버라이드 병합 전 = 브레이크 기준값)
+_AI_OVERRIDE_KEYS = set()  # 당일 swing_ai.js가 실제로 덮어쓴 파라미터 키
 
 def load_learned_params():
     """weekly_learning.py가 저장한 튜닝 파라미터 로드. 실패 시 기본값."""
-    global _LEARNED_PARAMS
+    global _LEARNED_PARAMS, _WEEKLY_BASELINE, _AI_OVERRIDE_KEYS
     if _LEARNED_PARAMS is not None:
         return _LEARNED_PARAMS
     defaults = {
@@ -35,6 +37,8 @@ def load_learned_params():
                     defaults[k] = saved["params"][k]
     except Exception:
         pass
+    # AI 병합 전 값 = 주간학습 원본. swing_ai.js의 래칫 브레이크가 이 값을 기준으로 삼는다.
+    _WEEKLY_BASELINE = dict(defaults)
     # ─── AI 결정 오버라이드 병합 (당일 유효) ───
     # swing_ai.js가 AI 판단을 반영해 저장한 파일. 날짜가 오늘이면 학습 파라미터를 덮어씀.
     try:
@@ -47,6 +51,7 @@ def load_learned_params():
                 for k in defaults:
                     if k in ovp and ovp[k] is not None:
                         defaults[k] = ovp[k]
+                        _AI_OVERRIDE_KEYS.add(k)
     except Exception:
         pass
     _LEARNED_PARAMS = defaults
@@ -54,6 +59,58 @@ def load_learned_params():
 
 def params():
     return load_learned_params()
+
+# ─── 성과 지표 (AI 판단 근거 주입 — LLM이 실적을 못 보는 문제 수정) ───
+def _stats(rows):
+    wins = [h["pnl"] for h in rows if h["pnl"] > 0]
+    losses = [h["pnl"] for h in rows if h["pnl"] <= 0]
+    gp, gl = sum(wins), abs(sum(losses))
+    return {
+        "n": len(rows),
+        "win_rate": round(len(wins) / len(rows) * 100, 1),
+        "profit_factor": (round(gp / gl, 2) if gl > 0 else (float("inf") if gp > 0 else 0.0)),
+        "expectancy": round((gp - gl) / len(rows), 2),
+        "total_pnl": round(gp - gl, 2),
+        "avg_win": round(gp / len(wins), 2) if wins else 0.0,
+        "avg_loss": round(gl / len(losses), 2) if losses else 0.0,
+    }
+
+def performance_metrics(history):
+    """실현 거래 내역 기반 성과 지표. AI 결정 레이어에 주입된다."""
+    hs = [h for h in (history or []) if isinstance(h.get("pnl"), (int, float))]
+    if not hs:
+        return None
+    out = _stats(hs)
+    out["recent"] = _stats(hs[-20:]) if len(hs) >= 10 else None
+    holds = [h.get("days_held") for h in hs if isinstance(h.get("days_held"), (int, float))]
+    out["avg_hold_days"] = round(sum(holds) / len(holds), 1) if holds else None
+    reasons = {"시간초과": 0, "목표": 0, "스톱": 0, "기타": 0}
+    for h in hs:
+        r = h.get("exit_reason", "") or ""
+        if "시간 초과" in r:
+            reasons["시간초과"] += 1
+        elif "목표" in r:
+            reasons["목표"] += 1
+        elif "스톱" in r:
+            reasons["스톱"] += 1
+        else:
+            reasons["기타"] += 1
+    out["exit_reasons"] = reasons
+    return out
+
+def weekly_metrics():
+    """weekly_learning.py가 저장한 성과 지표(비교 기준)."""
+    try:
+        with open(PARAMS_PATH) as f:
+            saved = json.load(f)
+        m = dict(saved.get("metrics") or {})
+        m["date"] = (saved.get("updated_at") or "")[:10]
+        return m if m.get("trades") else None
+    except Exception:
+        return None
+
+def _fmt_pf(v):
+    return "\u221e" if v == float("inf") else f"{v:.2f}"
 
 # ─── 거래대금 필터 ───
 TOP_VOLUME_N = 250                # 거래대금 상위 250개 종목만 스캔 (API 최대치)
@@ -1483,14 +1540,37 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     lines.append(f"• 미실현: ${summary['unrealized']:,} | 실현수익: ${summary['realized']:,}")
     lines.append(f"• 보유 종목: {summary['open_count']}/{MAX_POSITIONS}")
     P = params()
-    if P.get("stop_mult", 1.0) != 1.0 or P.get("score_min", 5) != 5 or P.get("aggression_bias", 0.0) != 0.0:
-        lines.append(f"• 🧠 **학습 파라미터**: score≥{P['score_min']} | stop×{P['stop_mult']:.2f} | tgt×{P['target_mult']:.2f} | bias {P['aggression_bias']:+.2f}")
+    _src = "AI 당일" if _AI_OVERRIDE_KEYS else "주간학습"
+    lines.append(f"• 🧠 **학습 파라미터** (출처 {_src}): score≥{P['score_min']} | hold≤{P['max_hold_days']}일 | stop×{P['stop_mult']:.2f} | tgt×{P['target_mult']:.2f} | bias {P['aggression_bias']:+.2f} | 최소가 ${P['price_min']:.2f}")
+    if _AI_OVERRIDE_KEYS and _WEEKLY_BASELINE:
+        _dev = []
+        for _k in sorted(_AI_OVERRIDE_KEYS):
+            if _k in _WEEKLY_BASELINE:
+                _dev.append(f"{_k} {_WEEKLY_BASELINE[_k]}→{P[_k]}")
+        if _dev:
+            lines.append(f"• ↔️ **AI 오버라이드** (주간학습 기준값 대비): {', '.join(_dev)}")
     if aggression >= 0.75:
         lines.append("• 💡 **현금 전략**: 강세장 — 현금 비중 최소화, 적극 배분 중")
     elif aggression <= 0.3:
         lines.append("• 💡 **현금 전략**: 약세장 — 방어적 현금 비중 유지, 신규 진입 축소")
     else:
         lines.append("• 💡 **현금 전략**: 중립 구간 — 점수 높은 셋업 선별 진입")
+
+    # ── 성과 지표 (실현 기준) — AI 판단 근거. 표본 편향(최근 10건만 보는 문제) 교정용 ──
+    _pm = performance_metrics(history)
+    if _pm:
+        lines.append("")
+        lines.append("📈 **성과 지표 (실현 기준 — AI 판단 정답지)**")
+        lines.append(f"• 전체 {_pm['n']}건: 승률 {_pm['win_rate']}% | PF {_fmt_pf(_pm['profit_factor'])} | 기대값 ${_pm['expectancy']:+,.2f}/건 | 누적 ${_pm['total_pnl']:+,.2f}")
+        if _pm.get("recent"):
+            _r = _pm["recent"]
+            lines.append(f"• 최근 {_r['n']}건: 승률 {_r['win_rate']}% | PF {_fmt_pf(_r['profit_factor'])} | 기대값 ${_r['expectancy']:+,.2f}/건")
+        _ex = _pm["exit_reasons"]
+        _hold = f"{_pm['avg_hold_days']}일" if _pm.get("avg_hold_days") is not None else "?"
+        lines.append(f"• 청산사유: 시간초과 {_ex['시간초과']} · 목표 {_ex['목표']} · 스톱 {_ex['스톱']} · 기타 {_ex['기타']} | 평균보유 {_hold}")
+        _wm = weekly_metrics()
+        if _wm:
+            lines.append(f"• ⚖️ 주간학습 저장값({_wm.get('date','?')}): 승률 {_wm.get('win_rate')}% | PF {_wm.get('profit_factor')} | 기대값 ${_wm.get('expectancy')}/건 | 평균보유 {_wm.get('avg_hold_days')}일 | max_hold {_WEEKLY_BASELINE.get('max_hold_days','?')}일")
     lines.append("")
     
     # Closed positions
