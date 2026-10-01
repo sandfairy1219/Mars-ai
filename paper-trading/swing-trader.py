@@ -2,6 +2,12 @@
 import sys, json, urllib.request, math, os, datetime, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# ─── 판단용 컨텍스트 모드 ───
+# --context-only: 매매·전체 스캔·저장 없이 "지금 상태" 리포트만 출력한다.
+# swing_ai.js가 (1) 이 리포트로 AI 판단 → (2) 파라미터 반영 → (3) 실제 매매 실행 순서를 만들기 위한 것.
+# 기존 순서(매매 실행 → AI 판단)는 AI 결정이 항상 다음 틱에야 적용됐다.
+CONTEXT_ONLY = ("--context-only" in sys.argv) or ("--no-trade" in sys.argv)
+
 # ─── CONFIG ───
 SEED = 100_000.0
 PORTFOLIO_PATH = "/home/ubuntu/marsAI/paper-trading/swing-portfolio.json"
@@ -1406,6 +1412,21 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         entered.append(pos)
     return entered
 
+def _refresh_position_price(p, today):
+    """포지션 현재가/미실현/보유일수 갱신 (메모리 상에서만 — 저장은 호출측 판단)."""
+    prices = fetch_chart(p["ticker"])
+    if prices:
+        # 프리마켓/애프터마켓이면 라이브 가격 반영
+        if _is_premarket_or_afterhours():
+            live = fetch_live_price(p["ticker"])
+            cur = live if live is not None else prices[-1]
+        else:
+            cur = prices[-1]
+        p["current_price"] = round(cur, 2)
+        p["unrealized"] = round((cur - p["entry_price"]) * p["shares"], 2)
+        p["days_held"] = (datetime.datetime.strptime(today, "%Y-%m-%d") - datetime.datetime.strptime(p["date"], "%Y-%m-%d")).days
+    return p
+
 def portfolio_summary(portfolio):
     invested = sum(p["shares"] * p.get("current_price", p["entry_price"]) for p in portfolio["positions"])
     total_unrealized = sum(p.get("unrealized", 0) for p in portfolio["positions"])
@@ -1709,6 +1730,17 @@ def main():
                 portfolio["iwm_baseline_price"] = iwm_price
                 portfolio["iwm_baseline_date"] = today
         
+        # ── 판단용 컨텍스트 모드: 매매·전체 스캔·저장 없이 리포트만 출력하고 종료 ──
+        if CONTEXT_ONLY:
+            for p in portfolio["positions"]:
+                _refresh_position_price(p, today)
+            summary = portfolio_summary(portfolio)
+            msg = build_message(scan_type, ctx, summary, portfolio["positions"],
+                                portfolio.get("watchlist", []), [], [], today, aggression,
+                                portfolio.get("history", []), news_sentiment, earnings_ctx=_earn_ctx)
+            print(msg)
+            return
+
         # Determine which tickers to scan
         if scan_type in ("pre_market_1", "after_hours"):
             # Full universe scan: 거래대금 상위 300 + 레버리지 제외
@@ -1757,20 +1789,11 @@ def main():
         
         # Recompute summary with updated prices for remaining positions
         for p in portfolio["positions"]:
-            prices = fetch_chart(p["ticker"])
-            if prices:
-                # 프리마켓/애프터마켓이면 라이브 가격 반영
-                if _is_premarket_or_afterhours():
-                    live = fetch_live_price(p["ticker"])
-                    cur = live if live is not None else prices[-1]
-                else:
-                    cur = prices[-1]
-                p["current_price"] = round(cur, 2)
-                p["unrealized"] = round((cur - p["entry_price"]) * p["shares"], 2)
-                p["days_held"] = (datetime.datetime.strptime(today, "%Y-%m-%d") - datetime.datetime.strptime(p["date"], "%Y-%m-%d")).days
+            _refresh_position_price(p, today)
         
         summary = portfolio_summary(portfolio)
-        save_portfolio(portfolio)
+        if not CONTEXT_ONLY:
+            save_portfolio(portfolio)
         
         # Build and send message
         msg = build_message(scan_type, ctx, summary, portfolio["positions"], portfolio.get("watchlist", []), closed, entered, today, aggression, portfolio.get("history", []), news_sentiment, earnings_ctx=_earn_ctx)

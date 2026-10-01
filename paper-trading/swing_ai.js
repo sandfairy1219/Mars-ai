@@ -41,6 +41,14 @@ const BRAKE_PCT = 0.20;   // 주간학습 기준값 대비 최대 ±20% (곱셈�
 const BRAKE_ABS = 0.15;   // 부호 파라미터(aggression_bias 등) 절대 ±0.15
 const ABS_PARAMS = new Set(['aggression_bias', 'aggr_5d_bull', 'aggr_5d_bear']);
 
+// ─── 소유권 분리 (2026-10-01) ───
+// "포지션 구조" 파라미터(무엇을 사고 · 얼마나 버티고 · 어디서 자르는가)는 주간학습
+// (weekly_learning.py)이 실현 성과로 튜닝한다. LLM이 요청해도 거부된다.
+// 래칫의 근본 원인이 LLM이 구조를 흔든 것이었으므로, LLM에게 남기는 것은
+// "오늘 얼마나 실어 나를까"(리스크 노브)뿐이다.
+const LLM_LOCKED = new Set(['max_hold_days', 'score_min', 'price_min', 'stop_mult', 'target_mult']);
+const LLM_KNOBS = new Set(['aggression_bias', 'base_position_mult', 'vix_floor', 'vix_ceiling']);
+
 function apiKey() {
   if (process.env.OPENCODEGO_API_KEY) return process.env.OPENCODEGO_API_KEY;
   try {
@@ -149,15 +157,21 @@ function extractDecision(text) {
 function clampAndValidate(params) {
   const out = {};
   const clamped = [];
+  const rejected = [];
   for (const [k, [lo, hi]] of Object.entries(CLAMPS)) {
     if (params[k] === undefined || params[k] === null) continue;
     const raw = Number(params[k]);
     if (!Number.isFinite(raw)) continue;
+    if (LLM_LOCKED.has(k)) {
+      // 구조 파라미터는 주간학습 전용 — LLM 요청은 거부하고 그 사실을 출력에 남긴다
+      rejected.push(`${k}: 요청 ${raw} 거부 (주간학습 전용 — LLM 수정 금지)`);
+      continue;
+    }
     const v = Math.min(hi, Math.max(lo, raw));
     out[k] = v;
     if (v !== raw) clamped.push(`${k}: 요청 ${raw} → 클램프 ${v} (허용 ${lo}~${hi})`);
   }
-  return { clean: out, clamped };
+  return { clean: out, clamped, rejected };
 }
 
 // ─── 래칫 브레이크: 주간학습 기준값 대비 ±20%(부호 파라미터 ±0.15) ───
@@ -195,14 +209,16 @@ function fmtParams(p) {
 }
 
 async function main() {
-  // 1) 기존 리포트 생성 (= 이 시점 매매 집행 완료)
-  let report = '';
+  // 1) 판단용 컨텍스트 리포트 — --context-only: 매매/전체스캔/저장 없이 현재 상태만 수집.
+  //    기존 순서(매매 실행 → LLM 판단)는 AI 결정이 항상 "다음 틱"에야 적용됐다.
+  //    이제 판단 → 파라미터 반영 → 매매 실행이 같은 틱 안에서 끝난다.
+  let contextReport = '';
   try {
-    report = execFileSync('python3', [REPORTER], { cwd: SCRIPTS, timeout: 360000, encoding: 'utf8' }).trim();
+    contextReport = execFileSync('python3', [REPORTER, '--context-only'], { cwd: SCRIPTS, timeout: 600000, encoding: 'utf8' }).trim();
   } catch (e) {
-    report = `(리포트 생성 실패: ${e.message.split('\n')[0]})`;
+    contextReport = `(컨텍스트 리포트 생성 실패: ${e.message.split('\n')[0]})`;
   }
-  if (!report) report = '(리포트 출력 없음)';
+  if (!contextReport) contextReport = '(컨텍스트 출력 없음)';
 
   // 2) LLM 결정 요청
   const baseline = readWeeklyParams();
@@ -212,6 +228,17 @@ async function main() {
 [현재 파라미터 — 이 숫자가 기준이다]
 · 주간학습 기준값(브레이크 기준점): ${fmtParams(baseline)}
 · 현재 적용값(오늘 AI 조정까지 반영): ${fmtParams(effective)}
+
+[조정 권한 — 소유권이 분리돼 있다. 반드시 지켜라]
+· LLM이 바꿀 수 있는 것 = "오늘 얼마나 실어 나를까"(리스크 노브) 4개뿐이다:
+  - aggression_bias (기준값 ±0.15 절대) — 현금 비중/진입 강도
+  - base_position_mult (±20%) — 1회 진입 크기
+  - vix_floor / vix_ceiling (±20%) — 변동성 밴드
+· 아래는 주간학습(weekly_learning.py)이 실현 성과로 튜닝하는 "포지션 구조" 파라미터다.
+  LLM은 바꿀 수 없다 — 요청해도 시스템이 거부하고 거부 사실을 기록한다:
+  max_hold_days · score_min · price_min · stop_mult · target_mult
+  이 값들에 대한 의견은 판단문(텍스트)에만 쓰고 JSON에는 절대 넣지 마라.
+  (과거 이 5개를 매 틱 흔들어 max_hold_days가 16일→3일까지 내려간 사고가 있었다.)
 
 [조정 한계 — 하드 룰, 위반하면 시스템이 자동으로 잘라낸다]
 - 모든 조정은 "주간학습 기준값" 대비 ±20% 이내. aggression_bias는 ±0.15 절대 이내.
@@ -245,12 +272,12 @@ async function main() {
 1) "🤖 AI 판단:" 섹션 — 핵심 요약, 동의/반대, 리스크 체크 (한국어 반말). [성과 지표] 수치를 최소 1회 인용.
 2) 마지막에 \`\`\`json 블록으로 결정 (키 이름 정확히 "params"):
 \`\`\`json
-{"params": {"max_hold_days": <int>, "stop_mult": <float>, "target_mult": <float>, "score_min": <int>, "base_position_mult": <float>, "aggression_bias": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "note": "<조정 사유 한 줄>"}}
+{"params": {"aggression_bias": <float>, "base_position_mult": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "note": "<조정 사유 한 줄>"}}
 \`\`\`
 바꿀 게 없으면 현재 값 그대로 넣어라. 리포트가 비었거나 결정 불가면 {"params":{}}만 출력해라.
 
-[리포트]
-${report.slice(0, 9000)}`;
+[컨텍스트 리포트 — 매매 실행 전 상태]
+${contextReport.slice(0, 12000)}`;
 
   let aiText = '';
   try {
@@ -264,9 +291,9 @@ ${report.slice(0, 9000)}`;
   let brakeNotes = [];
   const decision = extractDecision(aiText);
   if (decision && decision.params) {
-    const { clean, clamped } = clampAndValidate(decision.params);
+    const { clean, clamped, rejected } = clampAndValidate(decision.params);
     const { applied: braked, adjustments } = applyBrake(clean, baseline);
-    brakeNotes = [...clamped, ...adjustments];
+    brakeNotes = [...rejected, ...clamped, ...adjustments];
     if (Object.keys(braked).length > 0) {
       const old = readOverridesFile();
       const prev = {};
@@ -288,7 +315,16 @@ ${report.slice(0, 9000)}`;
     }
   }
 
-  // 4) 최종 출력
+  // 4) 파라미터 반영 후 실제 매매 실행 (같은 틱에서 즉시 적용)
+  let report = '';
+  try {
+    report = execFileSync('python3', [REPORTER], { cwd: SCRIPTS, timeout: 600000, encoding: 'utf8' }).trim();
+  } catch (e) {
+    report = `(매매 리포트 생성 실패: ${e.message.split('\n')[0]})`;
+  }
+  if (!report) report = contextReport;
+
+  // 5) 최종 출력
   console.log(buildTail(report, aiText, applied, brakeNotes));
 }
 
@@ -316,4 +352,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { clampAndValidate, applyBrake, fmtParams, readWeeklyParams, buildTail, BRAKE_PCT, BRAKE_ABS };
+module.exports = { clampAndValidate, applyBrake, fmtParams, readWeeklyParams, buildTail, LLM_LOCKED, LLM_KNOBS, BRAKE_PCT, BRAKE_ABS };
