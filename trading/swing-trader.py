@@ -118,6 +118,71 @@ def weekly_metrics():
 def _fmt_pf(v):
     return "\u221e" if v == float("inf") else f"{v:.2f}"
 
+# ─── 섹터 해석 (UNIVERSE에 없는 스크리너 유입 티커용) ───
+# 과거에는 UNIVERSE에 없으면 sector="Unknown"이 되어, enter_positions의 sector_limit(3)이
+# "Unknown"을 한 섹터로 묶어 서로 다른 섹터 후보를 합계 3개에서 전부 차단했다.
+SECTOR_CACHE_PATH = os.path.expanduser("~/.hermes/scripts/.sector_cache.json")
+_SECTOR_CACHE = None
+_SECTOR_LOCK = __import__("threading").Lock()
+YF_SECTOR_MAP = {
+    "Technology": "Technology",
+    "Communication Services": "Communication Services",
+    "Consumer Cyclical": "Consumer Discretionary",
+    "Consumer Defensive": "Consumer Staples",
+    "Financial Services": "Financials",
+    "Healthcare": "Health Care",
+    "Industrials": "Industrials",
+    "Energy": "Energy",
+    "Utilities": "Utilities",
+    "Basic Materials": "Materials",
+    "Real Estate": "Real Estate",
+}
+
+def _load_sector_cache():
+    global _SECTOR_CACHE
+    if _SECTOR_CACHE is not None:
+        return _SECTOR_CACHE
+    try:
+        with open(SECTOR_CACHE_PATH) as f:
+            _SECTOR_CACHE = json.load(f)
+    except Exception:
+        _SECTOR_CACHE = {}
+    return _SECTOR_CACHE
+
+def _save_sector_cache():
+    try:
+        with _SECTOR_LOCK:
+            tmp = SECTOR_CACHE_PATH + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(_SECTOR_CACHE, f, ensure_ascii=False, indent=0)
+            os.replace(tmp, SECTOR_CACHE_PATH)
+    except Exception:
+        pass
+
+def resolve_sector(ticker):
+    """UNIVERSE 우선, 없으면 Yahoo search API로 조회 후 디스크 캐시. 실패 시 'Unknown'."""
+    if ticker in UNIVERSE:
+        return UNIVERSE[ticker]
+    cache = _load_sector_cache()
+    if ticker in cache:
+        return cache[ticker]
+    sec = "Unknown"
+    try:
+        url = (f"https://query1.finance.yahoo.com/v1/finance/search"
+               f"?q={urllib.request.quote(ticker)}&quotesCount=1&newsCount=0")
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        for q in (data.get("quotes") or []):
+            if str(q.get("symbol", "")).upper() == ticker.upper() and q.get("sector"):
+                sec = YF_SECTOR_MAP.get(q["sector"], q["sector"])
+                break
+    except Exception:
+        pass
+    cache[ticker] = sec
+    _save_sector_cache()
+    return sec
+
 # ─── 거래대금 필터 ───
 TOP_VOLUME_N = 250                # 거래대금 상위 250개 종목만 스캔 (API 최대치)
 LEVERAGED_ETF_SECTORS = {"Leveraged ETF", "Leveraged"}
@@ -1079,22 +1144,45 @@ def calc_atr(prices, period=14):
         trs.append(abs(prices[i] - prices[i-1]))
     return sum(trs[-period:]) / period
 
-def score_long(prices, rsi, ma20, ma50, atr):
+# 상대강도 기준값(S&P 500 20일 수익률). main()이 market_context 직후 세팅한다.
+_BENCH_20D = 0.0
+
+def score_long(prices, rsi, ma20, ma50, atr, bench_20d=None):
+    """LONG 셋업 점수 (8점 만점).
+
+    평균회귀(과매도 반등)와 추세/모멘텀(신고가 근접·상대강도)을 함께 평가한다.
+    2026-10-01 이전에는 평균회귀 항만 있어서, 나스닥이 주도한 랠리에서 주도주를
+    구조적으로 살 수 없었다(실측: RSI 66~82 주도주 3~5점 vs 낙폭 방어주 7점 →
+    포트폴리오가 소비재·금융·유틸로만 채워지고 기술주 0). 총점은 8점 유지 —
+    score_min·`lscore < 4` 컷·주간학습 LIMITS(3~8) 스케일을 건드리지 않기 위함.
+    """
     if not prices or rsi is None or ma20 is None or ma50 is None:
         return 0
+    if bench_20d is None:
+        bench_20d = _BENCH_20D
     score = 0
-    # RSI oversold
-    if rsi < 30: score += 3
-    elif rsi < 40: score += 2
-    elif rsi < 50: score += 1
-    # Trend
+    # 1) RSI 양방향 (최대 2): 과매도 반등 + 건강한 상승 구간(45~70). 과열(>70)은 제외
+    if rsi < 30: score += 2
+    elif rsi < 40: score += 1
+    elif 45 <= rsi <= 70: score += 1
+    # 2) 추세 (최대 2)
     if ma20 > ma50: score += 2
     elif prices[-1] > ma50: score += 1
-    # Pullback proximity to MA20
+    # 3) MA20 근접 (최대 1) — 과확장 회피
     dist_ma20 = abs(prices[-1] - ma20) / prices[-1] * 100
-    if dist_ma20 < 3: score += 2
-    elif dist_ma20 < 6: score += 1
-    # Volatility filter
+    if dist_ma20 < 3: score += 1
+    # 4) 3개월 고점 근접 (최대 1) — 추세 지속 보상
+    if prices:
+        window = prices[-63:] if len(prices) >= 63 else prices
+        hi = max(window)
+        if hi > 0 and (hi - prices[-1]) / hi <= 0.05:
+            score += 1
+    # 5) 상대강도 (최대 1) — S&P 500 20일 대비 +5%p 이상이면 가산
+    if len(prices) >= 21 and bench_20d is not None:
+        own20 = (prices[-1] - prices[-21]) / prices[-21] * 100
+        if own20 - bench_20d >= 5.0:
+            score += 1
+    # 6) 변동성 필터 (최대 1)
     if atr and atr / prices[-1] * 100 < 3: score += 1
     return score
 
@@ -1225,7 +1313,7 @@ def _scan_one(ticker):
     if price < P.get("price_min", 2.0):
         return None
     return {
-        "ticker": ticker, "sector": UNIVERSE.get(ticker, "Unknown"),
+        "ticker": ticker, "sector": resolve_sector(ticker),
         "price": price, "rsi": round(rsi, 1),
         "ma20": round(ma20, 2), "ma50": round(ma50, 2),
         "side": "LONG", "score": lscore,
@@ -1316,46 +1404,34 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
     for tier in by_tier:
         by_tier[tier].sort(key=lambda x: x["score"], reverse=True)
     
-    # Round-robin selection: prioritize under-represented tiers
-    idx = {"large": 0, "mid": 0, "small": 0}
-    
+    # ─── 선택: 점수 우선 + 캡티어 최소 보장 (2026-10-01 수정) ───
+    # 기존엔 '언더대표 tier'를 먼저 고르고 그 안에서 최고점을 뽑아서, 대형주가 점수 1위여도
+    # mid/small이 채워질 때까지 계속 밀렸다(대형 기술주 진입 불가). 이제 점수가 지배하고,
+    # 캡티어는 '최소 mid 1 · small 1' 보장용 +0.5 부스트로만 개입한다.
+    TIER_ORDER = ["large", "mid", "small"]
+
     def pick_next():
-        """Return the best candidate from the most under-represented tier."""
-        # Determine which tier needs filling most
-        total_pos = len(portfolio["positions"]) + len(entered)
-        if total_pos == 0:
-            # Start with small -> mid -> large to ensure mix
-            order = ["small", "mid", "large"]
-        else:
-            # Pick tier with lowest current %
-            ratios = {}
-            for t in ["small", "mid", "large"]:
-                current = cap_counts.get(t, 0)
-                # If we haven't met minimums for mid/small, boost priority
-                if t == "mid" and current < min_mid:
-                    ratios[t] = -999
-                elif t == "small" and current < min_small:
-                    ratios[t] = -999
-                else:
-                    ratios[t] = current / max(total_pos, 1)
-            order = sorted(ratios, key=ratios.get)
-        
-        for tier in order:
-            while idx[tier] < len(by_tier[tier]):
-                c = by_tier[tier][idx[tier]]
-                idx[tier] += 1
-                
-                sec = c["sector"]
-                t = CAP_TIER.get(c["ticker"], "large")
-                
-                # Sector limit
-                if sector_counts.get(sec, 0) >= sector_limit:
-                    continue
-                # Already in portfolio
-                if any(p["ticker"] == c["ticker"] for p in portfolio["positions"]):
-                    continue
-                
-                return c
+        """점수 내림차순으로 첫 '채택 가능한' 후보를 반환 (최소 캡티어는 부스트로 보장)."""
+        merged = []
+        for tier in TIER_ORDER:
+            boost = 0.0
+            current = cap_counts.get(tier, 0)
+            if tier == "mid" and current < min_mid:
+                boost = 0.5
+            elif tier == "small" and current < min_small:
+                boost = 0.5
+            for c in by_tier[tier]:
+                merged.append((c["score"] + boost, tier, c))
+        merged.sort(key=lambda x: -x[0])
+        for _, tier, c in merged:
+            sec = c["sector"]
+            if sector_counts.get(sec, 0) >= sector_limit:
+                continue
+            if any(p["ticker"] == c["ticker"] for p in portfolio["positions"]):
+                continue
+            if any(e["ticker"] == c["ticker"] for e in entered):
+                continue
+            return c
         return None
     
     while len(entered) < max_new and len(portfolio["positions"]) + len(entered) < MAX_POSITIONS:
@@ -1688,9 +1764,18 @@ def main():
         scan_type = get_scan_type()
         today = datetime.datetime.utcnow().strftime("%Y-%m-%d")
         portfolio = load_portfolio()
+        # 스크리너로 편입된 종목의 섹터가 Unknown이면 재해석 (섹터 한도 왜곡 방지)
+        for _p in portfolio["positions"]:
+            if _p.get("sector") in (None, "Unknown"):
+                _ns = resolve_sector(_p["ticker"])
+                if _ns != "Unknown":
+                    _p["sector"] = _ns
         
         # Market context (lightweight)
         ctx = market_context()
+        # 상대강도 기준값 — score_long 5번 항이 사용 (S&P 500 20일 수익률)
+        global _BENCH_20D
+        _BENCH_20D = ctx.get("S&P 500", {}).get("20d") or 0.0
 
         # 뉴스 센티먼트 조회 (시황 기준)
         news_sentiment = fetch_news_sentiment()
