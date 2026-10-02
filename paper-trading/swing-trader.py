@@ -57,6 +57,7 @@ def load_learned_params():
         "industry_limit": 2,        # 같은 업종(반도체·소프트웨어 등) 최대 보유 수 (1~6)
         "quality_min": 0,           # 퀄리티 스크린 통과 최소 점수 (0~7, 0=게이트 없음)
         "char_bonus": 1.0,          # 종목 특성 가산 (독립형·역상관형 = 섹터와 따로 노는 종목, 0~2)
+        "peer_bonus": 2,            # 동종업계(피어) 상대강도 가산 상한 (0~2)
         "flow_size_mult": 0.6,      # 흐름 트랙(펀더멘털 미달 모멘텀) 포지션 크기 배수
     }
     try:
@@ -102,6 +103,19 @@ _PROXY_CHART_CACHE = {}
 _SPY_CHART = {"ts": 0, "px": None}
 
 
+def _corr(a, b):
+    n = min(len(a), len(b))
+    if n < 20:
+        return None
+    a, b = a[-n:], b[-n:]
+    ma, mb = sum(a) / n, sum(b) / n
+    va = sum((x - ma) ** 2 for x in a)
+    vb = sum((x - mb) ** 2 for x in b)
+    if va <= 0 or vb <= 0:
+        return None
+    return sum((a[i] - ma) * (b[i] - mb) for i in range(n)) / math.sqrt(va * vb)
+
+
 def _spy_prices():
     if time.time() - _SPY_CHART["ts"] > 1800 or not _SPY_CHART["px"]:
         _SPY_CHART["px"] = fetch_chart("SPY")
@@ -113,6 +127,83 @@ def _proxy_prices(name):
     if name not in _PROXY_CHART_CACHE:
         _PROXY_CHART_CACHE[name] = fetch_chart(name)
     return _PROXY_CHART_CACHE[name]
+
+
+# ─── 피어 비교 (sp 지시: "과거 주가 무빙을 비슷한 섹터 내에서 비교") ───
+#   섹터 ETF 프록시 1개와 비교하는 대신, 스캔된 실제 동종업계 종목들과 교차 비교한다.
+_PEER_PRICES = {}      # ticker -> 일봉 (스캔 중 수집, 점수 게이트 통과 여부와 무관)
+_PEER_TAX = {}         # ticker -> (sector, industry)
+
+
+def _ret(prices, n=20):
+    if not prices or len(prices) < n + 1:
+        return None
+    return (prices[-1] - prices[-1 - n]) / prices[-1 - n] * 100.0
+
+
+def _peer_group(ticker, min_n=4):
+    """같은 업종 → 같은 섹터 순으로 피어 집합 구성 (자기 자신 제외)."""
+    tax = _PEER_TAX.get(ticker)
+    if not tax:
+        return []
+    sec, ind = tax
+    for key, idx in ((ind, 1), (sec, 0)):
+        if not key or key in ("Unknown",) or (key or "").startswith("ETF"):
+            continue
+        grp = [t for t, v in _PEER_TAX.items()
+               if t != ticker and v[idx] == key and t in _PEER_PRICES]
+        if len(grp) >= min_n:
+            return grp
+    return []
+
+
+def peer_stats(ticker):
+    """동종업계 대비 상대 위치. {n, rank_pct, excess_20d, corr, decouple_pct, basis}"""
+    grp = _peer_group(ticker)
+    px = _PEER_PRICES.get(ticker)
+    if not grp or not px:
+        return None
+    grp = grp[:40]
+    mine = _ret(px, 20)
+    rets = [(t, _ret(_PEER_PRICES[t], 20)) for t in grp]
+    rets = [(t, r) for t, r in rets if r is not None]
+    if mine is None or len(rets) < 4:
+        return None
+    vals = sorted(r for _, r in rets)
+    better = sum(1 for v in vals if v < mine)
+    rank_pct = round(better / len(vals) * 100.0, 1)
+    med = vals[len(vals) // 2]
+    excess = round(mine - med, 2)
+
+    # 동조도: 피어 일간수익률과의 상관 + 피어(중앙값) 하락일에 혼자 오른 비율
+    def _rp(p):
+        return [(p[i] - p[i - 1]) / p[i - 1] * 100.0 for i in range(1, len(p))][-120:]
+    myr = _rp(px)
+    peer_mats = [_rp(_PEER_PRICES[t]) for t in grp]
+    n = min([len(myr)] + [len(m) for m in peer_mats])
+    corr = None
+    decouple = None
+    if n >= 40:
+        myr, peer_mats = myr[-n:], [m[-n:] for m in peer_mats]
+        # 피어 중앙값 시계열
+        pmed = [sorted(m[i] for m in peer_mats)[len(peer_mats) // 2] for i in range(n)]
+        corr = _corr(myr, pmed)
+        down = [i for i in range(n) if pmed[i] < 0]
+        if down:
+            decouple = round(sum(1 for i in down if myr[i] > 0) / len(down) * 100.0, 1)
+    return {"n": len(grp), "rank_pct": rank_pct, "excess_20d": excess,
+            "corr": None if corr is None else round(corr, 2),
+            "decouple_pct": decouple,
+            "basis": (_PEER_TAX.get(ticker) or ("", ""))[1] or (_PEER_TAX.get(ticker) or ("", ""))[0]}
+
+
+def peer_describe(p):
+    if not p:
+        return None
+    s = f"업종내 {p['rank_pct']:.0f}%ile(n={p['n']}) {p['excess_20d']:+.1f}%p"
+    if p.get("decouple_pct") is not None:
+        s += f"·피어하락일 독립 {p['decouple_pct']}%"
+    return s
 
 
 def character_of(ticker, sector=None, industry=None, prices=None):
@@ -1444,6 +1535,7 @@ def _scan_one(ticker):
     prices = fetch_chart(ticker)
     if not prices or len(prices) < 50:
         return None
+    _PEER_PRICES[ticker] = prices          # 피어 비교용 수집(점수 게이트와 무관)
     rsi = calc_rsi(prices)
     ma20 = calc_ma(prices, 20)
     ma50 = calc_ma(prices, 50)
@@ -1453,6 +1545,7 @@ def _scan_one(ticker):
     lscore = score_long(prices, rsi, ma20, ma50, atr)
     raw_lscore = lscore                      # 순수 기술점수 — 사이징 기준 (보너스 제외)
     _tax0 = resolve_taxonomy(ticker)
+    _PEER_TAX[ticker] = (_tax0.get("sector"), _tax0.get("industry"))
     _ch = character_of(ticker, _tax0.get("sector"), _tax0.get("industry"), prices=prices)
     # 특성 가산: 섹터와 따로 노는 종목(독립형·역상관형)은 분산 가치가 있다 (AI 노브 char_bonus)
     try:
@@ -1498,6 +1591,7 @@ def _scan_one(ticker):
     }
 
 def scan_tickers(tickers, is_full=False):
+    _PEER_PRICES.clear()
     '''Parallel scan using ThreadPoolExecutor.'''
     results = []
     workers = 12 if is_full else 6
@@ -2030,6 +2124,31 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
                              f"분산 여력 점검 필요 (독립형·방어형으로 보완)")
     except Exception:
         pass
+    # 업종 내 상대 위치 요약 (피어 비교) — 동종업계에서 앞서는 종목 / 뒤처지는 종목
+    try:
+        _peers_rows = []
+        for _p in positions:
+            _tk = _p["ticker"]
+            if _tk not in _PEER_PRICES:
+                _pp = fetch_chart(_tk)
+                if _pp and len(_pp) >= 50:
+                    _PEER_PRICES[_tk] = _pp
+                    _PEER_TAX[_tk] = (_p.get("sector"), _p.get("industry"))
+            _ps = peer_stats(_tk)
+            if _ps:
+                _peers_rows.append((_tk, _ps))
+        if _peers_rows:
+            _fwd = [f"{t} {p['rank_pct']:.0f}%ile/{p['excess_20d']:+.1f}%p" for t, p in _peers_rows if p["rank_pct"] >= 60]
+            _back = [f"{t} {p['rank_pct']:.0f}%ile/{p['excess_20d']:+.1f}%p" for t, p in _peers_rows if p["rank_pct"] < 40]
+            _seg = f"• 📐 **업종 내 상대강도**(피어 {len(_peers_rows)}종목 기준): "
+            if _fwd:
+                _seg += "앞섬 — " + ", ".join(_fwd[:5])
+            if _back:
+                _seg += (" | " if _fwd else "") + "뒤처짐 — " + ", ".join(_back[:5])
+            if _fwd or _back:
+                lines.append(_seg)
+    except Exception:
+        pass
     try:
         _etfs = load_etf_universe()
     except Exception:
@@ -2135,6 +2254,9 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             _cw = w.get("character")
             if _cw:
                 _ind_w += f" | {_cw['label']}({_cw['corr_sector']})"
+            _pw = w.get("peer")
+            if _pw:
+                _ind_w += f" | {peer_describe(_pw)}"
             lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {_raw}/8{_tag}{_ind_w} | RSI {w['rsi']} | ${w['price']}")
         lines.append("")
     
@@ -2301,6 +2423,19 @@ def main():
         results = scan_tickers(scan_targets, is_full)
 
         # 알파 트랙 가산 (+1) — 배분 틸트와 별개. 사이즈 보너스는 원점수 기준 유지
+        # ── 피어 상대강도 가산 (동종업계 대비): 업종 80%ile 이상 + 중앙값 대비 +5%p 이상 ──
+        try:
+            _pb = max(0, min(2, int(round(float(params().get("peer_bonus", 2))))))
+        except (TypeError, ValueError):
+            _pb = 2
+        if _pb > 0:
+            for _r in results:
+                _ps = peer_stats(_r["ticker"])
+                if _ps:
+                    _r["peer"] = _ps
+                    _pts = (1 if _ps["rank_pct"] >= 80 else 0) + (1 if _ps["excess_20d"] >= 5.0 else 0)
+                    if _pts:
+                        _r["score"] += min(_pb, _pts)
         for _r in results:
             if _r["ticker"] in _etf_tk:
                 _r["instrument"] = "ETF"
