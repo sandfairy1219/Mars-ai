@@ -92,6 +92,26 @@ def params():
 
 # ─── AI 배분 지시 (섹터 틸트·종목 지정/제외) — swing_ai.js가 당일 유효로 저장 ───
 ALPHA_PATH = os.path.expanduser("~/.hermes/scripts/alpha_watchlist.json")
+ETF_PATH = os.path.expanduser("~/.hermes/scripts/etf_universe.json")
+_ETF_CACHE = {"data": None, "ts": 0}
+
+def load_etf_universe():
+    """etf_universe.json → {ticker: {name, sector, industry}}. 5분 캐시. 레버리지는 호출부에서 제외."""
+    now = time.time()
+    if _ETF_CACHE["data"] is not None and now - _ETF_CACHE["ts"] < 300:
+        return _ETF_CACHE["data"]
+    try:
+        with open(ETF_PATH) as f:
+            d = json.load(f)
+        etfs = {k.upper(): v for k, v in (d.get("etfs") or {}).items()
+                if v.get("sector") not in LEVERAGED_ETF_SECTORS}
+    except Exception:
+        etfs = {}
+    _ETF_CACHE["data"], _ETF_CACHE["ts"] = etfs, now
+    return etfs
+
+def is_etf(ticker):
+    return ticker.upper() in load_etf_universe()
 
 def load_alpha_track():
     """alpha_pipeline.py가 저장한 2·3차 병목 후보(알파 트랙). 실패 시 빈 값."""
@@ -237,6 +257,11 @@ def _save_taxonomy_cache():
 def resolve_taxonomy(ticker):
     """ticker → {"sector":..., "industry":...}. UNIVERSE 섹터 우선, 업종은 조회·캐시."""
     ticker = ticker.upper()
+    _etf = load_etf_universe().get(ticker)
+    if _etf:      # ETF는 카테고리 메타를 그대로 쓴다 (업종/섹터 조회 무의미)
+        return {"sector": _etf.get("sector") or "ETF",
+                "industry": _etf.get("industry") or "ETF",
+                "instrument": "ETF"}
     cache = _load_taxonomy_cache()
     entry = cache.get(ticker)
     base_sector = UNIVERSE.get(ticker)
@@ -1403,7 +1428,7 @@ def _scan_one(ticker):
         _rel20 = round((prices[-1] - prices[-21]) / prices[-21] * 100 - (_BENCH_20D or 0.0), 2)
     # 퀄리티 스크린 (캐시 히트가 대부분 — 첫 실행만 네트워크)
     _q = None
-    if quality_report is not None:
+    if quality_report is not None and _tax.get("instrument") != "ETF":
         try:
             _q = quality_report(ticker, sector=_tax["sector"])
         except Exception:
@@ -1416,6 +1441,7 @@ def _scan_one(ticker):
         "dist_ma20": round(abs(prices[-1]-ma20)/prices[-1]*100, 2),
         "atr_pct": round(atr/prices[-1]*100, 2) if atr else 0,
         "rel_20d": _rel20,
+        "instrument": _tax.get("instrument") or "STOCK",
         "quality": None if not _q else {"score": _q.get("score"), "measured": _q.get("measured")},
     }
 
@@ -1930,6 +1956,16 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     if _al.get("tickers"):
         _tk = ", ".join(_al["tickers"][:12])
         lines.append(f"• 🧬 **알파 트랙**(품질 통과·2·3차 병목, {_al.get('generated','?')} 기준 {len(_al['tickers'])}종목): {_tk}")
+    try:
+        _etfs = load_etf_universe()
+    except Exception:
+        _etfs = {}
+    if _etfs:
+        _by_cat = {}
+        for _t, _m in _etfs.items():
+            _by_cat.setdefault(_m.get("sector") or "ETF", []).append(_t)
+        _cat_s = " · ".join(f"{k} {len(v)}" for k, v in list(_by_cat.items())[:8])
+        lines.append(f"• 📦 **ETF 트랙**(상시 스캔 {len(_etfs)}종목): {_cat_s}")
     if _al.get("flow_tickers"):
         _ft = ", ".join(_al["flow_tickers"][:12])
         lines.append(f"• 🔥 **흐름 트랙**(품질 미달·섹터 흐름 동조, {len(_al['flow_tickers'])}종목 · 사이즈 ×{P.get('flow_size_mult',0.6):.2f}): {_ft}")
@@ -2020,6 +2056,8 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
                 _ind_w += " | 🧬알파"
             if w.get("flow_track"):
                 _ind_w += " | 🔥흐름"
+            if w.get("instrument") == "ETF":
+                _ind_w += " | 📦ETF"
             lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {_raw}/8{_tag}{_ind_w} | RSI {w['rsi']} | ${w['price']}")
         lines.append("")
     
@@ -2154,13 +2192,17 @@ def main():
         _alpha_tk = set(_alpha.get("tickers") or [])
         # ── 흐름 트랙: 펀더멘털 미달이지만 섹터 흐름에 올라탄 종목 (sp: 섹터 흐름 따라가는 건 남긴다) ──
         _flow_tk = set(_alpha.get("flow_tickers") or [])
+        # ── ETF 트랙: 상시 스캔 (동적 유니버스에 ETF가 안 들어오므로 별도 목록으로 강제 포함) ──
+        _etf_map = load_etf_universe()
+        _etf_tk = set(_etf_map.keys())
 
         # Determine which tickers to scan
         if scan_type in ("pre_market_1", "after_hours"):
             # Full universe scan: 거래대금 상위 300 + 레버리지 제외
             dynamic_universe = get_filtered_universe(TOP_VOLUME_N)
             scan_targets = dynamic_universe if dynamic_universe else TICKERS
-            scan_targets = list(dict.fromkeys(list(scan_targets) + sorted(_alpha_tk) + sorted(_flow_tk)))
+            scan_targets = list(dict.fromkeys(list(scan_targets) + sorted(_alpha_tk)
+                                              + sorted(_flow_tk) + sorted(_etf_tk)))
             is_full = True
         else:
             # Positions + watchlist only
@@ -2170,7 +2212,8 @@ def main():
                 # Fallback: add some from dynamic universe if watchlist is small
                 dynamic_universe = get_filtered_universe(TOP_VOLUME_N) or TICKERS
                 scan_targets = list(dict.fromkeys(scan_targets + dynamic_universe[:30]))
-            scan_targets = list(dict.fromkeys(scan_targets + sorted(_alpha_tk) + sorted(_flow_tk)))
+            scan_targets = list(dict.fromkeys(scan_targets + sorted(_alpha_tk)
+                                             + sorted(_flow_tk) + sorted(_etf_tk)))
         
         # Update existing positions (check stops/targets/time)
         closed = update_positions(portfolio, today)
@@ -2181,6 +2224,9 @@ def main():
         results = scan_tickers(scan_targets, is_full)
 
         # 알파 트랙 가산 (+1) — 배분 틸트와 별개. 사이즈 보너스는 원점수 기준 유지
+        for _r in results:
+            if _r["ticker"] in _etf_tk:
+                _r["instrument"] = "ETF"
         if _alpha_tk or _flow_tk:
             for _r in results:
                 if _r["ticker"] in _alpha_tk:

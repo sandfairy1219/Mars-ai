@@ -164,6 +164,22 @@
   ],
   "watchlist": [
     {
+      "ticker": "ARKK",
+      "sector": "Thematic ETF",
+      "industry": "ETF - Innovation",
+      "price": 89.21,
+      "rsi": 66.4,
+      "ma20": 87.15,
+      "ma50": 82.45,
+      "side": "LONG",
+      "score": 7,
+      "dist_ma20": 2.19,
+      "atr_pct": 1.48,
+      "rel_20d": 7.14,
+      "instrument": "ETF",
+      "quality": null
+    },
+    {
       "ticker": "LITE",
       "sector": "Technology",
       "industry": "Communication Equipment",
@@ -176,6 +192,7 @@
       "dist_ma20": 5.17,
       "atr_pct": 2.83,
       "rel_20d": 11.66,
+      "instrument": "STOCK",
       "quality": {
         "score": 3,
         "measured": 6
@@ -184,24 +201,23 @@
       "raw_score": 6
     },
     {
-      "ticker": "SNDK",
-      "sector": "Technology",
-      "industry": "Computer Hardware",
-      "price": 1783.74,
-      "rsi": 52.8,
-      "ma20": 1693.49,
-      "ma50": 1533.71,
+      "ticker": "SPCX",
+      "sector": "Industrials",
+      "industry": "Aerospace & Defense",
+      "price": 148.87,
+      "rsi": 53.1,
+      "ma20": 149.3,
+      "ma50": 137.49,
       "side": "LONG",
       "score": 6,
-      "dist_ma20": 2.67,
-      "atr_pct": 3.45,
-      "rel_20d": 13.1,
+      "dist_ma20": 1.03,
+      "atr_pct": 2.08,
+      "rel_20d": 5.96,
+      "instrument": "STOCK",
       "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "alpha": true,
-      "raw_score": 5
+        "score": 2,
+        "measured": 4
+      }
     },
     {
       "ticker": "NVDA",
@@ -216,8 +232,68 @@
       "dist_ma20": 2.27,
       "atr_pct": 1.15,
       "rel_20d": 4.92,
+      "instrument": "STOCK",
       "quality": {
         "score": 6,
+        "measured": 7
+      }
+    },
+    {
+      "ticker": "AAPL",
+      "sector": "Technology",
+      "industry": "Consumer Electronics",
+      "price": 330.8,
+      "rsi": 57.6,
+      "ma20": 331.35,
+      "ma50": 322.09,
+      "side": "LONG",
+      "score": 6,
+      "dist_ma20": 0.5,
+      "atr_pct": 0.92,
+      "rel_20d": 2.32,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 6,
+        "measured": 7
+      }
+    },
+    {
+      "ticker": "SNDK",
+      "sector": "Technology",
+      "industry": "Computer Hardware",
+      "price": 1783.74,
+      "rsi": 52.8,
+      "ma20": 1693.49,
+      "ma50": 1533.71,
+      "side": "LONG",
+      "score": 6,
+      "dist_ma20": 2.67,
+      "atr_pct": 3.45,
+      "rel_20d": 13.1,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "alpha": true,
+      "raw_score": 5
+    },
+    {
+      "ticker": "SKHY",
+      "sector": "Technology",
+      "industry": "Semiconductors",
+      "price": 191.8,
+      "rsi": 47.0,
+      "ma20": 183.41,
+      "ma50": 165.48,
+      "side": "LONG",
+      "score": 6,
+      "dist_ma20": 0.4,
+      "atr_pct": 2.66,
+      "rel_20d": 14.43,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 7,
         "measured": 7
       }
     },
@@ -234,60 +310,7 @@
       "dist_ma20": 4.39,
       "atr_pct": 1.26,
       "rel_20d": 10.08,
-      "quality": {
-        "score": 7,
-        "measured": 7
-      }
-    },
-    {
-      "ticker": "SPCX",
-      "sector": "Industrials",
-      "industry": "Aerospace & Defense",
-      "price": 148.87,
-      "rsi": 53.1,
-      "ma20": 149.3,
-      "ma50": 137.49,
-      "side": "LONG",
-      "score": 6,
-      "dist_ma20": 1.03,
-      "atr_pct": 2.08,
-      "rel_20d": 5.96,
-      "quality": {
-        "score": 2,
-        "measured": 4
-      }
-    },
-    {
-      "ticker": "AAPL",
-      "sector": "Technology",
-      "industry": "Consumer Electronics",
-      "price": 330.8,
-      "rsi": 57.6,
-      "ma20": 331.35,
-      "ma50": 322.09,
-      "side": "LONG",
-      "score": 6,
-      "dist_ma20": 0.5,
-      "atr_pct": 0.92,
-      "rel_20d": 2.32,
-      "quality": {
-        "score": 6,
-        "measured": 7
-      }
-    },
-    {
-      "ticker": "SKHY",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 191.8,
-      "rsi": 47.0,
-      "ma20": 183.41,
-      "ma50": 165.48,
-      "side": "LONG",
-      "score": 6,
-      "dist_ma20": 0.4,
-      "atr_pct": 2.66,
-      "rel_20d": 14.43,
+      "instrument": "STOCK",
       "quality": {
         "score": 7,
         "measured": 7
@@ -306,6 +329,7 @@
       "dist_ma20": 0.65,
       "atr_pct": 2.58,
       "rel_20d": 6.33,
+      "instrument": "STOCK",
       "quality": {
         "score": 1,
         "measured": 6
@@ -324,6 +348,7 @@
       "dist_ma20": 0.03,
       "atr_pct": 1.2,
       "rel_20d": -1.2,
+      "instrument": "STOCK",
       "quality": {
         "score": 7,
         "measured": 7
@@ -342,6 +367,7 @@
       "dist_ma20": 1.84,
       "atr_pct": 0.44,
       "rel_20d": -2.49,
+      "instrument": "STOCK",
       "quality": {
         "score": 7,
         "measured": 7
@@ -360,6 +386,7 @@
       "dist_ma20": 3.46,
       "atr_pct": 1.78,
       "rel_20d": 3.21,
+      "instrument": "STOCK",
       "quality": {
         "score": 7,
         "measured": 7
@@ -380,6 +407,7 @@
       "dist_ma20": 0.29,
       "atr_pct": 1.04,
       "rel_20d": 2.92,
+      "instrument": "STOCK",
       "quality": {
         "score": 7,
         "measured": 7
@@ -398,6 +426,7 @@
       "dist_ma20": 3.52,
       "atr_pct": 1.33,
       "rel_20d": 10.96,
+      "instrument": "STOCK",
       "quality": {
         "score": 3,
         "measured": 4
@@ -416,6 +445,7 @@
       "dist_ma20": 0.74,
       "atr_pct": 1.54,
       "rel_20d": 5.88,
+      "instrument": "STOCK",
       "quality": {
         "score": 3,
         "measured": 6
@@ -434,6 +464,7 @@
       "dist_ma20": 3.98,
       "atr_pct": 1.44,
       "rel_20d": 12.04,
+      "instrument": "STOCK",
       "quality": {
         "score": 4,
         "measured": 4
@@ -452,30 +483,11 @@
       "dist_ma20": 1.19,
       "atr_pct": 1.58,
       "rel_20d": 5.91,
+      "instrument": "STOCK",
       "quality": {
         "score": 2,
         "measured": 4
       }
-    },
-    {
-      "ticker": "ETN",
-      "sector": "Industrials",
-      "industry": "Specialty Industrial Machinery",
-      "price": 437.28,
-      "rsi": 58.7,
-      "ma20": 418.97,
-      "ma50": 420.9,
-      "side": "LONG",
-      "score": 6,
-      "dist_ma20": 2.5,
-      "atr_pct": 1.97,
-      "rel_20d": 9.87,
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "alpha": true,
-      "raw_score": 5
     },
     {
       "ticker": "KEYS",
@@ -490,6 +502,7 @@
       "dist_ma20": 7.1,
       "atr_pct": 1.84,
       "rel_20d": 13.91,
+      "instrument": "STOCK",
       "quality": {
         "score": 7,
         "measured": 7
@@ -498,40 +511,42 @@
       "raw_score": 5
     },
     {
-      "ticker": "SMTC",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 186.63,
-      "rsi": 58.8,
-      "ma20": 165.49,
-      "ma50": 143.84,
+      "ticker": "ETN",
+      "sector": "Industrials",
+      "industry": "Specialty Industrial Machinery",
+      "price": 437.28,
+      "rsi": 58.7,
+      "ma20": 418.97,
+      "ma50": 420.9,
       "side": "LONG",
       "score": 6,
-      "dist_ma20": 7.21,
-      "atr_pct": 4.38,
-      "rel_20d": 34.73,
+      "dist_ma20": 2.5,
+      "atr_pct": 1.97,
+      "rel_20d": 9.87,
+      "instrument": "STOCK",
       "quality": {
-        "score": 6,
+        "score": 7,
         "measured": 7
       },
       "alpha": true,
       "raw_score": 5
     },
     {
-      "ticker": "ARQQ",
+      "ticker": "SOI.PA",
       "sector": "Technology",
-      "industry": "Software - Infrastructure",
-      "price": 23.52,
-      "rsi": 61.4,
-      "ma20": 21.51,
-      "ma50": 20.9,
+      "industry": "Semiconductor Equipment & Materials",
+      "price": 160.1,
+      "rsi": 61.9,
+      "ma20": 141.54,
+      "ma50": 125.18,
       "side": "LONG",
       "score": 6,
-      "dist_ma20": 10.59,
-      "atr_pct": 4.51,
-      "rel_20d": 27.19,
+      "dist_ma20": 9.24,
+      "atr_pct": 3.74,
+      "rel_20d": 39.13,
+      "instrument": "STOCK",
       "quality": {
-        "score": 2,
+        "score": 3,
         "measured": 6
       },
       "flow_track": true,
