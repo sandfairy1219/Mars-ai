@@ -56,6 +56,7 @@ def load_learned_params():
         "min_candidate_score": 4,   # 후보 스크린: 이 점수 미만은 워치리스트에 안 올림 (0~8)
         "industry_limit": 2,        # 같은 업종(반도체·소프트웨어 등) 최대 보유 수 (1~6)
         "quality_min": 0,           # 퀄리티 스크린 통과 최소 점수 (0~7, 0=게이트 없음)
+        "char_bonus": 1.0,          # 종목 특성 가산 (독립형·역상관형 = 섹터와 따로 노는 종목, 0~2)
         "flow_size_mult": 0.6,      # 흐름 트랙(펀더멘털 미달 모멘텀) 포지션 크기 배수
     }
     try:
@@ -91,6 +92,45 @@ def params():
     return load_learned_params()
 
 # ─── AI 배분 지시 (섹터 틸트·종목 지정/제외) — swing_ai.js가 당일 유효로 저장 ───
+# ─── 종목 특성(개성) 프로파일러 (sp: "애플처럼 섹터 빠질 때 혼자 오르는 특성") ───
+try:
+    import ticker_character as _char_mod
+except Exception:
+    _char_mod = None
+
+_PROXY_CHART_CACHE = {}
+_SPY_CHART = {"ts": 0, "px": None}
+
+
+def _spy_prices():
+    if time.time() - _SPY_CHART["ts"] > 1800 or not _SPY_CHART["px"]:
+        _SPY_CHART["px"] = fetch_chart("SPY")
+        _SPY_CHART["ts"] = time.time()
+    return _SPY_CHART["px"]
+
+
+def _proxy_prices(name):
+    if name not in _PROXY_CHART_CACHE:
+        _PROXY_CHART_CACHE[name] = fetch_chart(name)
+    return _PROXY_CHART_CACHE[name]
+
+
+def character_of(ticker, sector=None, industry=None, prices=None):
+    """종목 특성(섹터 상관·하락일 독립률 등). 하루 1회 계산 후 캐시."""
+    if _char_mod is None:
+        return None
+    try:
+        tax = {"sector": sector, "industry": industry}
+        if sector is None:
+            tax = resolve_taxonomy(ticker)
+        px = prices or fetch_chart(ticker)
+        return _char_mod.cached(ticker, tax.get("sector"), tax.get("industry"),
+                                lambda proxy: _char_mod.compute(ticker, px, _proxy_prices(proxy),
+                                                                proxy, _spy_prices()))
+    except Exception:
+        return None
+
+
 ALPHA_PATH = os.path.expanduser("~/.hermes/scripts/alpha_watchlist.json")
 ETF_PATH = os.path.expanduser("~/.hermes/scripts/etf_universe.json")
 _ETF_CACHE = {"data": None, "ts": 0}
@@ -1411,6 +1451,16 @@ def _scan_one(ticker):
     if rsi is None or ma20 is None or ma50 is None:
         return None
     lscore = score_long(prices, rsi, ma20, ma50, atr)
+    raw_lscore = lscore                      # 순수 기술점수 — 사이징 기준 (보너스 제외)
+    _tax0 = resolve_taxonomy(ticker)
+    _ch = character_of(ticker, _tax0.get("sector"), _tax0.get("industry"), prices=prices)
+    # 특성 가산: 섹터와 따로 노는 종목(독립형·역상관형)은 분산 가치가 있다 (AI 노브 char_bonus)
+    try:
+        _cb = max(0.0, min(2.0, float(P.get("char_bonus", 1.0))))
+    except (TypeError, ValueError):
+        _cb = 1.0
+    if _ch and _ch.get("label") in ("독립형", "역상관형") and _cb > 0:
+        lscore += int(round(_cb))
     if lscore < P.get("min_candidate_score", 4):
         return None
     # 프리마켓/애프터마켓이면 라이브 가격으로 진입가 결정 (지표는 일봉 유지)
@@ -1443,6 +1493,8 @@ def _scan_one(ticker):
         "rel_20d": _rel20,
         "instrument": _tax.get("instrument") or "STOCK",
         "quality": None if not _q else {"score": _q.get("score"), "measured": _q.get("measured")},
+        "raw_score": raw_lscore,
+        "character": _ch,
     }
 
 def scan_tickers(tickers, is_full=False):
@@ -1956,6 +2008,28 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     if _al.get("tickers"):
         _tk = ", ".join(_al["tickers"][:12])
         lines.append(f"• 🧬 **알파 트랙**(품질 통과·2·3차 병목, {_al.get('generated','?')} 기준 {len(_al['tickers'])}종목): {_tk}")
+    # 종목 특성 요약 (섹터와 같이 흐르는가) — AI가 분산 판단에 쓴다
+    try:
+        _chars = {}
+        for _p in positions:
+            _c = character_of(_p["ticker"], _p.get("sector"), _p.get("industry"))
+            if _c:
+                _chars[_p["ticker"]] = _c
+        if _chars:
+            _lbl = {}
+            for _t, _c in _chars.items():
+                _lbl.setdefault(_c["label"], []).append(_t)
+            _avgc = sum(_c["corr_sector"] for _c in _chars.values()) / len(_chars)
+            _order = ["역상관형", "탈동조형", "독립형", "방어형", "보통", "동조형"]
+            _parts = [f"{_k} {len(_lbl[_k])}({','.join(_lbl[_k])})" for _k in _order if _k in _lbl]
+            lines.append(f"• 🧩 **종목 특성**(섹터 대비): " + " · ".join(_parts)
+                         + f" | 평균 섹터상관 {_avgc:.2f}")
+            _same = _lbl.get("동조형", [])
+            if len(_same) >= 4:
+                lines.append(f"  ↳ ⚠️ 동조형 {len(_same)}종목({','.join(_same)})은 함께 빠질 수 있음 — "
+                             f"분산 여력 점검 필요 (독립형·방어형으로 보완)")
+    except Exception:
+        pass
     try:
         _etfs = load_etf_universe()
     except Exception:
@@ -2058,6 +2132,9 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
                 _ind_w += " | 🔥흐름"
             if w.get("instrument") == "ETF":
                 _ind_w += " | 📦ETF"
+            _cw = w.get("character")
+            if _cw:
+                _ind_w += f" | {_cw['label']}({_cw['corr_sector']})"
             lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {_raw}/8{_tag}{_ind_w} | RSI {w['rsi']} | ${w['price']}")
         lines.append("")
     

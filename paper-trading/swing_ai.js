@@ -46,6 +46,7 @@ const CLAMPS = {
   industry_limit: [1, 6],
   quality_min: [0, 7],
   flow_size_mult: [0.1, 1.5],
+  char_bonus: [0, 2],
 };
 
 // ─── 래칫 브레이크 설정 ───
@@ -64,13 +65,13 @@ const LLM_KNOBS = new Set([
   // 배분(집중도) 노브 — LLM 전용. 주간학습이 소유하지 않으므로 브레이크 없이 CLAMPS 안에서 자유.
   'sector_limit', 'max_positions', 'min_cash_pct', 'cap_min_mid', 'cap_min_small',
   'max_new_per_tick', 'min_position_size', 'min_candidate_score', 'industry_limit', 'quality_min',
-  'flow_size_mult',
+  'flow_size_mult', 'char_bonus',
 ]);
 // 브레이크(하루 변동 제한)는 주간학습과 소유권이 겹치는 노브에만 건다.
 // LLM 전용 배분 노브는 CLAMPS 범위 안에서 자유롭게 움직인다 (래칫 사고는 구조 파라미터에서 났다).
 const NO_BRAKE = new Set(['sector_limit', 'max_positions', 'min_cash_pct', 'cap_min_mid', 'cap_min_small',
   'max_new_per_tick', 'min_position_size', 'min_candidate_score', 'industry_limit', 'quality_min',
-  'flow_size_mult']);
+  'flow_size_mult', 'char_bonus']);
 
 function apiKey() {
   if (process.env.OPENCODEGO_API_KEY) return process.env.OPENCODEGO_API_KEY;
@@ -321,6 +322,9 @@ Computer Hardware, Communication Equipment, Banks - Diversified, Oil & Gas E&P, 
   올라탄 종목)의 포지션 크기 배수. 리포트의 🔥 흐름 트랙 목록이 그 대상이다.
   흐름 트랙은 테마 프록시 ETF가 MA20 위 + 20일 +3% 이상이고, 종목이 MA20 위 + 프록시 대비
   2%p 이내로 동조할 때만 편입된다(alpha_pipeline.py 판정).
+· char_bonus (0~2, 기본 1) — **종목 특성 가산**. 리포트 📦 섹션과 🧩 종목 특성을 보고 판단한다.
+  '독립형'(섹터가 빠지는 날 혼자 오르는 비율 ≥55% & 섹터상관 <0.55)과 '역상관형'(상관 <0.15)에
+  점수를 더한다 — 섹터 급락에 휩쓸리지 않는 분산 가치를 반영. '동조형'(상관 ≥0.75)은 가산 없음.
 · min_candidate_score (0~8, 기본 4) — 워치리스트에 올릴 최소 점수(후보 스크린). 낮추면 후보가 늘고,
   올리면 상위만 본다. 남용하면 스캔이 무거워지니 근거가 있을 때만.
 그리고 alloc 블록으로 후보 점수에 직접 개입할 수 있다:
@@ -364,7 +368,7 @@ Computer Hardware, Communication Equipment, Banks - Diversified, Oil & Gas E&P, 
 1) "🤖 AI 판단:" 섹션 — 핵심 요약, 동의/반대, 리스크 체크 (한국어 반말). [성과 지표] 수치를 최소 1회 인용.
 2) 마지막에 \`\`\`json 블록으로 결정 (키 이름 정확히 "params"):
 \`\`\`json
-{"params": {"aggression_bias": <float>, "base_position_mult": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "sector_limit": <int>, "max_positions": <int>, "min_cash_pct": <float|null>, "cap_min_mid": <int>, "cap_min_small": <int>, "max_new_per_tick": <int|null>, "min_position_size": <number>, "min_candidate_score": <int>, "industry_limit": <int>, "quality_min": <int>, "flow_size_mult": <float>, "note": "<조정 사유 한 줄>"},
+{"params": {"aggression_bias": <float>, "base_position_mult": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "sector_limit": <int>, "max_positions": <int>, "min_cash_pct": <float|null>, "cap_min_mid": <int>, "cap_min_small": <int>, "max_new_per_tick": <int|null>, "min_position_size": <number>, "min_candidate_score": <int>, "industry_limit": <int>, "quality_min": <int>, "flow_size_mult": <float>, "char_bonus": <float>, "note": "<조정 사유 한 줄>"},
  "alloc": {"sector_tilt": {"<섹터>": <float>}, "industry_tilt": {"<업종>": <float>}, "focus_tickers": ["<TICKER>"], "avoid_tickers": ["<TICKER>"], "exit_tickers": ["<청산할 보유종목>"]}}
 \`\`\`
 바꿀 게 없으면 현재 값 그대로 넣어라. 리포트가 비었거나 결정 불가면 {"params":{}}만 출력해라.
