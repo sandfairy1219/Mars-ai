@@ -9,6 +9,9 @@
     "규모성": "글로벌 데이터센터 CAPEX 연 $400B+ (하이퍼스케일러 4사 합산 기준)",
     "가속성": "수요 증가속도 > 공급 증설속도 (광모듈/기판 리드타임 연장)"
    },
+   "flow_proxy": "SMH",
+   "flow_alive": true,
+   "flow_proxy_20d": 11.7,
    "scanned": 36,
    "survived": 21,
    "dropped": [
@@ -22,7 +25,7 @@
       "ROE>10%"
      ],
      "market_cap": 62507692032,
-     "pe": 77.473305,
+     "pe": 69.99781,
      "roe_pct": 7.98,
      "rev_growth_pct": 33.7
     },
@@ -168,7 +171,7 @@
       "영업이익률>10%"
      ],
      "market_cap": 4221808384,
-     "pe": 45.87584,
+     "pe": 44.100002,
      "roe_pct": 8.89,
      "rev_growth_pct": 10.6
     },
@@ -243,6 +246,9 @@
     "규모성": "정부+민간 양자 투자 누적 $100B 규모(추정) — 단 상업매출은 아직 소규모",
     "가속성": "큐비트 수요 증가 > 냉동·측정 장비 공급 증설 속도"
    },
+   "flow_proxy": "QTUM",
+   "flow_alive": true,
+   "flow_proxy_20d": 5.2,
    "scanned": 15,
    "survived": 7,
    "dropped": [
@@ -348,7 +354,7 @@
      "value_fails": [
       "매출성장>0%"
      ],
-     "market_cap": 1652145152,
+     "market_cap": 1651766272,
      "pe": 39.142857,
      "roe_pct": 12.43,
      "rev_growth_pct": -0.6
@@ -363,7 +369,7 @@
       "ROE>10%",
       "영업이익률>10%"
      ],
-     "market_cap": 15534870528,
+     "market_cap": 15508337664,
      "pe": null,
      "roe_pct": 1.28,
      "rev_growth_pct": 1.7
@@ -378,6 +384,9 @@
     "규모성": "글로벌 전력망 CAPEX 연 $400B+ (IEA 기준선)",
     "가속성": "변압기 리드타임 2~4년 — 공급 증설이 수요를 못 따라감"
    },
+   "flow_proxy": "GRID",
+   "flow_alive": false,
+   "flow_proxy_20d": 1.13,
    "scanned": 26,
    "survived": 11,
    "dropped": [
@@ -405,7 +414,7 @@
       "영업이익률>10%"
      ],
      "market_cap": 262991101952,
-     "pe": 28.30992,
+     "pe": 27.247515,
      "roe_pct": 82.58,
      "rev_growth_pct": 21.9
     },
@@ -447,7 +456,7 @@
       "영업이익률>10%"
      ],
      "market_cap": 91737276416,
-     "pe": 25.285158,
+     "pe": 24.824545,
      "roe_pct": 15.06,
      "rev_growth_pct": 23.0
     },
@@ -618,6 +627,9 @@
     "규모성": "글로벌 국방비 연 $2T+",
     "가속성": "드론·요격탄 소모 속도 > 생산 증설 속도"
    },
+   "flow_proxy": "ITA",
+   "flow_alive": false,
+   "flow_proxy_20d": -8.0,
    "scanned": 22,
    "survived": 9,
    "dropped": [
@@ -645,7 +657,7 @@
       "ROE>10%"
      ],
      "market_cap": 44393566208,
-     "pe": 24.080809,
+     "pe": 23.911734,
      "roe_pct": 9.34,
      "rev_growth_pct": 8.4
     },
@@ -749,7 +761,7 @@
       "ROE>10%",
       "영업이익률>10%"
      ],
-     "market_cap": 2254354944,
+     "market_cap": 2267852032,
      "pe": null,
      "roe_pct": -30.77,
      "rev_growth_pct": 3.1
@@ -778,7 +790,7 @@
      "value_fails": [
       "영업이익률>10%"
      ],
-     "market_cap": 56865959936,
+     "market_cap": 56873607168,
      "pe": 27.757143,
      "roe_pct": 18.63,
      "rev_growth_pct": 7.7
@@ -827,6 +839,9 @@
     "규모성": "암호화폐 시총 $2T+ / 채굴 CAPEX 수십억$",
     "가속성": "전력 확보 경쟁 — 전력 PPA 확보가 채굴 성패를 가름"
    },
+   "flow_proxy": "WGMI",
+   "flow_alive": false,
+   "flow_proxy_20d": 8.84,
    "scanned": 16,
    "survived": 1,
    "dropped": [
@@ -871,7 +886,7 @@
       "부채비율<200%"
      ],
      "market_cap": 99932995584,
-     "pe": 49.181416,
+     "pe": 49.84305,
      "roe_pct": 23.62,
      "rev_growth_pct": 32.3
     },
@@ -1340,7 +1355,7 @@
    "name": "ABB LTD N",
    "value_checks": 5,
    "value_fails": [],
-   "market_cap": 144126427136,
+   "market_cap": 144083091456,
    "pe": 35.23009,
    "roe_pct": 32.57,
    "rev_growth_pct": 14.2,
@@ -1485,7 +1500,7 @@
    "value_checks": 5,
    "value_fails": [],
    "market_cap": 39501852672,
-   "pe": 74.003525,
+   "pe": 68.45928,
    "roe_pct": 30.67,
    "rev_growth_pct": 114.7,
    "quality": 6,
@@ -1677,7 +1692,7 @@
    "value_checks": 5,
    "value_fails": [],
    "market_cap": 16177291264,
-   "pe": 34.54017,
+   "pe": 32.4777,
    "roe_pct": 21.33,
    "rev_growth_pct": 44.6,
    "quality": 4,
@@ -1700,8 +1715,8 @@
    "name": "SHIN-ETSU CHEMICAL CO",
    "value_checks": 5,
    "value_fails": [],
-   "market_cap": 10939394949120,
-   "pe": 23.866472,
+   "market_cap": 10930319523840,
+   "pe": 23.846672,
    "roe_pct": 11.23,
    "rev_growth_pct": 5.4,
    "quality": 7,
@@ -1796,8 +1811,8 @@
    "name": "NITTO BOSEKI CO",
    "value_checks": 5,
    "value_fails": [],
-   "market_cap": 607055380480,
-   "pe": 14.534758,
+   "market_cap": 617066790912,
+   "pe": 14.774461,
    "roe_pct": 28.39,
    "rev_growth_pct": 20.6,
    "quality": 5,
@@ -1869,7 +1884,7 @@
    "value_checks": 5,
    "value_fails": [],
    "market_cap": 2381628833792,
-   "pe": 34.1159,
+   "pe": 33.889297,
    "roe_pct": 39.97,
    "rev_growth_pct": 36.0,
    "quality": 7,
@@ -1965,7 +1980,7 @@
    "value_checks": 5,
    "value_fails": [],
    "market_cap": 90019782656,
-   "pe": 20.300184,
+   "pe": 20.238441,
    "roe_pct": 17.8,
    "rev_growth_pct": 8.1,
    "quality": 7,
@@ -1989,7 +2004,7 @@
    "value_checks": 5,
    "value_fails": [],
    "market_cap": 95324463104,
-   "pe": 22.485157,
+   "pe": 22.22129,
    "roe_pct": 15.8,
    "rev_growth_pct": 0.8,
    "quality": 7,
@@ -2037,7 +2052,7 @@
    "value_checks": 5,
    "value_fails": [],
    "market_cap": 67761774592,
-   "pe": 8.219915,
+   "pe": 8.110774,
    "roe_pct": 46.58,
    "rev_growth_pct": 4.3,
    "quality": 6,
@@ -2061,7 +2076,7 @@
    "value_checks": 5,
    "value_fails": [],
    "market_cap": 159264440320,
-   "pe": 17.157303,
+   "pe": 17.004456,
    "roe_pct": 11.68,
    "rev_growth_pct": 12.4,
    "quality": 4,
@@ -2234,7 +2249,7 @@
      "영업이익률>10%"
     ],
     "market_cap": 4221808384,
-    "pe": 45.87584,
+    "pe": 44.100002,
     "roe_pct": 8.89,
     "rev_growth_pct": 10.6,
     "lane": "flow",
@@ -2355,7 +2370,7 @@
     "value_fails": [
      "매출성장>0%"
     ],
-    "market_cap": 1652145152,
+    "market_cap": 1651766272,
     "pe": 39.142857,
     "roe_pct": 12.43,
     "rev_growth_pct": -0.6,
@@ -2539,7 +2554,7 @@
     "영업이익률>10%"
    ],
    "market_cap": 4221808384,
-   "pe": 45.87584,
+   "pe": 44.100002,
    "roe_pct": 8.89,
    "rev_growth_pct": 10.6,
    "lane": "flow",
@@ -2658,7 +2673,7 @@
    "value_fails": [
     "매출성장>0%"
    ],
-   "market_cap": 1652145152,
+   "market_cap": 1651766272,
    "pe": 39.142857,
    "roe_pct": 12.43,
    "rev_growth_pct": -0.6,

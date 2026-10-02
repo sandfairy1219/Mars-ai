@@ -63,6 +63,36 @@ def _save_cache(cache):
         pass
 
 
+# ─── 캐시 (스레드 안전) ───
+#   버그 이력: 종목마다 _load_cache()→수정→_save_cache()를 했는데 스캔이 12스레드라
+#   서로 덮어써 캐시가 4종목만 남았다 → 매 틱 365종목을 재조회(느림 + Finnhub 레이트리밋 위험).
+#   메모리 캐시 + 락 + 틱 종료 시 1회 flush 로 교체.
+import threading
+import atexit
+
+_LOCK = threading.Lock()
+_MEM = None
+_DIRTY = False
+
+
+def _mem():
+    global _MEM
+    if _MEM is None:
+        _MEM = _load_cache()
+    return _MEM
+
+
+def flush():
+    global _DIRTY
+    with _LOCK:
+        if _DIRTY and _MEM is not None:
+            _save_cache(_MEM)
+            _DIRTY = False
+
+
+atexit.register(flush)
+
+
 def _finnhub_key():
     for p in ["/home/ubuntu/.hermes/scripts/.env", "/home/ubuntu/marsAI/etf-alarm/.env",
               "/home/ubuntu/etf-alarm/.env"]:
@@ -184,8 +214,9 @@ def quality_report(ticker, sector=None, use_cache=True):
     """종목 1개의 퀄리티 리포트. 캐시(TTL 7일) 사용."""
     ticker = ticker.upper()
     today = datetime.datetime.utcnow().strftime("%Y-%m-%d")
-    cache = _load_cache()
-    hit = cache.get(ticker)
+    with _LOCK:
+        cache = _mem()
+        hit = dict(cache.get(ticker) or {}) or None
     if use_cache and isinstance(hit, dict) and hit.get("fetched"):
         age = (datetime.datetime.strptime(today, "%Y-%m-%d") -
                datetime.datetime.strptime(hit["fetched"], "%Y-%m-%d")).days
@@ -264,8 +295,10 @@ def quality_report(ticker, sector=None, use_cache=True):
         "cross_check": flags,
         "src_used": [s for s in [y.get("src"), f.get("src")] if s],
     }
-    cache[ticker] = rec
-    _save_cache(cache)
+    global _DIRTY
+    with _LOCK:
+        _mem()[ticker] = rec
+        _DIRTY = True
     return rec
 
 
@@ -305,3 +338,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    flush()

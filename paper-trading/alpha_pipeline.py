@@ -384,6 +384,9 @@ def run(theme_keys):
             print(f"    ✓ {r['ticker']:9s} [{r['tier']}] {r['bottleneck']:18s} 가치 {r['value_checks']}/5 · 퀄리티 {r.get('quality')}/{r.get('quality_measured')} · 시총 {r['market_cap']}")
 
         results["themes"][key] = {"name": theme["name"], "trend_check": theme["trend_check"],
+                                 "flow_proxy": theme.get("flow_proxy"),
+                                 "flow_alive": theme.get("flow_alive"),
+                                 "flow_proxy_20d": theme.get("flow_proxy_20d"),
                                  "scanned": len(cands), "survived": len(stage2), "dropped": dropped}
         results["candidates"].extend(stage2)
 

@@ -162,7 +162,17 @@ def describe(ch):
     return s + ")"
 
 
-# ─── 캐시 ───
+# ─── 캐시 (스레드 안전) ───
+#   버그 이력: 종목마다 load→수정→save를 했는데 스캔이 12스레드라 서로 덮어써
+#   캐시가 365개가 아니라 26개만 남았다(레이스). 이제 메모리 캐시 + 락 + 틱 종료 시 1회 flush.
+import threading
+import atexit
+
+_LOCK = threading.Lock()
+_MEM = None
+_DIRTY = False
+
+
 def load_cache():
     try:
         with open(CACHE_PATH) as f:
@@ -173,24 +183,48 @@ def load_cache():
 
 def save_cache(d):
     try:
-        with open(CACHE_PATH, "w") as f:
+        tmp = CACHE_PATH + ".tmp"
+        with open(tmp, "w") as f:
             json.dump(d, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, CACHE_PATH)      # 원자적 교체 (부분 기록 방지)
     except Exception:
         pass
 
 
+def _mem():
+    global _MEM
+    if _MEM is None:
+        _MEM = load_cache()
+    return _MEM
+
+
+def flush():
+    """틱 종료 시 1회 저장."""
+    global _DIRTY
+    with _LOCK:
+        if _DIRTY and _MEM is not None:
+            save_cache(_MEM)
+            _DIRTY = False
+
+
+atexit.register(flush)
+
+
 def cached(ticker, sector, industry, build):
-    """build()는 특성 dict를 반환하는 콜러블. 하루 1회만 계산."""
+    """build()는 특성 dict를 반환하는 콜러블. 하루 1회만 계산 (스레드 안전)."""
+    global _DIRTY
     today = time.strftime("%Y-%m-%d")
-    cache = load_cache()
-    e = cache.get(ticker)
     proxy = pick_proxy(sector, industry, ticker)
-    if e and e.get("date") == today and e.get("proxy") == proxy:
-        return e.get("character")
-    ch = build(proxy)
+    with _LOCK:
+        mem = _mem()
+        e = mem.get(ticker)
+        if e and e.get("date") == today and e.get("proxy") == proxy:
+            return e.get("character")
+    ch = build(proxy)                     # 락 밖에서 계산(네트워크·수학) — 직렬화 방지
     if ch:
-        cache[ticker] = {"date": today, "proxy": proxy, "character": ch}
-        save_cache(cache)
+        with _LOCK:
+            _mem()[ticker] = {"date": today, "proxy": proxy, "character": ch}
+            _DIRTY = True
     return ch
 
 

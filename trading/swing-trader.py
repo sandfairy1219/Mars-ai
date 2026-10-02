@@ -99,6 +99,16 @@ try:
 except Exception:
     _char_mod = None
 
+_SOFT_ERRORS = []
+
+
+def _soft(tag, e=None):
+    """조용히 삼키지 말고 리포트에 남긴다 (신규 레이어 실패 가시화)."""
+    msg = f"{tag}: {type(e).__name__ if e else 'fail'}"
+    if msg not in _SOFT_ERRORS:
+        _SOFT_ERRORS.append(msg)
+
+
 _PROXY_CHART_CACHE = {}
 _SPY_CHART = {"ts": 0, "px": None}
 
@@ -218,7 +228,8 @@ def character_of(ticker, sector=None, industry=None, prices=None):
         return _char_mod.cached(ticker, tax.get("sector"), tax.get("industry"),
                                 lambda proxy: _char_mod.compute(ticker, px, _proxy_prices(proxy),
                                                                 proxy, _spy_prices()))
-    except Exception:
+    except Exception as _e:
+        _soft("종목특성 계산", _e)
         return None
 
 
@@ -296,9 +307,15 @@ def effective_stop(pos, stop_adj=1.0):
     """스톱 거리를 배수만큼 조정한 실효 스톱 (롱 기준). adj<1 = 타이트."""
     try:
         e, s = float(pos["entry_price"]), float(pos["stop_price"])
+        adj = float(stop_adj)
     except (KeyError, TypeError, ValueError):
-        return pos.get("stop_price")
-    return round(e - (e - s) * stop_adj, 2)
+        try:
+            return float(pos.get("stop_price"))
+        except (TypeError, ValueError):
+            return None
+    if adj <= 0:
+        adj = 1.0
+    return round(e - (e - s) * adj, 2)
 
 
 # ─── 성과 지표 (AI 판단 근거 주입 — LLM이 실적을 못 보는 문제 수정) ───
@@ -1631,9 +1648,15 @@ def scan_tickers(tickers, is_full=False):
                 res = future.result(timeout=15)
                 if res:
                     results.append(res)
-            except Exception:
-                pass
+            except Exception as _e:
+                _soft("스캔 실패:" + str(futures.get(future, "?")), _e)
+    try:
+        if _char_mod is not None:
+            _char_mod.flush()          # 틱당 1회 저장 (종목마다 저장하던 레이스 제거)
+    except Exception:
+        pass
     return results
+
 
 def thesis_drift(pos):
     """thesis-drift 경량판: 진입 시점 사실값 vs 현재 사실값.
@@ -2134,6 +2157,8 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
         _al = json.load(open(ALPHA_PATH))
     except Exception:
         _al = {}
+    if _SOFT_ERRORS:
+        lines.append(f"• ⚠️ **내부 경고**({len(_SOFT_ERRORS)}): " + ", ".join(_SOFT_ERRORS[:6]))
     if _al.get("tickers"):
         _tk = ", ".join(_al["tickers"][:12])
         lines.append(f"• 🧬 **알파 트랙**(품질 통과·2·3차 병목, {_al.get('generated','?')} 기준 {len(_al['tickers'])}종목): {_tk}")
@@ -2218,6 +2243,11 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             _by_cat.setdefault(_m.get("sector") or "ETF", []).append(_t)
         _cat_s = " · ".join(f"{k} {len(v)}" for k, v in list(_by_cat.items())[:8])
         lines.append(f"• 📦 **ETF 트랙**(상시 스캔 {len(_etfs)}종목): {_cat_s}")
+    _fa = {k: v.get("flow_alive") for k, v in (_al.get("themes") or {}).items()}
+    _fa = {k: v for k, v in _fa.items() if v is not None}
+    if _fa:
+        _fa_s = " · ".join(f"{k} {'🔥' if v else '–'}" for k, v in _fa.items())
+        lines.append(f"• 🌡️ **테마 흐름(프록시 20일)**: {_fa_s}")
     if _al.get("flow_tickers"):
         _ft = ", ".join(_al["flow_tickers"][:12])
         lines.append(f"• 🔥 **흐름 트랙**(품질 미달·섹터 흐름 동조, {len(_al['flow_tickers'])}종목 · 사이즈 ×{P.get('flow_size_mult',0.6):.2f}): {_ft}")
