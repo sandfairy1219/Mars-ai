@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-01",
+ "generated": "2026-10-02",
  "themes": {
   "ai-infra": {
    "name": "AI 인프라 공급망",
@@ -10,7 +10,7 @@
     "가속성": "수요 증가속도 > 공급 증설속도 (광모듈/기판 리드타임 연장)"
    },
    "scanned": 36,
-   "survived": 20,
+   "survived": 21,
    "dropped": [
     {
      "ticker": "COHR",
@@ -130,24 +130,6 @@
      "rev_growth_pct": 37.5
     },
     {
-     "ticker": "Nittobo.T",
-     "tier": "3차",
-     "bottleneck": "특수유리섬유(저유전)",
-     "name": null,
-     "value_checks": 0,
-     "value_fails": [
-      "ROE>10%(데이터없음)",
-      "영업이익률>10%(데이터없음)",
-      "부채비율<200%(데이터없음)",
-      "매출성장>0%(데이터없음)",
-      "시총>$500M(데이터없음)"
-     ],
-     "market_cap": null,
-     "pe": null,
-     "roe_pct": null,
-     "rev_growth_pct": null
-    },
-    {
      "ticker": "ONTO",
      "tier": "2차",
      "bottleneck": "검사·계측",
@@ -250,6 +232,838 @@
      "pe": null,
      "roe_pct": null,
      "rev_growth_pct": null
+    }
+   ]
+  },
+  "quantum": {
+   "name": "퀀텀컴퓨팅",
+   "trend_check": {
+    "지속성": "국가·빅테크 양자 로드맵 5~10년 (오류정정 단계 진입)",
+    "물리성": "극저온 냉동기·제어전자·광자칩 = 실물 장비 필수",
+    "규모성": "정부+민간 양자 투자 누적 $100B 규모(추정) — 단 상업매출은 아직 소규모",
+    "가속성": "큐비트 수요 증가 > 냉동·측정 장비 공급 증설 속도"
+   },
+   "scanned": 15,
+   "survived": 7,
+   "dropped": [
+    {
+     "ticker": "IONQ",
+     "tier": "3차",
+     "bottleneck": "이온트랩 양자컴퓨터",
+     "name": "IonQ, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 17821917184,
+     "pe": null,
+     "roe_pct": -60.48,
+     "rev_growth_pct": 2.87
+    },
+    {
+     "ticker": "RGTI",
+     "tier": "3차",
+     "bottleneck": "초전도 큐비트",
+     "name": "Rigetti Computing, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 5213467648,
+     "pe": null,
+     "roe_pct": -43.77,
+     "rev_growth_pct": 1.85
+    },
+    {
+     "ticker": "QBTS",
+     "tier": "3차",
+     "bottleneck": "양자어닐링",
+     "name": "D-Wave Quantum Inc.",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "매출성장>0%"
+     ],
+     "market_cap": 6286616576,
+     "pe": null,
+     "roe_pct": -27.98,
+     "rev_growth_pct": -0.6
+    },
+    {
+     "ticker": "QUBT",
+     "tier": "3차",
+     "bottleneck": "광자 양자",
+     "name": "Quantum Computing Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 1899050240,
+     "pe": null,
+     "roe_pct": -1.51,
+     "rev_growth_pct": 90.0
+    },
+    {
+     "ticker": "ARQQ",
+     "tier": "3차",
+     "bottleneck": "양자암호(QKD)",
+     "name": "Arqit Quantum Inc.",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "시총>$500M"
+     ],
+     "market_cap": 416787776,
+     "pe": null,
+     "roe_pct": -2.2,
+     "rev_growth_pct": 8.3
+    },
+    {
+     "ticker": "QMCO",
+     "tier": "3차",
+     "bottleneck": "양자 저장/컴퓨팅",
+     "name": "Quantum Corporation",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%(데이터없음)",
+      "영업이익률>10%",
+      "부채비율<200%(데이터없음)"
+     ],
+     "market_cap": 1256587904,
+     "pe": null,
+     "roe_pct": null,
+     "rev_growth_pct": 25.7
+    },
+    {
+     "ticker": "OXIG.L",
+     "tier": "2차",
+     "bottleneck": "극저온 냉동기·장비",
+     "name": "OXFORD INSTRUMENTS PLC ORD 5P",
+     "value_checks": 4,
+     "value_fails": [
+      "매출성장>0%"
+     ],
+     "market_cap": 1652145152,
+     "pe": 39.142857,
+     "roe_pct": 12.43,
+     "rev_growth_pct": -0.6
+    },
+    {
+     "ticker": "3501.T",
+     "tier": "2차",
+     "bottleneck": "극저온·전력 시스템",
+     "name": "SUMINOE CO LTD",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 15534870528,
+     "pe": null,
+     "roe_pct": 1.28,
+     "rev_growth_pct": 1.7
+    }
+   ]
+  },
+  "power-grid": {
+   "name": "전력망·변압기·전력기기",
+   "trend_check": {
+    "지속성": "5년+ 확정 — 데이터센터·전기화 동시 수요",
+    "물리성": "변압기·케이블·스위치기어는 실물 제조 (리드타임 수년)",
+    "규모성": "글로벌 전력망 CAPEX 연 $400B+ (IEA 기준선)",
+    "가속성": "변압기 리드타임 2~4년 — 공급 증설이 수요를 못 따라감"
+   },
+   "scanned": 26,
+   "survived": 11,
+   "dropped": [
+    {
+     "ticker": "PWR",
+     "tier": "2차",
+     "bottleneck": "전력망 시공",
+     "name": "Quanta Services, Inc.",
+     "value_checks": 4,
+     "value_fails": [
+      "영업이익률>10%"
+     ],
+     "market_cap": 99617529856,
+     "pe": 75.812355,
+     "roe_pct": 15.34,
+     "rev_growth_pct": 41.1
+    },
+    {
+     "ticker": "GEV",
+     "tier": "2차",
+     "bottleneck": "가스터빈·그리드",
+     "name": "GE Vernova Inc.",
+     "value_checks": 4,
+     "value_fails": [
+      "영업이익률>10%"
+     ],
+     "market_cap": 262991101952,
+     "pe": 28.30992,
+     "roe_pct": 82.58,
+     "rev_growth_pct": 21.9
+    },
+    {
+     "ticker": "WCC",
+     "tier": "2차",
+     "bottleneck": "전기 부품 유통",
+     "name": "WESCO International, Inc.",
+     "value_checks": 4,
+     "value_fails": [
+      "영업이익률>10%"
+     ],
+     "market_cap": 18093535232,
+     "pe": 25.676348,
+     "roe_pct": 14.31,
+     "rev_growth_pct": 13.0
+    },
+    {
+     "ticker": "MYRG",
+     "tier": "3차",
+     "bottleneck": "전력 인프라 시공",
+     "name": "MYR Group, Inc.",
+     "value_checks": 4,
+     "value_fails": [
+      "영업이익률>10%"
+     ],
+     "market_cap": 4638391296,
+     "pe": 28.319391,
+     "roe_pct": 24.71,
+     "rev_growth_pct": 20.1
+    },
+    {
+     "ticker": "CEG",
+     "tier": "2차",
+     "bottleneck": "원전 전력판매",
+     "name": "Constellation Energy Corporatio",
+     "value_checks": 4,
+     "value_fails": [
+      "영업이익률>10%"
+     ],
+     "market_cap": 91737276416,
+     "pe": 25.285158,
+     "roe_pct": 15.06,
+     "rev_growth_pct": 23.0
+    },
+    {
+     "ticker": "VST",
+     "tier": "2차",
+     "bottleneck": "발전·소매전력",
+     "name": "Vistra Corp.",
+     "value_checks": 3,
+     "value_fails": [
+      "부채비율<200%",
+      "매출성장>0%"
+     ],
+     "market_cap": 46905020416,
+     "pe": 23.526936,
+     "roe_pct": 42.96,
+     "rev_growth_pct": -5.5
+    },
+    {
+     "ticker": "TLN",
+     "tier": "3차",
+     "bottleneck": "원전·데이터센터 PPA",
+     "name": "Talen Energy Corporation",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "부채비율<200%"
+     ],
+     "market_cap": 15282156544,
+     "pe": null,
+     "roe_pct": -12.83,
+     "rev_growth_pct": 111.2
+    },
+    {
+     "ticker": "NRG",
+     "tier": "2차",
+     "bottleneck": "발전·소매",
+     "name": "NRG Energy, Inc.",
+     "value_checks": 4,
+     "value_fails": [
+      "부채비율<200%"
+     ],
+     "market_cap": 20375701504,
+     "pe": 25.242188,
+     "roe_pct": 23.77,
+     "rev_growth_pct": 11.0
+    },
+    {
+     "ticker": "OKLO",
+     "tier": "3차",
+     "bottleneck": "SMR 원자로",
+     "name": "Oklo Inc.",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "매출성장>0%(데이터없음)"
+     ],
+     "market_cap": 6722677760,
+     "pe": null,
+     "roe_pct": -7.7,
+     "rev_growth_pct": null
+    },
+    {
+     "ticker": "SMR",
+     "tier": "3차",
+     "bottleneck": "SMR(NuScale)",
+     "name": "NuScale Power Corporation",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "매출성장>0%"
+     ],
+     "market_cap": 3196934400,
+     "pe": null,
+     "roe_pct": -55.18,
+     "rev_growth_pct": -99.1
+    },
+    {
+     "ticker": "LEU",
+     "tier": "3차",
+     "bottleneck": "HALEU 농축(병목)",
+     "name": "Centrus Energy Corp.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 2845231872,
+     "pe": 73.21579,
+     "roe_pct": 8.05,
+     "rev_growth_pct": 14.0
+    },
+    {
+     "ticker": "CCJ",
+     "tier": "3차",
+     "bottleneck": "우라늄",
+     "name": "Cameco Corporation",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "매출성장>0%"
+     ],
+     "market_cap": 37320822784,
+     "pe": 150.33334,
+     "roe_pct": 5.11,
+     "rev_growth_pct": -7.2
+    },
+    {
+     "ticker": "UUUU",
+     "tier": "3차",
+     "bottleneck": "우라늄/희토류",
+     "name": "Energy Fuels Inc",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 2835724800,
+     "pe": null,
+     "roe_pct": -11.45,
+     "rev_growth_pct": 4.96
+    },
+    {
+     "ticker": "UEC",
+     "tier": "3차",
+     "bottleneck": "우라늄",
+     "name": "Uranium Energy Corp.",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "매출성장>0%(데이터없음)"
+     ],
+     "market_cap": 4638672384,
+     "pe": null,
+     "roe_pct": -11.64,
+     "rev_growth_pct": null
+    },
+    {
+     "ticker": "HYUNDAIELECTRIC.KS",
+     "tier": "3차",
+     "bottleneck": "변압기(한국)",
+     "name": null,
+     "value_checks": 0,
+     "value_fails": [
+      "ROE>10%(데이터없음)",
+      "영업이익률>10%(데이터없음)",
+      "부채비율<200%(데이터없음)",
+      "매출성장>0%(데이터없음)",
+      "시총>$500M(데이터없음)"
+     ],
+     "market_cap": null,
+     "pe": null,
+     "roe_pct": null,
+     "rev_growth_pct": null
+    }
+   ]
+  },
+  "defense": {
+   "name": "방산·드론·우주",
+   "trend_check": {
+    "지속성": "5년+ — 각국 국방예산 증액 추세",
+    "물리성": "미사일·드론·탄약 = 실물 생산 (탄약 병목)",
+    "규모성": "글로벌 국방비 연 $2T+",
+    "가속성": "드론·요격탄 소모 속도 > 생산 증설 속도"
+   },
+   "scanned": 22,
+   "survived": 9,
+   "dropped": [
+    {
+     "ticker": "LMT",
+     "tier": "1차",
+     "bottleneck": "미사일·전투기(대형)",
+     "name": "Lockheed Martin Corporation",
+     "value_checks": 4,
+     "value_fails": [
+      "부채비율<200%"
+     ],
+     "market_cap": 116664721408,
+     "pe": 18.625645,
+     "roe_pct": 89.17,
+     "rev_growth_pct": 10.5
+    },
+    {
+     "ticker": "LHX",
+     "tier": "1차",
+     "bottleneck": "전자전·통신",
+     "name": "L3Harris Technologies, Inc.",
+     "value_checks": 4,
+     "value_fails": [
+      "ROE>10%"
+     ],
+     "market_cap": 44393566208,
+     "pe": 24.080809,
+     "roe_pct": 9.34,
+     "rev_growth_pct": 8.4
+    },
+    {
+     "ticker": "HII",
+     "tier": "1차",
+     "bottleneck": "조선",
+     "name": "Huntington Ingalls Industries, ",
+     "value_checks": 4,
+     "value_fails": [
+      "영업이익률>10%"
+     ],
+     "market_cap": 10809863168,
+     "pe": 16.329166,
+     "roe_pct": 12.97,
+     "rev_growth_pct": 10.9
+    },
+    {
+     "ticker": "KTOS",
+     "tier": "2차",
+     "bottleneck": "무인기·타겟드론·엔진",
+     "name": "Kratos Defense & Security Solut",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 8038227456,
+     "pe": 251.88235,
+     "roe_pct": 1.15,
+     "rev_growth_pct": 30.5
+    },
+    {
+     "ticker": "AVAV",
+     "tier": "2차",
+     "bottleneck": "무인기·탄약(로이터)",
+     "name": "AeroVironment, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 7130652672,
+     "pe": null,
+     "roe_pct": -4.6,
+     "rev_growth_pct": 5.7
+    },
+    {
+     "ticker": "BAH",
+     "tier": "2차",
+     "bottleneck": "국방 컨설팅",
+     "name": "Booz Allen Hamilton Holding Cor",
+     "value_checks": 2,
+     "value_fails": [
+      "영업이익률>10%",
+      "부채비율<200%",
+      "매출성장>0%"
+     ],
+     "market_cap": 8476482560,
+     "pe": 11.062795,
+     "roe_pct": 68.64,
+     "rev_growth_pct": -4.2
+    },
+    {
+     "ticker": "RKLB",
+     "tier": "3차",
+     "bottleneck": "발사체·위성부품",
+     "name": "Rocket Lab Corporation",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 45052899328,
+     "pe": null,
+     "roe_pct": -7.92,
+     "rev_growth_pct": 62.0
+    },
+    {
+     "ticker": "ASTS",
+     "tier": "3차",
+     "bottleneck": "위성통신(직접연결)",
+     "name": "AST SpaceMobile, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 22198114304,
+     "pe": null,
+     "roe_pct": -45.62,
+     "rev_growth_pct": 26.27
+    },
+    {
+     "ticker": "LUNR",
+     "tier": "3차",
+     "bottleneck": "달 착륙선",
+     "name": "Intuitive Machines, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 2254354944,
+     "pe": null,
+     "roe_pct": -30.77,
+     "rev_growth_pct": 3.1
+    },
+    {
+     "ticker": "RDW",
+     "tier": "3차",
+     "bottleneck": "우주 인프라",
+     "name": "Redwire Corporation",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 2642421760,
+     "pe": null,
+     "roe_pct": -18.15,
+     "rev_growth_pct": 89.6
+    },
+    {
+     "ticker": "BA.L",
+     "tier": "2차",
+     "bottleneck": "BAE Systems",
+     "name": "BAE SYSTEMS PLC ORD 2.5P",
+     "value_checks": 4,
+     "value_fails": [
+      "영업이익률>10%"
+     ],
+     "market_cap": 56865959936,
+     "pe": 27.757143,
+     "roe_pct": 18.63,
+     "rev_growth_pct": 7.7
+    },
+    {
+     "ticker": "NOC가 아닌 012450.KS",
+     "tier": "3차",
+     "bottleneck": "한화에어로 — 항공엔진(한국)",
+     "name": null,
+     "value_checks": 0,
+     "value_fails": [
+      "ROE>10%(데이터없음)",
+      "영업이익률>10%(데이터없음)",
+      "부채비율<200%(데이터없음)",
+      "매출성장>0%(데이터없음)",
+      "시총>$500M(데이터없음)"
+     ],
+     "market_cap": null,
+     "pe": null,
+     "roe_pct": null,
+     "rev_growth_pct": null
+    },
+    {
+     "ticker": "OLN",
+     "tier": "3차",
+     "bottleneck": "탄약용 화학(클로르알칼리)",
+     "name": "Olin Corporation",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "매출성장>0%"
+     ],
+     "market_cap": 1819160576,
+     "pe": null,
+     "roe_pct": -10.59,
+     "rev_growth_pct": -0.9
+    }
+   ]
+  },
+  "crypto-proxy": {
+   "name": "암호화폐 프록시·채굴·전력",
+   "trend_check": {
+    "지속성": "3~5년 — 기관화·ETF 자금 유입, 반감기 사이클",
+    "물리성": "채굴은 실제 전력·하드웨어 소비(전력 병목과 중첩)",
+    "규모성": "암호화폐 시총 $2T+ / 채굴 CAPEX 수십억$",
+    "가속성": "전력 확보 경쟁 — 전력 PPA 확보가 채굴 성패를 가름"
+   },
+   "scanned": 16,
+   "survived": 1,
+   "dropped": [
+    {
+     "ticker": "COIN",
+     "tier": "2차",
+     "bottleneck": "거래소(수수료)",
+     "name": "Coinbase Global, Inc.",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "매출성장>0%"
+     ],
+     "market_cap": 49941688320,
+     "pe": null,
+     "roe_pct": -7.85,
+     "rev_growth_pct": -17.3
+    },
+    {
+     "ticker": "MSTR",
+     "tier": "2차",
+     "bottleneck": "비트코인 보유 프록시",
+     "name": "Strategy Inc",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 63999504384,
+     "pe": null,
+     "roe_pct": -63.56,
+     "rev_growth_pct": 6.9
+    },
+    {
+     "ticker": "HOOD",
+     "tier": "2차",
+     "bottleneck": "소매 브로커·크립토",
+     "name": "Robinhood Markets, Inc.",
+     "value_checks": 4,
+     "value_fails": [
+      "부채비율<200%"
+     ],
+     "market_cap": 99932995584,
+     "pe": 49.181416,
+     "roe_pct": 23.62,
+     "rev_growth_pct": 32.3
+    },
+    {
+     "ticker": "MARA",
+     "tier": "3차",
+     "bottleneck": "채굴",
+     "name": "MARA Holdings, Inc.",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "매출성장>0%"
+     ],
+     "market_cap": 4330415104,
+     "pe": null,
+     "roe_pct": -105.57,
+     "rev_growth_pct": -26.7
+    },
+    {
+     "ticker": "RIOT",
+     "tier": "3차",
+     "bottleneck": "채굴·전력",
+     "name": "Riot Platforms, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 7358828032,
+     "pe": null,
+     "roe_pct": -48.24,
+     "rev_growth_pct": 13.9
+    },
+    {
+     "ticker": "CLSK",
+     "tier": "3차",
+     "bottleneck": "채굴",
+     "name": "CleanSpark, Inc.",
+     "value_checks": 1,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "부채비율<200%",
+      "매출성장>0%"
+     ],
+     "market_cap": 3215349760,
+     "pe": null,
+     "roe_pct": -68.62,
+     "rev_growth_pct": -30.5
+    },
+    {
+     "ticker": "CIFR",
+     "tier": "3차",
+     "bottleneck": "채굴",
+     "name": "Cipher Digital Inc.",
+     "value_checks": 1,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "부채비율<200%",
+      "매출성장>0%"
+     ],
+     "market_cap": 6416374784,
+     "pe": null,
+     "roe_pct": -1.67,
+     "rev_growth_pct": -43.0
+    },
+    {
+     "ticker": "WULF",
+     "tier": "3차",
+     "bottleneck": "채굴·HPC 전환",
+     "name": "TeraWulf Inc.",
+     "value_checks": 1,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "부채비율<200%",
+      "매출성장>0%"
+     ],
+     "market_cap": 7439622656,
+     "pe": null,
+     "roe_pct": -12.12,
+     "rev_growth_pct": -6.0
+    },
+    {
+     "ticker": "IREN",
+     "tier": "3차",
+     "bottleneck": "채굴·AI 데이터센터",
+     "name": "IREN LIMITED",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "매출성장>0%"
+     ],
+     "market_cap": 16018485248,
+     "pe": null,
+     "roe_pct": -23.41,
+     "rev_growth_pct": -26.7
+    },
+    {
+     "ticker": "CORZ",
+     "tier": "3차",
+     "bottleneck": "채굴·HPC 호스팅",
+     "name": "Core Scientific, Inc.",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%(데이터없음)",
+      "영업이익률>10%",
+      "부채비율<200%(데이터없음)"
+     ],
+     "market_cap": 5253916672,
+     "pe": null,
+     "roe_pct": null,
+     "rev_growth_pct": 108.8
+    },
+    {
+     "ticker": "APLD",
+     "tier": "3차",
+     "bottleneck": "AI 데이터센터·전력",
+     "name": "Applied Digital Corporation",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 7227951616,
+     "pe": null,
+     "roe_pct": -8.38,
+     "rev_growth_pct": 4.07
+    },
+    {
+     "ticker": "BTBT",
+     "tier": "3차",
+     "bottleneck": "채굴",
+     "name": "Bit Digital, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 584226304,
+     "pe": null,
+     "roe_pct": -52.18,
+     "rev_growth_pct": 25.6
+    },
+    {
+     "ticker": "HUT",
+     "tier": "3차",
+     "bottleneck": "채굴·전력",
+     "name": "Hut 8 Corp.",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "부채비율<200%"
+     ],
+     "market_cap": 10644687872,
+     "pe": null,
+     "roe_pct": -43.37,
+     "rev_growth_pct": 81.4
+    },
+    {
+     "ticker": "XYZ",
+     "tier": "2차",
+     "bottleneck": "Block — 결제·크립토",
+     "name": "Block, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 44482863104,
+     "pe": 132.21428,
+     "roe_pct": 1.61,
+     "rev_growth_pct": 9.3
+    },
+    {
+     "ticker": "GLXY",
+     "tier": "3차",
+     "bottleneck": "Galaxy Digital",
+     "name": "Galaxy Digital Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "매출성장>0%"
+     ],
+     "market_cap": 13565625344,
+     "pe": null,
+     "roe_pct": -10.41,
+     "rev_growth_pct": -3.8
     }
    ]
   }
@@ -417,6 +1231,236 @@
    }
   },
   {
+   "ticker": "KEYS",
+   "tier": "2차",
+   "bottleneck": "계측·양자제어",
+   "name": "Keysight Technologies Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 63651106816,
+   "pe": 50.592693,
+   "roe_pct": 20.9,
+   "rev_growth_pct": 36.5,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "MKSI",
+   "tier": "2차",
+   "bottleneck": "진공·광학 부품",
+   "name": "MKS Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 18340585472,
+   "pe": 43.122414,
+   "roe_pct": 15.85,
+   "rev_growth_pct": 28.3,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "ENR.DE",
+   "tier": "2차",
+   "bottleneck": "Siemens Energy — 그리드",
+   "name": "Siemens Energy AG             N",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 121262940160,
+   "pe": 46.12298,
+   "roe_pct": 27.75,
+   "rev_growth_pct": 17.5,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "SU.PA",
+   "tier": "2차",
+   "bottleneck": "Schneider — 그리드 소프트웨어",
+   "name": "SCHNEIDER ELECTRIC SE",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 164821925888,
+   "pe": 34.42353,
+   "roe_pct": 18.62,
+   "rev_growth_pct": 9.8,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "ABBN.SW",
+   "tier": "2차",
+   "bottleneck": "ABB — 전력장비",
+   "name": "ABB LTD N",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 144126427136,
+   "pe": 35.23009,
+   "roe_pct": 32.57,
+   "rev_growth_pct": 14.2,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "APH",
+   "tier": "2차",
+   "bottleneck": "커넥터·전력",
+   "name": "Amphenol Corporation",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 211259375616,
+   "pe": 42.835,
+   "roe_pct": 38.12,
+   "rev_growth_pct": 55.0,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "LDOS",
+   "tier": "2차",
+   "bottleneck": "국방 IT",
+   "name": "Leidos Holdings, Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 15306285056,
+   "pe": 11.388422,
+   "roe_pct": 27.78,
+   "rev_growth_pct": 7.2,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "RHM.DE",
+   "tier": "2차",
+   "bottleneck": "Rheinmetall — 탄약·차량",
+   "name": "RHEINMETALL AG                I",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 44138655744,
+   "pe": 36.362938,
+   "roe_pct": 25.69,
+   "rev_growth_pct": 68.8,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "HO.PA",
+   "tier": "2차",
+   "bottleneck": "Thales — 전자전",
+   "name": "THALES",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 46334676992,
+   "pe": 31.075863,
+   "roe_pct": 19.35,
+   "rev_growth_pct": 6.7,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "SAF.PA",
+   "tier": "2차",
+   "bottleneck": "Safran — 엔진",
+   "name": "SAFRAN",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 135500890112,
+   "pe": 35.16129,
+   "roe_pct": 27.49,
+   "rev_growth_pct": 16.0,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
    "ticker": "CRDO",
    "tier": "2차",
    "bottleneck": "AI 인터커넥트(AEC/DSP)",
@@ -555,6 +1599,52 @@
    }
   },
   {
+   "ticker": "PLTR",
+   "tier": "2차",
+   "bottleneck": "국방 소프트웨어",
+   "name": "Palantir Technologies Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 456677195776,
+   "pe": 161.05084,
+   "roe_pct": 38.1,
+   "rev_growth_pct": 92.8,
+   "quality": 6,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "F",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "CACI",
+   "tier": "2차",
+   "bottleneck": "국방 IT/전자",
+   "name": "CACI International, Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 13857772544,
+   "pe": 25.933002,
+   "roe_pct": 12.82,
+   "rev_growth_pct": 17.6,
+   "quality": 6,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "F"
+   }
+  },
+  {
    "ticker": "FN",
    "tier": "2차",
    "bottleneck": "광모듈 위탁생산",
@@ -601,6 +1691,52 @@
    }
   },
   {
+   "ticker": "NVT",
+   "tier": "3차",
+   "bottleneck": "전기 인클로저·열관리(구 nVent)",
+   "name": "nVent Electric plc",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 26831190016,
+   "pe": 46.17549,
+   "roe_pct": 15.75,
+   "rev_growth_pct": 52.8,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "AZZ",
+   "tier": "3차",
+   "bottleneck": "아연도금(전신주·구조물)",
+   "name": "AZZ Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 4069273600,
+   "pe": 20.64177,
+   "roe_pct": 15.31,
+   "rev_growth_pct": 6.3,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
    "ticker": "POWL",
    "tier": "3차",
    "bottleneck": "전력 인프라 장비",
@@ -619,6 +1755,29 @@
     "interest": "N/A",
     "gm": "P",
     "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "3110.T",
+   "tier": "3차",
+   "bottleneck": "특수유리섬유(저유전)",
+   "name": "NITTO BOSEKI CO",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 607055380480,
+   "pe": 14.534758,
+   "roe_pct": 28.39,
+   "rev_growth_pct": 20.6,
+   "quality": 5,
+   "quality_measured": 5,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "N/A",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "N/A",
     "nm": "P",
     "netdebt_ebitda": "P"
    }
@@ -693,6 +1852,121 @@
    }
   },
   {
+   "ticker": "IBM",
+   "tier": "1차",
+   "bottleneck": "초전도 양자(대형)",
+   "name": "International Business Machines",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 212564361216,
+   "pe": 20.0373,
+   "roe_pct": 34.46,
+   "rev_growth_pct": 1.1,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "RTX",
+   "tier": "1차",
+   "bottleneck": "미사일·방공",
+   "name": "RTX Corporation",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 249348718592,
+   "pe": 32.57218,
+   "roe_pct": 12.27,
+   "rev_growth_pct": 14.5,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "NOC",
+   "tier": "1차",
+   "bottleneck": "전략자산",
+   "name": "Northrop Grumman Corporation",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 68474376192,
+   "pe": 15.3161745,
+   "roe_pct": 26.96,
+   "rev_growth_pct": 5.1,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "GD",
+   "tier": "1차",
+   "bottleneck": "육상·잠수함",
+   "name": "General Dynamics Corporation",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 90019782656,
+   "pe": 20.300184,
+   "roe_pct": 17.8,
+   "rev_growth_pct": 8.1,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "CME",
+   "tier": "1차",
+   "bottleneck": "선물거래(비교군)",
+   "name": "CME Group Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 95324463104,
+   "pe": 22.485157,
+   "roe_pct": 15.8,
+   "rev_growth_pct": 0.8,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
    "ticker": "NVDA",
    "tier": "1차",
    "bottleneck": "GPU",
@@ -714,6 +1988,52 @@
     "nm": "P",
     "netdebt_ebitda": "P"
    }
+  },
+  {
+   "ticker": "HON",
+   "tier": "1차",
+   "bottleneck": "Quantinuum 보유",
+   "name": "Honeywell International Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 67761774592,
+   "pe": 8.219915,
+   "roe_pct": 46.58,
+   "rev_growth_pct": 4.3,
+   "quality": 6,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "F",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "NEE",
+   "tier": "1차",
+   "bottleneck": "유틸리티(비교군)",
+   "name": "NextEra Energy, Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 159264440320,
+   "pe": 17.157303,
+   "roe_pct": 11.68,
+   "rev_growth_pct": 12.4,
+   "quality": 4,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "F",
+    "interest": "F",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "F"
+   }
   }
  ],
  "tickers": [
@@ -724,14 +2044,22 @@
   "HUBB",
   "CIEN",
   "SNDK",
+  "KEYS",
+  "MKSI",
+  "ENR.DE",
+  "SU.PA",
+  "ABBN.SW",
+  "APH",
+  "LDOS",
+  "RHM.DE",
+  "HO.PA",
+  "SAF.PA",
   "CRDO",
   "ALAB",
   "MTSI",
   "SMTC",
   "KLIC",
   "WDC",
-  "FN",
-  "4063.T",
-  "POWL"
+  "PLTR"
  ]
 }

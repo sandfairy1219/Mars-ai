@@ -274,24 +274,6 @@
       }
     },
     {
-      "ticker": "XOM",
-      "sector": "Energy",
-      "industry": "Oil & Gas Integrated",
-      "price": 163.95,
-      "rsi": 45.5,
-      "ma20": 162.7,
-      "ma50": 160.21,
-      "side": "LONG",
-      "score": 6,
-      "dist_ma20": 0.03,
-      "atr_pct": 1.2,
-      "rel_20d": -1.2,
-      "quality": {
-        "score": 7,
-        "measured": 7
-      }
-    },
-    {
       "ticker": "CRWV",
       "sector": "Technology",
       "industry": "Software - Infrastructure",
@@ -307,6 +289,24 @@
       "quality": {
         "score": 1,
         "measured": 6
+      }
+    },
+    {
+      "ticker": "XOM",
+      "sector": "Energy",
+      "industry": "Oil & Gas Integrated",
+      "price": 163.97,
+      "rsi": 45.5,
+      "ma20": 162.7,
+      "ma50": 160.21,
+      "side": "LONG",
+      "score": 6,
+      "dist_ma20": 0.03,
+      "atr_pct": 1.2,
+      "rel_20d": -1.2,
+      "quality": {
+        "score": 7,
+        "measured": 7
       }
     },
     {
@@ -326,6 +326,26 @@
         "score": 7,
         "measured": 7
       }
+    },
+    {
+      "ticker": "APH",
+      "sector": "Technology",
+      "industry": "Electronic Components",
+      "price": 85.76,
+      "rsi": 59.7,
+      "ma20": 81.39,
+      "ma50": 80.85,
+      "side": "LONG",
+      "score": 6,
+      "dist_ma20": 3.46,
+      "atr_pct": 1.78,
+      "rel_20d": 3.21,
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "alpha": true,
+      "raw_score": 5
     },
     {
       "ticker": "SHEL",
@@ -364,24 +384,6 @@
       }
     },
     {
-      "ticker": "XP",
-      "sector": "Financials",
-      "industry": "Capital Markets",
-      "price": 20.77,
-      "rsi": 62.1,
-      "ma20": 20.16,
-      "ma50": 18.13,
-      "side": "LONG",
-      "score": 6,
-      "dist_ma20": 3.98,
-      "atr_pct": 1.44,
-      "rel_20d": 12.04,
-      "quality": {
-        "score": 4,
-        "measured": 4
-      }
-    },
-    {
       "ticker": "AVTR",
       "sector": "Health Care",
       "industry": "Medical Instruments & Supplies",
@@ -397,6 +399,24 @@
       "quality": {
         "score": 3,
         "measured": 6
+      }
+    },
+    {
+      "ticker": "XP",
+      "sector": "Financials",
+      "industry": "Capital Markets",
+      "price": 20.77,
+      "rsi": 62.1,
+      "ma20": 20.16,
+      "ma50": 18.13,
+      "side": "LONG",
+      "score": 6,
+      "dist_ma20": 3.98,
+      "atr_pct": 1.44,
+      "rel_20d": 12.04,
+      "quality": {
+        "score": 4,
+        "measured": 4
       }
     },
     {
@@ -458,22 +478,44 @@
       "raw_score": 5
     },
     {
-      "ticker": "META",
+      "ticker": "KEYS",
       "sector": "Technology",
-      "industry": "Internet Content & Information",
-      "price": 726.78,
-      "rsi": 64.7,
-      "ma20": 683.39,
-      "ma50": 620.62,
+      "industry": "Scientific & Technical Instruments",
+      "price": 373.88,
+      "rsi": 70.5,
+      "ma20": 338.19,
+      "ma50": 331.99,
       "side": "LONG",
-      "score": 5,
-      "dist_ma20": 5.76,
-      "atr_pct": 2.7,
-      "rel_20d": 25.24,
+      "score": 6,
+      "dist_ma20": 7.1,
+      "atr_pct": 1.84,
+      "rel_20d": 13.91,
       "quality": {
         "score": 7,
         "measured": 7
-      }
+      },
+      "alpha": true,
+      "raw_score": 5
+    },
+    {
+      "ticker": "PLTR",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "price": 190.56,
+      "rsi": 81.2,
+      "ma20": 178.85,
+      "ma50": 167.16,
+      "side": "LONG",
+      "score": 5,
+      "dist_ma20": 4.38,
+      "atr_pct": 1.3,
+      "rel_20d": 3.85,
+      "quality": {
+        "score": 6,
+        "measured": 7
+      },
+      "alpha": true,
+      "raw_score": 4
     },
     {
       "ticker": "AMD",
@@ -491,42 +533,6 @@
       "quality": {
         "score": 7,
         "measured": 7
-      }
-    },
-    {
-      "ticker": "NOW",
-      "sector": "Technology",
-      "industry": "Software - Application",
-      "price": 137.5,
-      "rsi": 53.6,
-      "ma20": 136.74,
-      "ma50": 127.49,
-      "side": "LONG",
-      "score": 5,
-      "dist_ma20": 2.04,
-      "atr_pct": 2.11,
-      "rel_20d": -6.33,
-      "quality": {
-        "score": 7,
-        "measured": 7
-      }
-    },
-    {
-      "ticker": "HOOD",
-      "sector": "Financials",
-      "industry": "Capital Markets",
-      "price": 111.4,
-      "rsi": 49.1,
-      "ma20": 116.34,
-      "ma50": 105.04,
-      "side": "LONG",
-      "score": 5,
-      "dist_ma20": 3.41,
-      "atr_pct": 2.79,
-      "rel_20d": 8.58,
-      "quality": {
-        "score": 3,
-        "measured": 4
       }
     }
   ],
