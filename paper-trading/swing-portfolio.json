@@ -373,45 +373,6 @@
       }
     },
     {
-      "ticker": "LITE",
-      "sector": "Technology",
-      "industry": "Communication Equipment",
-      "price": 1047.54,
-      "rsi": 54.6,
-      "ma20": 921.06,
-      "ma50": 869.67,
-      "side": "LONG",
-      "score": 11.0,
-      "dist_ma20": 5.17,
-      "atr_pct": 2.83,
-      "rel_20d": 11.66,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 3,
-        "measured": 6
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "XLK",
-        "corr_sector": 0.7,
-        "beta_spy": 2.92,
-        "decouple_pct": 32.3,
-        "sec_down_ret": -1.77,
-        "up_capture": 2.99,
-        "down_capture": 2.63,
-        "label": "보통"
-      },
-      "peer": {
-        "n": 8,
-        "rank_pct": 87.5,
-        "excess_20d": 9.66,
-        "corr": 0.77,
-        "decouple_pct": 24.1,
-        "basis": "Communication Equipment"
-      },
-      "flow_track": true
-    },
-    {
       "ticker": "SOI.PA",
       "sector": "Technology",
       "industry": "Semiconductor Equipment & Materials",
@@ -447,6 +408,45 @@
         "corr": 0.16,
         "decouple_pct": 40.0,
         "basis": "Semiconductor Equipment & Materials"
+      },
+      "flow_track": true
+    },
+    {
+      "ticker": "LITE",
+      "sector": "Technology",
+      "industry": "Communication Equipment",
+      "price": 1047.54,
+      "rsi": 54.6,
+      "ma20": 921.06,
+      "ma50": 869.67,
+      "side": "LONG",
+      "score": 11.0,
+      "dist_ma20": 5.17,
+      "atr_pct": 2.83,
+      "rel_20d": 11.66,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 3,
+        "measured": 6
+      },
+      "raw_score": 6,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": 0.7,
+        "beta_spy": 2.92,
+        "decouple_pct": 32.3,
+        "sec_down_ret": -1.77,
+        "up_capture": 2.99,
+        "down_capture": 2.63,
+        "label": "보통"
+      },
+      "peer": {
+        "n": 8,
+        "rank_pct": 87.5,
+        "excess_20d": 9.66,
+        "corr": 0.77,
+        "decouple_pct": 24.1,
+        "basis": "Communication Equipment"
       },
       "flow_track": true
     },
@@ -566,45 +566,6 @@
       "flow_track": true
     },
     {
-      "ticker": "SNDK",
-      "sector": "Technology",
-      "industry": "Computer Hardware",
-      "price": 1783.74,
-      "rsi": 52.8,
-      "ma20": 1693.49,
-      "ma50": 1533.71,
-      "side": "LONG",
-      "score": 9.0,
-      "dist_ma20": 2.67,
-      "atr_pct": 3.45,
-      "rel_20d": 13.1,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 5,
-      "character": {
-        "proxy": "XLK",
-        "corr_sector": 0.74,
-        "beta_spy": 4.28,
-        "decouple_pct": 29.0,
-        "sec_down_ret": -3.1,
-        "up_capture": 3.37,
-        "down_capture": 3.85,
-        "label": "보통"
-      },
-      "peer": {
-        "n": 8,
-        "rank_pct": 75.0,
-        "excess_20d": 6.25,
-        "corr": 0.59,
-        "decouple_pct": 39.3,
-        "basis": "Computer Hardware"
-      },
-      "alpha": true
-    },
-    {
       "ticker": "META",
       "sector": "Technology",
       "industry": "Internet Content & Information",
@@ -679,6 +640,45 @@
         "decouple_pct": 59.3,
         "basis": "Consumer Electronics"
       }
+    },
+    {
+      "ticker": "SNDK",
+      "sector": "Technology",
+      "industry": "Computer Hardware",
+      "price": 1783.74,
+      "rsi": 52.8,
+      "ma20": 1693.49,
+      "ma50": 1533.71,
+      "side": "LONG",
+      "score": 9.0,
+      "dist_ma20": 2.67,
+      "atr_pct": 3.45,
+      "rel_20d": 13.1,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "raw_score": 5,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": 0.74,
+        "beta_spy": 4.28,
+        "decouple_pct": 29.0,
+        "sec_down_ret": -3.1,
+        "up_capture": 3.37,
+        "down_capture": 3.85,
+        "label": "보통"
+      },
+      "peer": {
+        "n": 8,
+        "rank_pct": 75.0,
+        "excess_20d": 6.25,
+        "corr": 0.59,
+        "decouple_pct": 39.3,
+        "basis": "Computer Hardware"
+      },
+      "alpha": true
     },
     {
       "ticker": "QCOM",
@@ -872,6 +872,41 @@
       "alpha": true
     },
     {
+      "ticker": "BUG",
+      "sector": "Technology",
+      "industry": "ETF - Cybersecurity",
+      "price": 46.77,
+      "rsi": 69.4,
+      "ma20": 43.9,
+      "ma50": 41.94,
+      "side": "LONG",
+      "score": 9.0,
+      "dist_ma20": 4.95,
+      "atr_pct": 2.2,
+      "rel_20d": 11.06,
+      "instrument": "ETF",
+      "quality": null,
+      "raw_score": 6,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": 0.3,
+        "beta_spy": 1.28,
+        "decouple_pct": 41.9,
+        "sec_down_ret": 0.82,
+        "up_capture": 0.63,
+        "down_capture": 0.25,
+        "label": "방어형"
+      },
+      "peer": {
+        "n": 40,
+        "rank_pct": 65.0,
+        "excess_20d": 5.54,
+        "corr": 0.13,
+        "decouple_pct": 39.3,
+        "basis": "ETF - Cybersecurity"
+      }
+    },
+    {
       "ticker": "OXIG.L",
       "sector": "Technology",
       "industry": "Scientific & Technical Instruments",
@@ -909,41 +944,6 @@
         "basis": "Scientific & Technical Instruments"
       },
       "flow_track": true
-    },
-    {
-      "ticker": "BUG",
-      "sector": "Technology",
-      "industry": "ETF - Cybersecurity",
-      "price": 46.77,
-      "rsi": 69.4,
-      "ma20": 43.9,
-      "ma50": 41.94,
-      "side": "LONG",
-      "score": 9.0,
-      "dist_ma20": 4.95,
-      "atr_pct": 2.2,
-      "rel_20d": 11.06,
-      "instrument": "ETF",
-      "quality": null,
-      "raw_score": 6,
-      "character": {
-        "proxy": "XLK",
-        "corr_sector": 0.3,
-        "beta_spy": 1.28,
-        "decouple_pct": 41.9,
-        "sec_down_ret": 0.82,
-        "up_capture": 0.63,
-        "down_capture": 0.25,
-        "label": "방어형"
-      },
-      "peer": {
-        "n": 40,
-        "rank_pct": 65.0,
-        "excess_20d": 5.54,
-        "corr": 0.13,
-        "decouple_pct": 39.3,
-        "basis": "ETF - Cybersecurity"
-      }
     }
   ],
   "history": [

@@ -211,6 +211,19 @@ function validateAlloc(alloc) {
   const f = tick(alloc.focus_tickers); if (f.length) out.focus_tickers = f;
   const a = tick(alloc.avoid_tickers); if (a.length) out.avoid_tickers = a;
   const x = tick(alloc.exit_tickers).slice(0, 4); if (x.length) out.exit_tickers = x;
+  // 종목별 조정: 스톱 거리 배수 / 보유일 상한 (하드코딩 규칙 없음 — AI가 특성·피어를 보고 정한다)
+  const sa = {};
+  for (const [k, v] of Object.entries(alloc.stop_adjust || {})) {
+    const n = Number(v);
+    if (k && isFinite(n)) sa[String(k).toUpperCase()] = Math.max(0.3, Math.min(2.0, n));
+  }
+  if (Object.keys(sa).length) out.stop_adjust = sa;
+  const hd = {};
+  for (const [k, v] of Object.entries(alloc.hold_days || {})) {
+    const n = Math.round(Number(v));
+    if (k && isFinite(n)) hd[String(k).toUpperCase()] = Math.max(1, Math.min(120, n));
+  }
+  if (Object.keys(hd).length) out.hold_days = hd;
   return Object.keys(out).length ? out : null;
 }
 
@@ -338,6 +351,12 @@ Computer Hardware, Communication Equipment, Banks - Diversified, Oil & Gas E&P, 
   처럼 업종 점수 가감(-3~+3). 섹터보다 세분되므로 이쪽을 우선 활용해라.
 · focus_tickers / avoid_tickers — 종목 최대 8개 지정(가산 +2)/제외
 · exit_tickers — 보유 중인 종목을 최대 4개까지 청산 지시(틱당 최대 3건 집행, long_term 제외).
+· stop_adjust — {\"PTEN\": 0.6} 처럼 **종목별 스톱 거리 배수**(0.3~2.0, 1.0=원래대로, 0.6=타이트).
+  롱 기준: 배수가 작으면 스톱이 진입가에 가까워져 먼저 잘린다. 리포트의 🎯 종목별 특성·피어를
+  보고 판단한다 — 업종 내에서 뒤처지면서 섹터와 같이 빠지는 종목(동조형+낮은 백분위)은 조이고,
+  섹터 하락에 독립적인 종목은 여유를 줄 수 있다. **규칙은 없다: 네가 정한다.**
+· hold_days — {\"AAPL\": 45} 처럼 **종목별 보유일 상한**(1~120). 전역 max_hold_days를 이 종목만 덮어쓴다.
+  업종 내 최상위(백분위 높음)·독립형은 길게, 뒤처지는 동조형은 짧게 가져가는 식으로 써라.
   섹터 전환을 실제로 집행할 수단이다. 남발 금지 — 배분 전환이라는 근거가 있을 때만.
 배분은 네 판단이지만, 조정 사유(note)에 근거를 남겨라.
 

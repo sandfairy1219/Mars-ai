@@ -272,6 +272,35 @@ def load_ai_alloc():
     except Exception:
         return {}
 
+def ai_pos_tuning(ticker):
+    """AI의 종목별 조정: alloc.stop_adjust(스톱 거리 배수) · alloc.hold_days(보유일 상한).
+    하드코딩 규칙 없음 — 종목 특성·피어 데이터를 본 AI가 직접 정한다."""
+    a = load_ai_alloc()
+    sa, hd = 1.0, None
+    try:
+        m = a.get("stop_adjust") or {}
+        if isinstance(m, dict) and ticker in m:
+            sa = max(0.3, min(2.0, float(m[ticker])))
+    except (TypeError, ValueError):
+        sa = 1.0
+    try:
+        m = a.get("hold_days") or {}
+        if isinstance(m, dict) and ticker in m:
+            hd = max(1, min(120, int(m[ticker])))
+    except (TypeError, ValueError):
+        hd = None
+    return sa, hd
+
+
+def effective_stop(pos, stop_adj=1.0):
+    """스톱 거리를 배수만큼 조정한 실효 스톱 (롱 기준). adj<1 = 타이트."""
+    try:
+        e, s = float(pos["entry_price"]), float(pos["stop_price"])
+    except (KeyError, TypeError, ValueError):
+        return pos.get("stop_price")
+    return round(e - (e - s) * stop_adj, 2)
+
+
 # ─── 성과 지표 (AI 판단 근거 주입 — LLM이 실적을 못 보는 문제 수정) ───
 def _stats(rows):
     wins = [h["pnl"] for h in rows if h["pnl"] > 0]
@@ -1650,7 +1679,8 @@ def thesis_drift(pos):
         (weak if now_q < e_q else strong).append(f"퀄리티 {e_q}→{now_q}/7")
     cur = pos.get("current_price") or prices[-1]
     if pos.get("stop_price"):
-        dist_stop = (cur - pos["stop_price"]) / cur * 100 if cur else 0
+        _eff = effective_stop(pos, ai_pos_tuning(pos["ticker"])[0])
+        dist_stop = (cur - _eff) / cur * 100 if cur else 0
         if dist_stop < 2.0:
             weak.append(f"스톱까지 {dist_stop:.1f}%")
 
@@ -1713,12 +1743,17 @@ def update_positions(portfolio, today):
             current = prices[-1]
         days_held = (datetime.datetime.strptime(today, "%Y-%m-%d") - datetime.datetime.strptime(pos["date"], "%Y-%m-%d")).days
         exit_reason = None
-        if current <= pos["stop_price"]:
-            exit_reason = f"스톱 출도 (${current:.2f} ≤ ${pos['stop_price']:.2f})"
+        _sa, _hd = ai_pos_tuning(pos["ticker"])          # AI 종목별 조정
+        _stop = effective_stop(pos, _sa)
+        _hold = _hd if _hd is not None else params().get("max_hold_days", DEFAULT_MAX_HOLD_DAYS)
+        if current <= _stop:
+            _adj_note = "" if abs(_sa - 1.0) < 1e-9 else f" · AI스톱×{_sa:g}"
+            exit_reason = f"스톱 이탈 (${current:.2f} ≤ ${_stop:.2f}{_adj_note})"
         elif current >= pos["target_price"]:
             exit_reason = f"목표 도달 (${current:.2f} ≥ ${pos['target_price']:.2f})"
-        elif days_held >= params().get("max_hold_days", DEFAULT_MAX_HOLD_DAYS) and not pos.get("long_term"):
-            exit_reason = f"시간 초과 ({days_held}일 보유 ≥ {params().get('max_hold_days', DEFAULT_MAX_HOLD_DAYS)}일)"
+        elif days_held >= _hold and not pos.get("long_term"):
+            _h_note = "" if _hd is None else " · AI지정"
+            exit_reason = f"시간 초과 ({days_held}일 보유 ≥ {_hold}일{_h_note})"
         
         if exit_reason:
             pnl = (current - pos["entry_price"]) * pos["shares"]
@@ -2137,6 +2172,30 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             _ps = peer_stats(_tk)
             if _ps:
                 _peers_rows.append((_tk, _ps))
+        # 종목별 특성·피어 상세 (AI가 청산/스톱 조정을 직접 판단하는 재료)
+        try:
+            lines.append("🎯 **종목별 특성·피어 (AI 판단 재료 — 하드코딩 규칙 없음)**")
+            for _p in positions:
+                _t = _p["ticker"]
+                _c2 = character_of(_t, _p.get("sector"), _p.get("industry"))
+                _p2 = peer_stats(_t)
+                _bits = []
+                if _c2:
+                    _bits.append(f"{_c2['label']}(상관 {_c2['corr_sector']}"
+                                 + (f"·하방참여 {_c2['down_capture']}" if _c2.get("down_capture") is not None else "") + ")")
+                if _p2:
+                    _bits.append(f"업종 {_p2['rank_pct']:.0f}%ile {_p2['excess_20d']:+.1f}%p")
+                    if _p2.get("decouple_pct") is not None:
+                        _bits.append(f"피어하락일 독립 {_p2['decouple_pct']}%")
+                _sa2, _hd2 = ai_pos_tuning(_t)
+                if abs(_sa2 - 1.0) > 1e-9:
+                    _bits.append(f"AI스톱×{_sa2:g}")
+                if _hd2 is not None:
+                    _bits.append(f"AI보유 {_hd2}일")
+                if _bits:
+                    lines.append(f"  · {_t}: " + " · ".join(_bits))
+        except Exception:
+            pass
         if _peers_rows:
             _fwd = [f"{t} {p['rank_pct']:.0f}%ile/{p['excess_20d']:+.1f}%p" for t, p in _peers_rows if p["rank_pct"] >= 60]
             _back = [f"{t} {p['rank_pct']:.0f}%ile/{p['excess_20d']:+.1f}%p" for t, p in _peers_rows if p["rank_pct"] < 40]
