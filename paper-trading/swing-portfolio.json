@@ -164,22 +164,24 @@
   ],
   "watchlist": [
     {
-      "ticker": "NVDA",
+      "ticker": "LITE",
       "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 231.49,
-      "rsi": 63.7,
-      "ma20": 223.19,
-      "ma50": 217.4,
+      "industry": "Communication Equipment",
+      "price": 1047.54,
+      "rsi": 54.6,
+      "ma20": 921.06,
+      "ma50": 869.67,
       "side": "LONG",
-      "score": 6,
-      "dist_ma20": 2.27,
-      "atr_pct": 1.15,
-      "rel_20d": 4.92,
+      "score": 7,
+      "dist_ma20": 5.17,
+      "atr_pct": 2.83,
+      "rel_20d": 11.66,
       "quality": {
-        "score": 6,
-        "measured": 7
-      }
+        "score": 3,
+        "measured": 6
+      },
+      "flow_track": true,
+      "raw_score": 6
     },
     {
       "ticker": "SNDK",
@@ -200,6 +202,24 @@
       },
       "alpha": true,
       "raw_score": 5
+    },
+    {
+      "ticker": "NVDA",
+      "sector": "Technology",
+      "industry": "Semiconductors",
+      "price": 231.49,
+      "rsi": 63.7,
+      "ma20": 223.19,
+      "ma50": 217.4,
+      "side": "LONG",
+      "score": 6,
+      "dist_ma20": 2.27,
+      "atr_pct": 1.15,
+      "rel_20d": 4.92,
+      "quality": {
+        "score": 6,
+        "measured": 7
+      }
     },
     {
       "ticker": "TSM",
@@ -458,26 +478,6 @@
       "raw_score": 5
     },
     {
-      "ticker": "SMTC",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 186.63,
-      "rsi": 58.8,
-      "ma20": 165.49,
-      "ma50": 143.84,
-      "side": "LONG",
-      "score": 6,
-      "dist_ma20": 7.21,
-      "atr_pct": 4.38,
-      "rel_20d": 34.73,
-      "quality": {
-        "score": 6,
-        "measured": 7
-      },
-      "alpha": true,
-      "raw_score": 5
-    },
-    {
       "ticker": "KEYS",
       "sector": "Technology",
       "industry": "Scientific & Technical Instruments",
@@ -498,42 +498,44 @@
       "raw_score": 5
     },
     {
-      "ticker": "PLTR",
+      "ticker": "SMTC",
       "sector": "Technology",
-      "industry": "Software - Infrastructure",
-      "price": 190.56,
-      "rsi": 81.2,
-      "ma20": 178.85,
-      "ma50": 167.16,
+      "industry": "Semiconductors",
+      "price": 186.63,
+      "rsi": 58.8,
+      "ma20": 165.49,
+      "ma50": 143.84,
       "side": "LONG",
-      "score": 5,
-      "dist_ma20": 4.38,
-      "atr_pct": 1.3,
-      "rel_20d": 3.85,
+      "score": 6,
+      "dist_ma20": 7.21,
+      "atr_pct": 4.38,
+      "rel_20d": 34.73,
       "quality": {
         "score": 6,
         "measured": 7
       },
       "alpha": true,
-      "raw_score": 4
+      "raw_score": 5
     },
     {
-      "ticker": "AMD",
+      "ticker": "ARQQ",
       "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 617.26,
-      "rsi": 74.8,
-      "ma20": 549.67,
-      "ma50": 510.38,
+      "industry": "Software - Infrastructure",
+      "price": 23.52,
+      "rsi": 61.4,
+      "ma20": 21.51,
+      "ma50": 20.9,
       "side": "LONG",
-      "score": 5,
-      "dist_ma20": 10.15,
-      "atr_pct": 2.55,
-      "rel_20d": 32.99,
+      "score": 6,
+      "dist_ma20": 10.59,
+      "atr_pct": 4.51,
+      "rel_20d": 27.19,
       "quality": {
-        "score": 7,
-        "measured": 7
-      }
+        "score": 2,
+        "measured": 6
+      },
+      "flow_track": true,
+      "raw_score": 5
     }
   ],
   "history": [

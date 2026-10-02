@@ -1090,7 +1090,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "FORM",
@@ -1113,7 +1114,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "VRT",
@@ -1136,7 +1138,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "ETN",
@@ -1159,7 +1162,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "HUBB",
@@ -1182,7 +1186,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "CIEN",
@@ -1205,7 +1210,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "SNDK",
@@ -1228,7 +1234,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "KEYS",
@@ -1251,7 +1258,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "MKSI",
@@ -1274,7 +1282,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "ENR.DE",
@@ -1297,7 +1306,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "SU.PA",
@@ -1320,7 +1330,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "ABBN.SW",
@@ -1343,7 +1354,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "APH",
@@ -1366,7 +1378,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "LDOS",
@@ -1389,7 +1402,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "RHM.DE",
@@ -1412,7 +1426,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "HO.PA",
@@ -1435,7 +1450,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "SAF.PA",
@@ -1458,7 +1474,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "CRDO",
@@ -1481,7 +1498,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "ALAB",
@@ -1504,7 +1522,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "MTSI",
@@ -1527,7 +1546,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "SMTC",
@@ -1550,7 +1570,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "KLIC",
@@ -1573,7 +1594,8 @@
     "cfo_ni": "F",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "WDC",
@@ -1596,7 +1618,8 @@
     "cfo_ni": "F",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "PLTR",
@@ -1619,7 +1642,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "CACI",
@@ -1642,7 +1666,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "F"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "FN",
@@ -1665,7 +1690,8 @@
     "cfo_ni": "F",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "4063.T",
@@ -1688,7 +1714,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "NVT",
@@ -1711,7 +1738,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "AZZ",
@@ -1734,7 +1762,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "POWL",
@@ -1757,7 +1786,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "3110.T",
@@ -1780,7 +1810,8 @@
     "cfo_ni": "N/A",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "AVGO",
@@ -1803,7 +1834,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "MU",
@@ -1826,7 +1858,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "TSM",
@@ -1849,7 +1882,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "IBM",
@@ -1872,7 +1906,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "RTX",
@@ -1895,7 +1930,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "NOC",
@@ -1918,7 +1954,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "GD",
@@ -1941,7 +1978,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "CME",
@@ -1964,7 +2002,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "NVDA",
@@ -1987,7 +2026,8 @@
     "cfo_ni": "F",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "HON",
@@ -2010,7 +2050,8 @@
     "cfo_ni": "F",
     "nm": "P",
     "netdebt_ebitda": "P"
-   }
+   },
+   "lane": "quality"
   },
   {
    "ticker": "NEE",
@@ -2033,7 +2074,8 @@
     "cfo_ni": "P",
     "nm": "P",
     "netdebt_ebitda": "F"
-   }
+   },
+   "lane": "quality"
   }
  ],
  "tickers": [
@@ -2061,5 +2103,627 @@
   "KLIC",
   "WDC",
   "PLTR"
+ ],
+ "flow": {
+  "ai-infra": [
+   {
+    "ticker": "COHU",
+    "tier": "3차",
+    "bottleneck": "테스트 핸들러",
+    "name": "Cohu, Inc.",
+    "value_checks": 3,
+    "value_fails": [
+     "ROE>10%",
+     "영업이익률>10%"
+    ],
+    "market_cap": 3329785088,
+    "pe": null,
+    "roe_pct": -4.84,
+    "rev_growth_pct": 38.4,
+    "lane": "flow",
+    "r20": 54.3,
+    "flow_note": "테마 20일 11.7% · 종목 20일 54.3% (흐름 동조)",
+    "quality": 3,
+    "quality_measured": 6
+   },
+   {
+    "ticker": "SOI.PA",
+    "tier": "3차",
+    "bottleneck": "SOI 웨이퍼(실리콘 온 인슐레이터)",
+    "name": "SOITEC",
+    "value_checks": 2,
+    "value_fails": [
+     "ROE>10%",
+     "영업이익률>10%",
+     "매출성장>0%"
+    ],
+    "market_cap": 5673343488,
+    "pe": null,
+    "roe_pct": -15.2,
+    "rev_growth_pct": -34.6,
+    "lane": "flow",
+    "r20": 39.24,
+    "flow_note": "테마 20일 11.7% · 종목 20일 39.24% (흐름 동조)",
+    "quality": 3,
+    "quality_measured": 6
+   },
+   {
+    "ticker": "AXTI",
+    "tier": "3차",
+    "bottleneck": "InP/GaAs 기판(원재료)",
+    "name": "AXT Inc",
+    "value_checks": 4,
+    "value_fails": [
+     "ROE>10%"
+    ],
+    "market_cap": 5364544512,
+    "pe": 2727.0,
+    "roe_pct": 1.01,
+    "rev_growth_pct": 1.65,
+    "lane": "flow",
+    "r20": 37.96,
+    "flow_note": "테마 20일 11.7% · 종목 20일 37.96% (흐름 동조)",
+    "quality": 2,
+    "quality_measured": 7
+   },
+   {
+    "ticker": "ATS.VI",
+    "tier": "3차",
+    "bottleneck": "IC 기판(ABF)",
+    "name": "AT&S Austria Tech.&Systemtech.",
+    "value_checks": 4,
+    "value_fails": [
+     "ROE>10%"
+    ],
+    "market_cap": 7847699968,
+    "pe": 148.5294,
+    "roe_pct": 5.93,
+    "rev_growth_pct": 37.5,
+    "lane": "flow",
+    "r20": 32.78,
+    "flow_note": "테마 20일 11.7% · 종목 20일 32.78% (흐름 동조)",
+    "quality": 4,
+    "quality_measured": 7
+   },
+   {
+    "ticker": "CAMT",
+    "tier": "2차",
+    "bottleneck": "검사",
+    "name": "Camtek Ltd.",
+    "value_checks": 4,
+    "value_fails": [
+     "ROE>10%"
+    ],
+    "market_cap": 7177098240,
+    "pe": 205.05333,
+    "roe_pct": 7.56,
+    "rev_growth_pct": 2.5,
+    "lane": "flow",
+    "r20": 21.16,
+    "flow_note": "테마 20일 11.7% · 종목 20일 21.16% (흐름 동조)",
+    "quality": 4,
+    "quality_measured": 5
+   },
+   {
+    "ticker": "ONTO",
+    "tier": "2차",
+    "bottleneck": "검사·계측",
+    "name": "Onto Innovation Inc.",
+    "value_checks": 4,
+    "value_fails": [
+     "ROE>10%"
+    ],
+    "market_cap": 19246546944,
+    "pe": 117.49254,
+    "roe_pct": 6.83,
+    "rev_growth_pct": 35.3,
+    "lane": "flow",
+    "r20": 20.07,
+    "flow_note": "테마 20일 11.7% · 종목 20일 20.07% (흐름 동조)",
+    "quality": 5,
+    "quality_measured": 6
+   },
+   {
+    "ticker": "ACLS",
+    "tier": "2차",
+    "bottleneck": "이온주입 장비",
+    "name": "Axcelis Technologies, Inc.",
+    "value_checks": 3,
+    "value_fails": [
+     "ROE>10%",
+     "영업이익률>10%"
+    ],
+    "market_cap": 4221808384,
+    "pe": 45.87584,
+    "roe_pct": 8.89,
+    "rev_growth_pct": 10.6,
+    "lane": "flow",
+    "r20": 19.16,
+    "flow_note": "테마 20일 11.7% · 종목 20일 19.16% (흐름 동조)",
+    "quality": 7,
+    "quality_measured": 7
+   },
+   {
+    "ticker": "LITE",
+    "tier": "2차",
+    "bottleneck": "광모듈/레이저",
+    "name": "Lumentum Holdings Inc.",
+    "value_checks": 4,
+    "value_fails": [
+     "ROE>10%"
+    ],
+    "market_cap": 93806469120,
+    "pe": null,
+    "roe_pct": -2.4,
+    "rev_growth_pct": 109.3,
+    "lane": "flow",
+    "r20": 11.77,
+    "flow_note": "테마 20일 11.7% · 종목 20일 11.77% (흐름 동조)",
+    "quality": 3,
+    "quality_measured": 6
+   },
+   {
+    "ticker": "IQEPF",
+    "tier": "3차",
+    "bottleneck": "화합물 반도체 웨이퍼",
+    "name": "IQE Plc",
+    "value_checks": 3,
+    "value_fails": [
+     "ROE>10%",
+     "영업이익률>10%"
+    ],
+    "market_cap": 871888320,
+    "pe": null,
+    "roe_pct": -24.95,
+    "rev_growth_pct": 42.7,
+    "lane": "flow",
+    "r20": 10.83,
+    "flow_note": "테마 20일 11.7% · 종목 20일 10.83% (흐름 동조)",
+    "quality": 1,
+    "quality_measured": 6
+   }
+  ],
+  "quantum": [
+   {
+    "ticker": "QMCO",
+    "tier": "3차",
+    "bottleneck": "양자 저장/컴퓨팅",
+    "name": "Quantum Corporation",
+    "value_checks": 2,
+    "value_fails": [
+     "ROE>10%(데이터없음)",
+     "영업이익률>10%",
+     "부채비율<200%(데이터없음)"
+    ],
+    "market_cap": 1256587904,
+    "pe": null,
+    "roe_pct": null,
+    "rev_growth_pct": 25.7,
+    "lane": "flow",
+    "r20": 31.24,
+    "flow_note": "테마 20일 5.2% · 종목 20일 31.24% (흐름 동조)",
+    "quality": 3,
+    "quality_measured": 5
+   },
+   {
+    "ticker": "ARQQ",
+    "tier": "3차",
+    "bottleneck": "양자암호(QKD)",
+    "name": "Arqit Quantum Inc.",
+    "value_checks": 2,
+    "value_fails": [
+     "ROE>10%",
+     "영업이익률>10%",
+     "시총>$500M"
+    ],
+    "market_cap": 416787776,
+    "pe": null,
+    "roe_pct": -2.2,
+    "rev_growth_pct": 8.3,
+    "lane": "flow",
+    "r20": 27.3,
+    "flow_note": "테마 20일 5.2% · 종목 20일 27.3% (흐름 동조)",
+    "quality": 2,
+    "quality_measured": 6
+   },
+   {
+    "ticker": "IONQ",
+    "tier": "3차",
+    "bottleneck": "이온트랩 양자컴퓨터",
+    "name": "IonQ, Inc.",
+    "value_checks": 3,
+    "value_fails": [
+     "ROE>10%",
+     "영업이익률>10%"
+    ],
+    "market_cap": 17821917184,
+    "pe": null,
+    "roe_pct": -60.48,
+    "rev_growth_pct": 2.87,
+    "lane": "flow",
+    "r20": 16.09,
+    "flow_note": "테마 20일 5.2% · 종목 20일 16.09% (흐름 동조)",
+    "quality": 2,
+    "quality_measured": 5
+   },
+   {
+    "ticker": "OXIG.L",
+    "tier": "2차",
+    "bottleneck": "극저온 냉동기·장비",
+    "name": "OXFORD INSTRUMENTS PLC ORD 5P",
+    "value_checks": 4,
+    "value_fails": [
+     "매출성장>0%"
+    ],
+    "market_cap": 1652145152,
+    "pe": 39.142857,
+    "roe_pct": 12.43,
+    "rev_growth_pct": -0.6,
+    "lane": "flow",
+    "r20": 12.27,
+    "flow_note": "테마 20일 5.2% · 종목 20일 12.27% (흐름 동조)",
+    "quality": 7,
+    "quality_measured": 7
+   },
+   {
+    "ticker": "QUBT",
+    "tier": "3차",
+    "bottleneck": "광자 양자",
+    "name": "Quantum Computing Inc.",
+    "value_checks": 3,
+    "value_fails": [
+     "ROE>10%",
+     "영업이익률>10%"
+    ],
+    "market_cap": 1899050240,
+    "pe": null,
+    "roe_pct": -1.51,
+    "rev_growth_pct": 90.0,
+    "lane": "flow",
+    "r20": 6.96,
+    "flow_note": "테마 20일 5.2% · 종목 20일 6.96% (흐름 동조)",
+    "quality": 0,
+    "quality_measured": 6
+   },
+   {
+    "ticker": "RGTI",
+    "tier": "3차",
+    "bottleneck": "초전도 큐비트",
+    "name": "Rigetti Computing, Inc.",
+    "value_checks": 3,
+    "value_fails": [
+     "ROE>10%",
+     "영업이익률>10%"
+    ],
+    "market_cap": 5213467648,
+    "pe": null,
+    "roe_pct": -43.77,
+    "rev_growth_pct": 1.85,
+    "lane": "flow",
+    "r20": 5.0,
+    "flow_note": "테마 20일 5.2% · 종목 20일 5.0% (흐름 동조)",
+    "quality": 2,
+    "quality_measured": 5
+   }
+  ],
+  "power-grid": [],
+  "defense": [],
+  "crypto-proxy": []
+ },
+ "flow_candidates": [
+  {
+   "ticker": "COHU",
+   "tier": "3차",
+   "bottleneck": "테스트 핸들러",
+   "name": "Cohu, Inc.",
+   "value_checks": 3,
+   "value_fails": [
+    "ROE>10%",
+    "영업이익률>10%"
+   ],
+   "market_cap": 3329785088,
+   "pe": null,
+   "roe_pct": -4.84,
+   "rev_growth_pct": 38.4,
+   "lane": "flow",
+   "r20": 54.3,
+   "flow_note": "테마 20일 11.7% · 종목 20일 54.3% (흐름 동조)",
+   "quality": 3,
+   "quality_measured": 6
+  },
+  {
+   "ticker": "SOI.PA",
+   "tier": "3차",
+   "bottleneck": "SOI 웨이퍼(실리콘 온 인슐레이터)",
+   "name": "SOITEC",
+   "value_checks": 2,
+   "value_fails": [
+    "ROE>10%",
+    "영업이익률>10%",
+    "매출성장>0%"
+   ],
+   "market_cap": 5673343488,
+   "pe": null,
+   "roe_pct": -15.2,
+   "rev_growth_pct": -34.6,
+   "lane": "flow",
+   "r20": 39.24,
+   "flow_note": "테마 20일 11.7% · 종목 20일 39.24% (흐름 동조)",
+   "quality": 3,
+   "quality_measured": 6
+  },
+  {
+   "ticker": "AXTI",
+   "tier": "3차",
+   "bottleneck": "InP/GaAs 기판(원재료)",
+   "name": "AXT Inc",
+   "value_checks": 4,
+   "value_fails": [
+    "ROE>10%"
+   ],
+   "market_cap": 5364544512,
+   "pe": 2727.0,
+   "roe_pct": 1.01,
+   "rev_growth_pct": 1.65,
+   "lane": "flow",
+   "r20": 37.96,
+   "flow_note": "테마 20일 11.7% · 종목 20일 37.96% (흐름 동조)",
+   "quality": 2,
+   "quality_measured": 7
+  },
+  {
+   "ticker": "ATS.VI",
+   "tier": "3차",
+   "bottleneck": "IC 기판(ABF)",
+   "name": "AT&S Austria Tech.&Systemtech.",
+   "value_checks": 4,
+   "value_fails": [
+    "ROE>10%"
+   ],
+   "market_cap": 7847699968,
+   "pe": 148.5294,
+   "roe_pct": 5.93,
+   "rev_growth_pct": 37.5,
+   "lane": "flow",
+   "r20": 32.78,
+   "flow_note": "테마 20일 11.7% · 종목 20일 32.78% (흐름 동조)",
+   "quality": 4,
+   "quality_measured": 7
+  },
+  {
+   "ticker": "CAMT",
+   "tier": "2차",
+   "bottleneck": "검사",
+   "name": "Camtek Ltd.",
+   "value_checks": 4,
+   "value_fails": [
+    "ROE>10%"
+   ],
+   "market_cap": 7177098240,
+   "pe": 205.05333,
+   "roe_pct": 7.56,
+   "rev_growth_pct": 2.5,
+   "lane": "flow",
+   "r20": 21.16,
+   "flow_note": "테마 20일 11.7% · 종목 20일 21.16% (흐름 동조)",
+   "quality": 4,
+   "quality_measured": 5
+  },
+  {
+   "ticker": "ONTO",
+   "tier": "2차",
+   "bottleneck": "검사·계측",
+   "name": "Onto Innovation Inc.",
+   "value_checks": 4,
+   "value_fails": [
+    "ROE>10%"
+   ],
+   "market_cap": 19246546944,
+   "pe": 117.49254,
+   "roe_pct": 6.83,
+   "rev_growth_pct": 35.3,
+   "lane": "flow",
+   "r20": 20.07,
+   "flow_note": "테마 20일 11.7% · 종목 20일 20.07% (흐름 동조)",
+   "quality": 5,
+   "quality_measured": 6
+  },
+  {
+   "ticker": "ACLS",
+   "tier": "2차",
+   "bottleneck": "이온주입 장비",
+   "name": "Axcelis Technologies, Inc.",
+   "value_checks": 3,
+   "value_fails": [
+    "ROE>10%",
+    "영업이익률>10%"
+   ],
+   "market_cap": 4221808384,
+   "pe": 45.87584,
+   "roe_pct": 8.89,
+   "rev_growth_pct": 10.6,
+   "lane": "flow",
+   "r20": 19.16,
+   "flow_note": "테마 20일 11.7% · 종목 20일 19.16% (흐름 동조)",
+   "quality": 7,
+   "quality_measured": 7
+  },
+  {
+   "ticker": "LITE",
+   "tier": "2차",
+   "bottleneck": "광모듈/레이저",
+   "name": "Lumentum Holdings Inc.",
+   "value_checks": 4,
+   "value_fails": [
+    "ROE>10%"
+   ],
+   "market_cap": 93806469120,
+   "pe": null,
+   "roe_pct": -2.4,
+   "rev_growth_pct": 109.3,
+   "lane": "flow",
+   "r20": 11.77,
+   "flow_note": "테마 20일 11.7% · 종목 20일 11.77% (흐름 동조)",
+   "quality": 3,
+   "quality_measured": 6
+  },
+  {
+   "ticker": "IQEPF",
+   "tier": "3차",
+   "bottleneck": "화합물 반도체 웨이퍼",
+   "name": "IQE Plc",
+   "value_checks": 3,
+   "value_fails": [
+    "ROE>10%",
+    "영업이익률>10%"
+   ],
+   "market_cap": 871888320,
+   "pe": null,
+   "roe_pct": -24.95,
+   "rev_growth_pct": 42.7,
+   "lane": "flow",
+   "r20": 10.83,
+   "flow_note": "테마 20일 11.7% · 종목 20일 10.83% (흐름 동조)",
+   "quality": 1,
+   "quality_measured": 6
+  },
+  {
+   "ticker": "QMCO",
+   "tier": "3차",
+   "bottleneck": "양자 저장/컴퓨팅",
+   "name": "Quantum Corporation",
+   "value_checks": 2,
+   "value_fails": [
+    "ROE>10%(데이터없음)",
+    "영업이익률>10%",
+    "부채비율<200%(데이터없음)"
+   ],
+   "market_cap": 1256587904,
+   "pe": null,
+   "roe_pct": null,
+   "rev_growth_pct": 25.7,
+   "lane": "flow",
+   "r20": 31.24,
+   "flow_note": "테마 20일 5.2% · 종목 20일 31.24% (흐름 동조)",
+   "quality": 3,
+   "quality_measured": 5
+  },
+  {
+   "ticker": "ARQQ",
+   "tier": "3차",
+   "bottleneck": "양자암호(QKD)",
+   "name": "Arqit Quantum Inc.",
+   "value_checks": 2,
+   "value_fails": [
+    "ROE>10%",
+    "영업이익률>10%",
+    "시총>$500M"
+   ],
+   "market_cap": 416787776,
+   "pe": null,
+   "roe_pct": -2.2,
+   "rev_growth_pct": 8.3,
+   "lane": "flow",
+   "r20": 27.3,
+   "flow_note": "테마 20일 5.2% · 종목 20일 27.3% (흐름 동조)",
+   "quality": 2,
+   "quality_measured": 6
+  },
+  {
+   "ticker": "IONQ",
+   "tier": "3차",
+   "bottleneck": "이온트랩 양자컴퓨터",
+   "name": "IonQ, Inc.",
+   "value_checks": 3,
+   "value_fails": [
+    "ROE>10%",
+    "영업이익률>10%"
+   ],
+   "market_cap": 17821917184,
+   "pe": null,
+   "roe_pct": -60.48,
+   "rev_growth_pct": 2.87,
+   "lane": "flow",
+   "r20": 16.09,
+   "flow_note": "테마 20일 5.2% · 종목 20일 16.09% (흐름 동조)",
+   "quality": 2,
+   "quality_measured": 5
+  },
+  {
+   "ticker": "OXIG.L",
+   "tier": "2차",
+   "bottleneck": "극저온 냉동기·장비",
+   "name": "OXFORD INSTRUMENTS PLC ORD 5P",
+   "value_checks": 4,
+   "value_fails": [
+    "매출성장>0%"
+   ],
+   "market_cap": 1652145152,
+   "pe": 39.142857,
+   "roe_pct": 12.43,
+   "rev_growth_pct": -0.6,
+   "lane": "flow",
+   "r20": 12.27,
+   "flow_note": "테마 20일 5.2% · 종목 20일 12.27% (흐름 동조)",
+   "quality": 7,
+   "quality_measured": 7
+  },
+  {
+   "ticker": "QUBT",
+   "tier": "3차",
+   "bottleneck": "광자 양자",
+   "name": "Quantum Computing Inc.",
+   "value_checks": 3,
+   "value_fails": [
+    "ROE>10%",
+    "영업이익률>10%"
+   ],
+   "market_cap": 1899050240,
+   "pe": null,
+   "roe_pct": -1.51,
+   "rev_growth_pct": 90.0,
+   "lane": "flow",
+   "r20": 6.96,
+   "flow_note": "테마 20일 5.2% · 종목 20일 6.96% (흐름 동조)",
+   "quality": 0,
+   "quality_measured": 6
+  },
+  {
+   "ticker": "RGTI",
+   "tier": "3차",
+   "bottleneck": "초전도 큐비트",
+   "name": "Rigetti Computing, Inc.",
+   "value_checks": 3,
+   "value_fails": [
+    "ROE>10%",
+    "영업이익률>10%"
+   ],
+   "market_cap": 5213467648,
+   "pe": null,
+   "roe_pct": -43.77,
+   "rev_growth_pct": 1.85,
+   "lane": "flow",
+   "r20": 5.0,
+   "flow_note": "테마 20일 5.2% · 종목 20일 5.0% (흐름 동조)",
+   "quality": 2,
+   "quality_measured": 5
+  }
+ ],
+ "flow_tickers": [
+  "COHU",
+  "SOI.PA",
+  "AXTI",
+  "ATS.VI",
+  "CAMT",
+  "ONTO",
+  "ACLS",
+  "LITE",
+  "IQEPF",
+  "QMCO",
+  "ARQQ",
+  "IONQ",
+  "OXIG.L",
+  "QUBT",
+  "RGTI"
  ]
 }

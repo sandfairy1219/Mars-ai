@@ -28,6 +28,7 @@ sys.path.insert(0, HERE)
 # bottleneck: 어느 지점이 먼저 막히는가
 THEMES = {
     "ai-infra": {
+        "flow_proxy": "SMH",
         "name": "AI 인프라 공급망",
         "trend_check": {
             "지속성": "3~5년 CAPEX 확정 (하이퍼스케일러 데이터센터 증설 가이던스)",
@@ -83,6 +84,7 @@ THEMES = {
         ],
     },
     "quantum": {
+        "flow_proxy": "QTUM",
         "name": "퀀텀컴퓨팅",
         "trend_check": {
             "지속성": "국가·빅테크 양자 로드맵 5~10년 (오류정정 단계 진입)",
@@ -112,6 +114,7 @@ THEMES = {
         ],
     },
     "power-grid": {
+        "flow_proxy": "GRID",
         "name": "전력망·변압기·전력기기",
         "trend_check": {
             "지속성": "5년+ 확정 — 데이터센터·전기화 동시 수요",
@@ -149,6 +152,7 @@ THEMES = {
         ],
     },
     "defense": {
+        "flow_proxy": "ITA",
         "name": "방산·드론·우주",
         "trend_check": {
             "지속성": "5년+ — 각국 국방예산 증액 추세",
@@ -182,6 +186,7 @@ THEMES = {
         ],
     },
     "crypto-proxy": {
+        "flow_proxy": "WGMI",
         "name": "암호화폐 프록시·채굴·전력",
         "trend_check": {
             "지속성": "3~5년 — 기관화·ETF 자금 유입, 반감기 사이클",
@@ -254,6 +259,37 @@ def _yf_batch(tickers):
     return out
 
 
+FLOW_PROXY_MIN_20D = 3.0    # 테마 프록시 ETF 20일 수익률이 이 이상이면 '섹터 흐름 살아있음'
+FLOW_LAG_TOLERANCE = 2.0    # 종목이 프록시보다 이 %p 이상 뒤처지면 흐름 이탈로 간주
+FLOW_CAP = 12               # 흐름 트랙 상한
+
+
+def _momentum_batch(tickers):
+    """일괄 가격 이력으로 20일 수익률 / MA20·MA50 상회 여부 계산 (yf.download 1회)."""
+    import yfinance as yf
+    out = {}
+    try:
+        data = yf.download(list(tickers), period="3mo", interval="1d",
+                           progress=False, auto_adjust=True, threads=True)
+        closes = data["Close"] if "Close" in data else data
+    except Exception:
+        return out
+    for t in tickers:
+        try:
+            s = closes[t].dropna()
+            if len(s) < 21:
+                continue
+            c_last = float(s.iloc[-1])
+            r20 = (c_last - float(s.iloc[-21])) / float(s.iloc[-21]) * 100
+            ma20 = float(s.tail(20).mean())
+            ma50 = float(s.tail(50).mean()) if len(s) >= 50 else None
+            out[t] = {"r20": round(r20, 2), "above_ma20": c_last > ma20,
+                      "above_ma50": (None if ma50 is None else c_last > ma50), "px": round(c_last, 2)}
+        except Exception:
+            continue
+    return out
+
+
 def run(theme_keys):
     from fundamentals import quality_report
     results = {"generated": datetime.datetime.utcnow().strftime("%Y-%m-%d"),
@@ -293,6 +329,45 @@ def run(theme_keys):
         for d in dropped[:12]:
             print(f"    ✗ {d['ticker']:9s} [{d['tier']}] {d['bottleneck']:18s} 미달: {','.join(d['value_fails'][:2])}")
 
+        # ── 2.5단계: 섹터 흐름 트랙 (sp 지시: 섹터 흐름 따라가는 건 남긴다 — 수익률이 중요) ──
+        #    펀더멘털 게이트를 못 넘어도, 테마 자체가 강하고 그 종목이 흐름에 올라타 있으면 관찰·진입 후보로 유지.
+        _all_tk = [c_[0] for c_ in cands]
+        _proxy = theme.get("flow_proxy")
+        _mom = _momentum_batch(_all_tk + ([_proxy] if _proxy else []))
+        _pm = _mom.get(_proxy or "", {})
+        _flow_alive = bool(_proxy and _pm and _pm.get("r20", -99) >= FLOW_PROXY_MIN_20D
+                           and _pm.get("above_ma20"))
+        print(f"  프록시 {_proxy}: 20일 {_pm.get('r20','?')}% · MA20 상회 {_pm.get('above_ma20')} "
+              f"→ 섹터 흐름 {'살아있음 🔥' if _flow_alive else '둔함'}")
+        theme["flow_alive"] = _flow_alive
+        theme["flow_proxy_20d"] = _pm.get("r20")
+        flow_added = []
+        if _flow_alive:
+            for d in dropped:
+                mm = _mom.get(d["ticker"])
+                if not mm or not mm.get("above_ma20"):
+                    continue
+                if mm["r20"] < (_pm.get("r20", 0) - FLOW_LAG_TOLERANCE):
+                    continue
+                d = dict(d)
+                d["lane"] = "flow"
+                d["r20"] = mm["r20"]
+                d["flow_note"] = f"테마 20일 {_pm.get('r20')}% · 종목 20일 {mm['r20']}% (흐름 동조)"
+                flow_added.append(d)
+            flow_added.sort(key=lambda x: -x.get("r20", 0))
+            flow_added = flow_added[:FLOW_CAP]
+            # 퀄리티도 붙여서 참고용으로 남긴다(게이트는 적용하지 않음)
+            for d in flow_added:
+                try:
+                    q = quality_report(d["ticker"])
+                    d["quality"] = q.get("score")
+                    d["quality_measured"] = q.get("measured")
+                except Exception:
+                    d["quality"], d["quality_measured"] = None, None
+            print(f"    🔥 흐름 트랙 {len(flow_added)}종목: "
+                  + ", ".join(f"{x['ticker']}({x['r20']:+.1f}%)" for x in flow_added[:10]))
+        results.setdefault("flow", {})[key] = flow_added
+
         # 3단계: 퀄리티 스크린(7지표)
         print(f"  3단계 퀄리티 스크린(7지표) …")
         for r in stage2:
@@ -305,6 +380,7 @@ def run(theme_keys):
                 r["quality"], r["quality_measured"] = None, None
         stage2.sort(key=lambda x: (-(x.get("quality") or 0), -(x.get("value_checks") or 0)))
         for r in stage2:
+            r["lane"] = "quality"
             print(f"    ✓ {r['ticker']:9s} [{r['tier']}] {r['bottleneck']:18s} 가치 {r['value_checks']}/5 · 퀄리티 {r.get('quality')}/{r.get('quality_measured')} · 시총 {r['market_cap']}")
 
         results["themes"][key] = {"name": theme["name"], "trend_check": theme["trend_check"],
@@ -325,10 +401,22 @@ def run(theme_keys):
         dedup.append(c_)
     results["candidates"] = dedup
     results["tickers"] = [c["ticker"] for c in dedup if c.get("tier") in ("2차", "3차")][:ALPHA_CAP]
+    # 흐름 트랙(품질 미달 + 섹터 흐름 동조) — 중복 제거 + 상한
+    _flow_seen, _flow = set(results["tickers"]), []
+    for key in results.get("flow", {}):
+        for f in results["flow"][key]:
+            if f["ticker"] in _flow_seen:
+                continue
+            _flow_seen.add(f["ticker"])
+            _flow.append(f)
+    results["flow_candidates"] = _flow[:20]
+    results["flow_tickers"] = [f["ticker"] for f in results["flow_candidates"]]
     with open(OUT, "w") as f:
         json.dump(results, f, ensure_ascii=False, indent=1)
     print(f"\n✅ 저장: {OUT}")
-    print(f"   알파 트랙(2·3차 병목) {len(results['tickers'])}종목: {', '.join(results['tickers'])}")
+    print(f"   알파 트랙(품질·2·3차 병목) {len(results['tickers'])}종목: {', '.join(results['tickers'])}")
+    if results.get("flow_tickers"):
+        print(f"   🔥 흐름 트랙(품질 미달·모멘텀) {len(results['flow_tickers'])}종목: {', '.join(results['flow_tickers'])}")
     return results
 
 

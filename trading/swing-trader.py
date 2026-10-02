@@ -56,6 +56,7 @@ def load_learned_params():
         "min_candidate_score": 4,   # 후보 스크린: 이 점수 미만은 워치리스트에 안 올림 (0~8)
         "industry_limit": 2,        # 같은 업종(반도체·소프트웨어 등) 최대 보유 수 (1~6)
         "quality_min": 0,           # 퀄리티 스크린 통과 최소 점수 (0~7, 0=게이트 없음)
+        "flow_size_mult": 0.6,      # 흐름 트랙(펀더멘털 미달 모멘텀) 포지션 크기 배수
     }
     try:
         if os.path.exists(PARAMS_PATH):
@@ -98,8 +99,11 @@ def load_alpha_track():
         with open(ALPHA_PATH) as f:
             d = json.load(f)
         tk = [t for t in (d.get("tickers") or []) if t]
+        ftk = [t for t in (d.get("flow_tickers") or []) if t]
         themes = list((d.get("themes") or {}).keys())
-        return {"tickers": tk, "generated": d.get("generated"), "themes": themes}
+        fa = {k: v.get("flow_alive") for k, v in (d.get("themes") or {}).items()}
+        return {"tickers": tk, "flow_tickers": ftk, "generated": d.get("generated"),
+                "themes": themes, "flow_alive": fa}
     except Exception:
         return {"tickers": [], "generated": None, "themes": []}
 
@@ -1613,6 +1617,11 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         quality_min = max(0, min(7, int(P.get("quality_min", 0) or 0)))
     except (TypeError, ValueError):
         quality_min = 0
+    # 흐름 트랙(펀더멘털 미달 모멘텀) 포지션 크기 배수 — AI 조정 가능
+    try:
+        flow_size_mult = max(0.1, min(1.5, float(P.get("flow_size_mult", 0.6))))
+    except (TypeError, ValueError):
+        flow_size_mult = 0.6
     try:
         min_mid = max(0, int(P.get("cap_min_mid", 0)))
         min_small = max(0, int(P.get("cap_min_small", 0)))
@@ -1684,6 +1693,8 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         # Cap tier sizing
         tier_mult = {"large": 1.0, "mid": 0.75, "small": 0.55}[tier]
         size = base * tier_mult
+        if c.get("flow_track"):
+            size *= flow_size_mult      # 흐름 트랙은 기본 0.6배 (펀더멘털 미달)
         
         # Enforce dynamic minimum cash
         if portfolio["cash"] - size < min_cash:
@@ -1918,7 +1929,10 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
         _al = {}
     if _al.get("tickers"):
         _tk = ", ".join(_al["tickers"][:12])
-        lines.append(f"• 🧬 **알파 트랙**(2·3차 병목, {_al.get('generated','?')} 기준 {len(_al['tickers'])}종목): {_tk}")
+        lines.append(f"• 🧬 **알파 트랙**(품질 통과·2·3차 병목, {_al.get('generated','?')} 기준 {len(_al['tickers'])}종목): {_tk}")
+    if _al.get("flow_tickers"):
+        _ft = ", ".join(_al["flow_tickers"][:12])
+        lines.append(f"• 🔥 **흐름 트랙**(품질 미달·섹터 흐름 동조, {len(_al['flow_tickers'])}종목 · 사이즈 ×{P.get('flow_size_mult',0.6):.2f}): {_ft}")
     # thesis-drift 요약 (ai-berkshire 이식): 사실 변화만 인정, 가격 변화는 논문 변화 아님
     if positions:
         _dr = {p["ticker"]: thesis_drift(p) for p in positions}
@@ -2004,6 +2018,8 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
                 _ind_w += f" | 품질 {_q.get('score')}/{_q.get('measured')}"
             if w.get("alpha"):
                 _ind_w += " | 🧬알파"
+            if w.get("flow_track"):
+                _ind_w += " | 🔥흐름"
             lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {_raw}/8{_tag}{_ind_w} | RSI {w['rsi']} | ${w['price']}")
         lines.append("")
     
@@ -2136,13 +2152,15 @@ def main():
         # ── 알파 트랙: 거래대금 상위 250 밖이어도 항상 스캔 (공급망 병목 후보) ──
         _alpha = load_alpha_track()
         _alpha_tk = set(_alpha.get("tickers") or [])
+        # ── 흐름 트랙: 펀더멘털 미달이지만 섹터 흐름에 올라탄 종목 (sp: 섹터 흐름 따라가는 건 남긴다) ──
+        _flow_tk = set(_alpha.get("flow_tickers") or [])
 
         # Determine which tickers to scan
         if scan_type in ("pre_market_1", "after_hours"):
             # Full universe scan: 거래대금 상위 300 + 레버리지 제외
             dynamic_universe = get_filtered_universe(TOP_VOLUME_N)
             scan_targets = dynamic_universe if dynamic_universe else TICKERS
-            scan_targets = list(dict.fromkeys(list(scan_targets) + sorted(_alpha_tk)))
+            scan_targets = list(dict.fromkeys(list(scan_targets) + sorted(_alpha_tk) + sorted(_flow_tk)))
             is_full = True
         else:
             # Positions + watchlist only
@@ -2152,7 +2170,7 @@ def main():
                 # Fallback: add some from dynamic universe if watchlist is small
                 dynamic_universe = get_filtered_universe(TOP_VOLUME_N) or TICKERS
                 scan_targets = list(dict.fromkeys(scan_targets + dynamic_universe[:30]))
-            scan_targets = list(dict.fromkeys(scan_targets + sorted(_alpha_tk)))
+            scan_targets = list(dict.fromkeys(scan_targets + sorted(_alpha_tk) + sorted(_flow_tk)))
         
         # Update existing positions (check stops/targets/time)
         closed = update_positions(portfolio, today)
@@ -2163,10 +2181,14 @@ def main():
         results = scan_tickers(scan_targets, is_full)
 
         # 알파 트랙 가산 (+1) — 배분 틸트와 별개. 사이즈 보너스는 원점수 기준 유지
-        if _alpha_tk:
+        if _alpha_tk or _flow_tk:
             for _r in results:
                 if _r["ticker"] in _alpha_tk:
                     _r["alpha"] = True
+                    _r.setdefault("raw_score", _r["score"])
+                    _r["score"] += 1
+                elif _r["ticker"] in _flow_tk:
+                    _r["flow_track"] = True
                     _r.setdefault("raw_score", _r["score"])
                     _r["score"] += 1
         
