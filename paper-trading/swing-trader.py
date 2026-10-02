@@ -90,6 +90,20 @@ def params():
     return load_learned_params()
 
 # ─── AI 배분 지시 (섹터 틸트·종목 지정/제외) — swing_ai.js가 당일 유효로 저장 ───
+ALPHA_PATH = os.path.expanduser("~/.hermes/scripts/alpha_watchlist.json")
+
+def load_alpha_track():
+    """alpha_pipeline.py가 저장한 2·3차 병목 후보(알파 트랙). 실패 시 빈 값."""
+    try:
+        with open(ALPHA_PATH) as f:
+            d = json.load(f)
+        tk = [t for t in (d.get("tickers") or []) if t]
+        themes = list((d.get("themes") or {}).keys())
+        return {"tickers": tk, "generated": d.get("generated"), "themes": themes}
+    except Exception:
+        return {"tickers": [], "generated": None, "themes": []}
+
+
 def load_ai_alloc():
     """swing_ai_overrides.json의 alloc(섹터 틸트·focus/avoid) 을 로드. 날짜가 오늘일 때만."""
     try:
@@ -1897,6 +1911,14 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     if _qm2:
         _avgq = sum(p["quality"] for p in _qm2) / len(_qm2)
         lines.append(f"• 🏅 **보유 퀄리티 평균**: {_avgq:.1f}/7 (품질 데이터 {len(_qm2)}/{len(positions or [])}종목)")
+    # 알파 트랙 (공급망 병목 2·3차 — alpha_pipeline.py)
+    try:
+        _al = json.load(open(ALPHA_PATH))
+    except Exception:
+        _al = {}
+    if _al.get("tickers"):
+        _tk = ", ".join(_al["tickers"][:12])
+        lines.append(f"• 🧬 **알파 트랙**(2·3차 병목, {_al.get('generated','?')} 기준 {len(_al['tickers'])}종목): {_tk}")
     # thesis-drift 요약 (ai-berkshire 이식): 사실 변화만 인정, 가격 변화는 논문 변화 아님
     if positions:
         _dr = {p["ticker"]: thesis_drift(p) for p in positions}
@@ -1980,6 +2002,8 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             _q = w.get("quality") or {}
             if _q.get("measured"):
                 _ind_w += f" | 품질 {_q.get('score')}/{_q.get('measured')}"
+            if w.get("alpha"):
+                _ind_w += " | 🧬알파"
             lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {_raw}/8{_tag}{_ind_w} | RSI {w['rsi']} | ${w['price']}")
         lines.append("")
     
@@ -2109,11 +2133,16 @@ def main():
             print(msg)
             return
 
+        # ── 알파 트랙: 거래대금 상위 250 밖이어도 항상 스캔 (공급망 병목 후보) ──
+        _alpha = load_alpha_track()
+        _alpha_tk = set(_alpha.get("tickers") or [])
+
         # Determine which tickers to scan
         if scan_type in ("pre_market_1", "after_hours"):
             # Full universe scan: 거래대금 상위 300 + 레버리지 제외
             dynamic_universe = get_filtered_universe(TOP_VOLUME_N)
             scan_targets = dynamic_universe if dynamic_universe else TICKERS
+            scan_targets = list(dict.fromkeys(list(scan_targets) + sorted(_alpha_tk)))
             is_full = True
         else:
             # Positions + watchlist only
@@ -2123,6 +2152,7 @@ def main():
                 # Fallback: add some from dynamic universe if watchlist is small
                 dynamic_universe = get_filtered_universe(TOP_VOLUME_N) or TICKERS
                 scan_targets = list(dict.fromkeys(scan_targets + dynamic_universe[:30]))
+            scan_targets = list(dict.fromkeys(scan_targets + sorted(_alpha_tk)))
         
         # Update existing positions (check stops/targets/time)
         closed = update_positions(portfolio, today)
@@ -2131,6 +2161,14 @@ def main():
         
         # Scan for setups
         results = scan_tickers(scan_targets, is_full)
+
+        # 알파 트랙 가산 (+1) — 배분 틸트와 별개. 사이즈 보너스는 원점수 기준 유지
+        if _alpha_tk:
+            for _r in results:
+                if _r["ticker"] in _alpha_tk:
+                    _r["alpha"] = True
+                    _r.setdefault("raw_score", _r["score"])
+                    _r["score"] += 1
         
         # For full scans, rebuild watchlist
         if is_full:
@@ -2156,7 +2194,7 @@ def main():
                     watchlist = [w for w in watchlist if w["ticker"].upper() not in _avoid]
                 _itilt = {k: float(v) for k, v in (_alloc.get("industry_tilt") or {}).items()}
                 for w in watchlist:
-                    w["raw_score"] = w["score"]      # 배분 개입 전 원점수 (사이즈 보너스는 원점수 기준)
+                    w.setdefault("raw_score", w["score"])   # 배분 개입 전 원점수 (사이즈 보너스는 원점수 기준)
                     if _tilt and w.get("sector") in _tilt:
                         w["score"] += _tilt[w["sector"]]
                     if _itilt and w.get("industry") in _itilt:

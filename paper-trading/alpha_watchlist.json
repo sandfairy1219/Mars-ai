@@ -1,0 +1,737 @@
+{
+ "generated": "2026-10-01",
+ "themes": {
+  "ai-infra": {
+   "name": "AI 인프라 공급망",
+   "trend_check": {
+    "지속성": "3~5년 CAPEX 확정 (하이퍼스케일러 데이터센터 증설 가이던스)",
+    "물리성": "실물 증설 — 서버·전력·냉각 하드웨어",
+    "규모성": "글로벌 데이터센터 CAPEX 연 $400B+ (하이퍼스케일러 4사 합산 기준)",
+    "가속성": "수요 증가속도 > 공급 증설속도 (광모듈/기판 리드타임 연장)"
+   },
+   "scanned": 36,
+   "survived": 20,
+   "dropped": [
+    {
+     "ticker": "COHR",
+     "tier": "2차",
+     "bottleneck": "광모듈/트랜시버",
+     "name": "Coherent Corp.",
+     "value_checks": 4,
+     "value_fails": [
+      "ROE>10%"
+     ],
+     "market_cap": 62507692032,
+     "pe": 77.473305,
+     "roe_pct": 7.98,
+     "rev_growth_pct": 33.7
+    },
+    {
+     "ticker": "LITE",
+     "tier": "2차",
+     "bottleneck": "광모듈/레이저",
+     "name": "Lumentum Holdings Inc.",
+     "value_checks": 4,
+     "value_fails": [
+      "ROE>10%"
+     ],
+     "market_cap": 93806469120,
+     "pe": null,
+     "roe_pct": -2.4,
+     "rev_growth_pct": 109.3
+    },
+    {
+     "ticker": "AAOI",
+     "tier": "2차",
+     "bottleneck": "광트랜시버",
+     "name": "Applied Optoelectronics, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 9112142848,
+     "pe": null,
+     "roe_pct": -5.45,
+     "rev_growth_pct": 86.4
+    },
+    {
+     "ticker": "POET",
+     "tier": "3차",
+     "bottleneck": "광인터포저(광엔진 집적)",
+     "name": "POET Technologies Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 1322163712,
+     "pe": null,
+     "roe_pct": -16.89,
+     "rev_growth_pct": 112.3
+    },
+    {
+     "ticker": "AXTI",
+     "tier": "3차",
+     "bottleneck": "InP/GaAs 기판(원재료)",
+     "name": "AXT Inc",
+     "value_checks": 4,
+     "value_fails": [
+      "ROE>10%"
+     ],
+     "market_cap": 5364544512,
+     "pe": 2727.0,
+     "roe_pct": 1.01,
+     "rev_growth_pct": 1.65
+    },
+    {
+     "ticker": "IQEPF",
+     "tier": "3차",
+     "bottleneck": "화합물 반도체 웨이퍼",
+     "name": "IQE Plc",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 871888320,
+     "pe": null,
+     "roe_pct": -24.95,
+     "rev_growth_pct": 42.7
+    },
+    {
+     "ticker": "SOI.PA",
+     "tier": "3차",
+     "bottleneck": "SOI 웨이퍼(실리콘 온 인슐레이터)",
+     "name": "SOITEC",
+     "value_checks": 2,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%",
+      "매출성장>0%"
+     ],
+     "market_cap": 5673343488,
+     "pe": null,
+     "roe_pct": -15.2,
+     "rev_growth_pct": -34.6
+    },
+    {
+     "ticker": "ATS.VI",
+     "tier": "3차",
+     "bottleneck": "IC 기판(ABF)",
+     "name": "AT&S Austria Tech.&Systemtech.",
+     "value_checks": 4,
+     "value_fails": [
+      "ROE>10%"
+     ],
+     "market_cap": 7847699968,
+     "pe": 148.5294,
+     "roe_pct": 5.93,
+     "rev_growth_pct": 37.5
+    },
+    {
+     "ticker": "Nittobo.T",
+     "tier": "3차",
+     "bottleneck": "특수유리섬유(저유전)",
+     "name": null,
+     "value_checks": 0,
+     "value_fails": [
+      "ROE>10%(데이터없음)",
+      "영업이익률>10%(데이터없음)",
+      "부채비율<200%(데이터없음)",
+      "매출성장>0%(데이터없음)",
+      "시총>$500M(데이터없음)"
+     ],
+     "market_cap": null,
+     "pe": null,
+     "roe_pct": null,
+     "rev_growth_pct": null
+    },
+    {
+     "ticker": "ONTO",
+     "tier": "2차",
+     "bottleneck": "검사·계측",
+     "name": "Onto Innovation Inc.",
+     "value_checks": 4,
+     "value_fails": [
+      "ROE>10%"
+     ],
+     "market_cap": 19246546944,
+     "pe": 117.49254,
+     "roe_pct": 6.83,
+     "rev_growth_pct": 35.3
+    },
+    {
+     "ticker": "CAMT",
+     "tier": "2차",
+     "bottleneck": "검사",
+     "name": "Camtek Ltd.",
+     "value_checks": 4,
+     "value_fails": [
+      "ROE>10%"
+     ],
+     "market_cap": 7177098240,
+     "pe": 205.05333,
+     "roe_pct": 7.56,
+     "rev_growth_pct": 2.5
+    },
+    {
+     "ticker": "ACLS",
+     "tier": "2차",
+     "bottleneck": "이온주입 장비",
+     "name": "Axcelis Technologies, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 4221808384,
+     "pe": 45.87584,
+     "roe_pct": 8.89,
+     "rev_growth_pct": 10.6
+    },
+    {
+     "ticker": "COHU",
+     "tier": "3차",
+     "bottleneck": "테스트 핸들러",
+     "name": "Cohu, Inc.",
+     "value_checks": 3,
+     "value_fails": [
+      "ROE>10%",
+      "영업이익률>10%"
+     ],
+     "market_cap": 3329785088,
+     "pe": null,
+     "roe_pct": -4.84,
+     "rev_growth_pct": 38.4
+    },
+    {
+     "ticker": "MOD",
+     "tier": "3차",
+     "bottleneck": "데이터센터 냉각",
+     "name": "Modine Manufacturing Company",
+     "value_checks": 4,
+     "value_fails": [
+      "영업이익률>10%"
+     ],
+     "market_cap": 10049456128,
+     "pe": 70.600746,
+     "roe_pct": 13.09,
+     "rev_growth_pct": 28.0
+    },
+    {
+     "ticker": "ANET",
+     "tier": "2차",
+     "bottleneck": "데이터센터 스위치",
+     "name": "Arista Networks, Inc.",
+     "value_checks": 4,
+     "value_fails": [
+      "부채비율<200%(데이터없음)"
+     ],
+     "market_cap": 257907851264,
+     "pe": 64.30503,
+     "roe_pct": 31.48,
+     "rev_growth_pct": 37.7
+    },
+    {
+     "ticker": "INFN",
+     "tier": "3차",
+     "bottleneck": "광네트워크 장비",
+     "name": null,
+     "value_checks": 0,
+     "value_fails": [
+      "ROE>10%(데이터없음)",
+      "영업이익률>10%(데이터없음)",
+      "부채비율<200%(데이터없음)",
+      "매출성장>0%(데이터없음)",
+      "시총>$500M(데이터없음)"
+     ],
+     "market_cap": null,
+     "pe": null,
+     "roe_pct": null,
+     "rev_growth_pct": null
+    }
+   ]
+  }
+ },
+ "candidates": [
+  {
+   "ticker": "TER",
+   "tier": "2차",
+   "bottleneck": "반도체 테스트",
+   "name": "Teradyne, Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 65004920832,
+   "pe": 56.957535,
+   "roe_pct": 36.46,
+   "rev_growth_pct": 103.9,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "FORM",
+   "tier": "2차",
+   "bottleneck": "웨이퍼레벨 테스트/프로브카드",
+   "name": "FormFactor, Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 11596240896,
+   "pe": 102.37241,
+   "roe_pct": 10.99,
+   "rev_growth_pct": 31.9,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "VRT",
+   "tier": "2차",
+   "bottleneck": "데이터센터 전력·냉각",
+   "name": "Vertiv Holdings, LLC",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 94753284096,
+   "pe": 55.557564,
+   "roe_pct": 43.94,
+   "rev_growth_pct": 24.1,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "ETN",
+   "tier": "2차",
+   "bottleneck": "전력관리",
+   "name": "Eaton Corporation, PLC",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 169839558656,
+   "pe": 44.439022,
+   "roe_pct": 19.68,
+   "rev_growth_pct": 21.4,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "HUBB",
+   "tier": "2차",
+   "bottleneck": "전력기기",
+   "name": "Hubbell Inc",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 24671754240,
+   "pe": 27.68109,
+   "roe_pct": 24.44,
+   "rev_growth_pct": 15.3,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "CIEN",
+   "tier": "2차",
+   "bottleneck": "광전송 네트워크",
+   "name": "Ciena Corporation",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 53765287936,
+   "pe": 84.8188,
+   "roe_pct": 22.4,
+   "rev_growth_pct": 37.0,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "SNDK",
+   "tier": "2차",
+   "bottleneck": "NAND",
+   "name": "Sandisk Corporation",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 261751783424,
+   "pe": 24.233294,
+   "roe_pct": 91.64,
+   "rev_growth_pct": 3.72,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "CRDO",
+   "tier": "2차",
+   "bottleneck": "AI 인터커넥트(AEC/DSP)",
+   "name": "Credo Technology Group Holding ",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 39501852672,
+   "pe": 74.003525,
+   "roe_pct": 30.67,
+   "rev_growth_pct": 114.7,
+   "quality": 6,
+   "quality_measured": 6,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "N/A",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "ALAB",
+   "tier": "2차",
+   "bottleneck": "PCIe/CXL 리타이머",
+   "name": "Astera Labs, Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 61833564160,
+   "pe": 175.57637,
+   "roe_pct": 25.83,
+   "rev_growth_pct": 104.5,
+   "quality": 6,
+   "quality_measured": 6,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "N/A",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "MTSI",
+   "tier": "2차",
+   "bottleneck": "광통신 아날로그 반도체",
+   "name": "MACOM Technology Solutions Hold",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 23035762688,
+   "pe": 96.36741,
+   "roe_pct": 17.18,
+   "rev_growth_pct": 35.8,
+   "quality": 6,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "F",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "SMTC",
+   "tier": "2차",
+   "bottleneck": "아날로그/광 신호",
+   "name": "Semtech Corporation",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 17413627904,
+   "pe": 122.75658,
+   "roe_pct": 23.66,
+   "rev_growth_pct": 32.7,
+   "quality": 6,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "F",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "KLIC",
+   "tier": "2차",
+   "bottleneck": "웨이퍼 본딩/어드밴스드 패키징",
+   "name": "Kulicke and Soffa Industries, I",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 5025164800,
+   "pe": 43.84931,
+   "roe_pct": 13.23,
+   "rev_growth_pct": 122.6,
+   "quality": 6,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "F",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "WDC",
+   "tier": "2차",
+   "bottleneck": "HDD/스토리지",
+   "name": "Western Digital Corporation",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 166771818496,
+   "pe": 17.19554,
+   "roe_pct": 130.85,
+   "rev_growth_pct": 43.8,
+   "quality": 6,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "F",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "FN",
+   "tier": "2차",
+   "bottleneck": "광모듈 위탁생산",
+   "name": "Fabrinet",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 16177291264,
+   "pe": 34.54017,
+   "roe_pct": 21.33,
+   "rev_growth_pct": 44.6,
+   "quality": 4,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "F",
+    "interest": "P",
+    "gm": "F",
+    "cfo_ni": "F",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "4063.T",
+   "tier": "3차",
+   "bottleneck": "실리콘웨이퍼/특수가스",
+   "name": "SHIN-ETSU CHEMICAL CO",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 10939394949120,
+   "pe": 23.866472,
+   "roe_pct": 11.23,
+   "rev_growth_pct": 5.4,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "POWL",
+   "tier": "3차",
+   "bottleneck": "전력 인프라 장비",
+   "name": "Powell Industries, Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 6944047104,
+   "pe": 36.513412,
+   "roe_pct": 28.25,
+   "rev_growth_pct": 8.9,
+   "quality": 6,
+   "quality_measured": 6,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "N/A",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "AVGO",
+   "tier": "1차",
+   "bottleneck": "커스텀 ASIC/네트워크",
+   "name": "Broadcom Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 1640410251264,
+   "pe": 43.887615,
+   "roe_pct": 44.25,
+   "rev_growth_pct": 85.5,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "MU",
+   "tier": "1차",
+   "bottleneck": "HBM/DRAM",
+   "name": "Micron Technology, Inc.",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 1239384719360,
+   "pe": 14.761771,
+   "roe_pct": 66.64,
+   "rev_growth_pct": 3.46,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "TSM",
+   "tier": "1차",
+   "bottleneck": "파운드리",
+   "name": "Taiwan Semiconductor Manufactur",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 2381628833792,
+   "pe": 34.1159,
+   "roe_pct": 39.97,
+   "rev_growth_pct": 36.0,
+   "quality": 7,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "P",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  },
+  {
+   "ticker": "NVDA",
+   "tier": "1차",
+   "bottleneck": "GPU",
+   "name": "NVIDIA Corporation",
+   "value_checks": 5,
+   "value_fails": [],
+   "market_cap": 5574576046080,
+   "pe": 29.222784,
+   "roe_pct": 117.21,
+   "rev_growth_pct": 105.9,
+   "quality": 6,
+   "quality_measured": 7,
+   "quality_checks": {
+    "roe": "P",
+    "fcf": "P",
+    "interest": "P",
+    "gm": "P",
+    "cfo_ni": "F",
+    "nm": "P",
+    "netdebt_ebitda": "P"
+   }
+  }
+ ],
+ "tickers": [
+  "TER",
+  "FORM",
+  "VRT",
+  "ETN",
+  "HUBB",
+  "CIEN",
+  "SNDK",
+  "CRDO",
+  "ALAB",
+  "MTSI",
+  "SMTC",
+  "KLIC",
+  "WDC",
+  "FN",
+  "4063.T",
+  "POWL"
+ ]
+}
