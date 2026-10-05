@@ -1886,6 +1886,8 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
                 merged.append((c["score"] + boost, tier, c))
         merged.sort(key=lambda x: -x[0])
         for _, tier, c in merged:
+            if c["ticker"] in skipped:        # 이미 진입 불가로 판정된 후보
+                continue
             sec = c["sector"]
             if sector_counts.get(sec, 0) >= sector_limit:
                 continue
@@ -1904,7 +1906,15 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
             return c
         return None
     
+    # 진입 불가로 판정된 후보는 다시 뽑지 않는다.
+    # 2026-10-05 사고: 현금이 현금하한(min_cash) 미만이면 size가 음수 → `continue`가
+    # 같은 후보를 무한 재선택 → 94% CPU 스핀 → swing_ai.js 600s 타임아웃 → 리포트 통째 유실.
+    skipped = set()
+    _guard = 0
     while len(entered) < max_new and len(portfolio["positions"]) + len(entered) < max_positions:
+        _guard += 1
+        if _guard > 500:                     # 하드 가드 (정상 종료는 슬롯/후보 소진)
+            break
         c = pick_next()
         if not c:
             break
@@ -1931,10 +1941,12 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
             size = portfolio["cash"] - min_cash
         
         if size < min_size:
+            skipped.add(c["ticker"])          # 사이즈 미달 → 재선택 금지
             continue
         
         shares = math.floor(size / c["price"])
         if shares < 1:
+            skipped.add(c["ticker"])          # 1주도 못 사면 재선택 금지
             continue
         
         entry = c["price"]
