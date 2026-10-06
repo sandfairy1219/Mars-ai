@@ -3,11 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
 <title>MARS 모의투자</title>
 <style>
 :root{
-  --bg:#f2f4f6; --card:#ffffff; --line:#eef1f4; --text:#191f28; --sub:#8b95a1; --ter:#b0b8c1;
-  --blue:#3182f6; --blue-soft:#e8f3ff; --up:#f04452; --down:#3182f6; --flat:#8b95a1;
+  --bg:#0f1014; --card:#1b1c22; --card2:#24252c; --line:#2c2d35;
+  --text:#f2f4f6; --sub:#9aa3ad; --ter:#6b7280;
+  --blue:#4e9bff; --blue-soft:#12305c; --up:#ff5c6c; --down:#4e9bff; --flat:#9aa3ad;
   --radius:20px;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -25,9 +27,9 @@ b.up,b.down{font-weight:700}
 .appbar{display:flex;align-items:center;justify-content:space-between;padding:18px 0 14px}
 .brand{font-weight:800;font-size:19px;letter-spacing:-.04em}
 .brand span{color:var(--sub);font-weight:600;font-size:13px;margin-left:6px;letter-spacing:0}
-.mkt{display:flex;align-items:center;gap:6px;background:#fff;border-radius:100px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--sub)}
+.mkt{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:100px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--sub)}
 .dot{width:6px;height:6px;border-radius:50%;background:var(--ter)}
-.dot.on{background:var(--up);box-shadow:0 0 0 3px #ffe9eb}
+.dot.on{background:var(--up);box-shadow:0 0 0 3px rgba(255,92,108,.18)}
 .dot.off{background:var(--ter)}
 
 /* ── 히어로 ── */
@@ -35,13 +37,13 @@ b.up,b.down{font-weight:700}
 .hero-label{font-size:13px;color:var(--sub);font-weight:600}
 .hero-value{font-size:34px;font-weight:800;letter-spacing:-.045em;margin-top:6px}
 .hero-row{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
-.pill{display:inline-flex;align-items:center;gap:4px;background:var(--blue-soft);color:var(--blue);border-radius:8px;padding:3px 8px;font-size:13px;font-weight:700}
-.pill.up{background:#fff0f1;color:var(--up)}
+.pill{display:inline-flex;align-items:center;gap:4px;background:var(--blue-soft);color:#8dc0ff;border-radius:8px;padding:3px 8px;font-size:13px;font-weight:700}
+.pill.up{background:rgba(255,92,108,.14);color:var(--up)}
 .pill.down{background:var(--blue-soft);color:var(--down)}
 .hero-sub{font-size:13px;color:var(--sub);font-weight:500}
 .spark{margin:14px -4px 4px;height:58px}
 .hero-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border-radius:14px;overflow:hidden;margin-top:14px}
-.hero-grid div{background:#fff;padding:12px 14px}
+.hero-grid div{background:var(--card);padding:12px 14px}
 .hero-grid .k{font-size:12px;color:var(--sub);font-weight:600}
 .hero-grid .v{font-size:16px;font-weight:800;margin-top:3px;letter-spacing:-.03em}
 
@@ -69,21 +71,28 @@ b.up,b.down{font-weight:700}
 .kv span{color:var(--sub);font-weight:600}
 .kv b{font-weight:800;letter-spacing:-.03em}
 
+/* 스크롤 리스트 (전체 일자) */
+.scrollbox{max-height:390px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-right:4px}
+.scrollbox::-webkit-scrollbar{width:3px}
+.scrollbox::-webkit-scrollbar-thumb{background:#3a3b44;border-radius:3px}
+.scrollbox::-webkit-scrollbar-track{background:transparent}
+.scrollhint{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11.5px;color:var(--ter);padding:9px 0 2px}
+
 /* 진행바 */
-.progress{position:relative;background:#f2f4f6;border-radius:100px;height:4px;margin-top:9px;overflow:visible}
+.progress{position:relative;background:var(--card2);border-radius:100px;height:4px;margin-top:9px;overflow:visible}
 .progress .bar{position:absolute;top:0;height:100%;border-radius:100px;background:var(--blue)}
 .progress .bar.stop{background:var(--up);width:2px!important;border-radius:2px}
 
 /* ── 종목 칩/기간 ── */
 .scroll{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
 .scroll::-webkit-scrollbar{display:none}
-.chip{flex-shrink:0;background:#f2f4f6;border:none;color:var(--text);border-radius:12px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:-.02em}
+.chip{flex-shrink:0;background:var(--card2);border:none;color:var(--text);border-radius:12px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:-.02em}
 .chip .d{font-size:11.5px;font-weight:700}
-.chip.on{background:#191f28;color:#fff}
+.chip.on{background:var(--blue);color:#fff}
 .chip.on .d{color:#fff}
-.seg{display:flex;gap:6px;background:#f2f4f6;border-radius:12px;padding:3px;margin-bottom:12px}
+.seg{display:flex;gap:6px;background:var(--card2);border-radius:12px;padding:3px;margin-bottom:12px}
 .seg button{flex:1;background:transparent;border:none;border-radius:9px;padding:8px 0;font-size:13px;font-weight:700;color:var(--sub);cursor:pointer;font-family:inherit}
-.seg button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.seg button.on{background:#3a3b44;color:var(--text)}
 
 /* ── 표 (밀도 높은 데이터) ── */
 table{width:100%;border-collapse:collapse;font-size:13px}
@@ -97,12 +106,12 @@ tr:last-child td{border-bottom:none}
 .tab{display:none}
 .tab.on{display:block}
 .tabbar{
-  position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);backdrop-filter:saturate(180%) blur(12px);
+  position:fixed;bottom:0;left:0;right:0;background:rgba(20,21,26,.94);backdrop-filter:saturate(180%) blur(14px);
   border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:20;
 }
 .tabbar .inner{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
 .tabbar button{background:none;border:none;padding:11px 0 12px;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--ter);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;letter-spacing:-.02em}
-.tabbar button .ic{font-size:17px;line-height:1;filter:grayscale(1) opacity(.45)}
+.tabbar button .ic{font-size:17px;line-height:1;filter:grayscale(1) opacity(.5)}
 .tabbar button.on{color:var(--blue)}
 .tabbar button.on .ic{filter:none}
 .foot{text-align:center;color:var(--ter);font-size:11px;padding:6px 0 18px;line-height:1.6}
@@ -142,8 +151,11 @@ tr:last-child td{border-bottom:none}
         <div class="list" id="nav-stats" style="margin-top:4px"></div>
       </div>
       <div class="card">
-        <div class="card-t">일자별 자산 <small>최근 10영업일</small></div>
-        <div class="list" id="nav-list" style="margin-top:2px"></div>
+        <div class="card-h" style="margin-bottom:6px">
+          <div class="card-t">일자별 자산 <small id="nav-list-count">-</small></div>
+        </div>
+        <div class="list scrollbox" id="nav-list"></div>
+        <div class="scrollhint">↕ 스크롤해서 전체 일자 보기</div>
       </div>
       <div class="card">
         <div class="card-t">지수 비교 <small>기준일 2026-06-15</small></div>
@@ -189,8 +201,9 @@ tr:last-child td{border-bottom:none}
     <!-- ───── 내역 ───── -->
     <section id="tab-hist" class="tab">
       <div class="card">
-        <div class="card-h"><div class="card-t">실현 손익 <small id="hist-count">-</small></div></div>
-        <div class="list" id="hist-body"></div>
+        <div class="card-h" style="margin-bottom:6px"><div class="card-t">실현 손익 <small id="hist-count">-</small></div></div>
+        <div class="list scrollbox" id="hist-body"></div>
+        <div class="scrollhint">↕ 스크롤해서 전체 내역 보기</div>
       </div>
     </section>
   </main>
@@ -221,13 +234,14 @@ const cls   = v => v==null ? 'neu' : (v>0 ? 'up' : v<0 ? 'down' : 'neu');
 const esc   = s => String(s??'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
 const fmtVol= v => v==null?'—':(v>=1e9?(v/1e9).toFixed(2)+'B':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':String(v));
 
-/* ── 차트 공통 ────────────────────────────────────── */
-const UP='#f04452', DOWN='#3182f6', BLUE='#3182f6', GRAY='#b0b8c1', LINE='#eef1f4';
+/* ── 차트 공통 (다크) ─────────────────────────────── */
+const UP='#ff5c6c', DOWN='#4e9bff', BLUE='#4e9bff', GRAY='#6b7280';
+const GRID='#2c2d35', TOOLTIP_BG='#2c2d35';
 const TOSS_FONT = {family:"'Pretendard',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif"};
 let D=null, pxTicker=null, pxRange=0;
 const chartRefs={};
 const CHART_OK = typeof Chart !== 'undefined';
-function grad(ctx,color){ const g=ctx.createLinearGradient(0,0,0,240); g.addColorStop(0,color+'33'); g.addColorStop(1,color+'00'); return g; }
+function grad(ctx,color){ const g=ctx.createLinearGradient(0,0,0,240); g.addColorStop(0,color+'44'); g.addColorStop(1,color+'00'); return g; }
 function mkChart(id,cfg){
   const cv=document.getElementById(id); if(!cv||!CHART_OK) return null;
   if(chartRefs[id]){ chartRefs[id].destroy(); }
@@ -235,17 +249,16 @@ function mkChart(id,cfg){
 }
 const AXIS=(yTick)=>({
   x:{ticks:{color:GRAY,font:{size:10,...TOSS_FONT},maxTicksLimit:6},grid:{display:false},border:{display:false}},
-  y:{position:'right',ticks:{color:GRAY,font:{size:10,...TOSS_FONT},maxTicksLimit:4,callback:yTick},grid:{color:LINE,drawTicks:false},border:{display:false}}
+  y:{position:'right',ticks:{color:GRAY,font:{size:10,...TOSS_FONT},maxTicksLimit:4,callback:yTick},grid:{color:GRID,drawTicks:false},border:{display:false}}
 });
-const TIP={backgroundColor:'#191f28',padding:10,cornerRadius:10,titleFont:{...TOSS_FONT,size:11},
-  bodyFont:{...TOSS_FONT,size:12},displayColors:false,caretSize:5};
-const LEG={labels:{color:'#8b95a1',boxWidth:8,boxHeight:8,usePointStyle:true,pointStyle:'line',font:{size:11,...TOSS_FONT}}};
+const TIP={backgroundColor:TOOLTIP_BG,titleColor:'#9aa3ad',bodyColor:'#f2f4f6',padding:10,cornerRadius:10,
+  titleFont:{...TOSS_FONT,size:11},bodyFont:{...TOSS_FONT,size:12},displayColors:false,caretSize:5};
+const LEG={labels:{color:'#9aa3ad',boxWidth:8,boxHeight:8,usePointStyle:true,pointStyle:'line',font:{size:11,...TOSS_FONT}}};
 
 /* ── 탭 ───────────────────────────────────────────── */
 document.querySelectorAll('.tabbar button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabbar button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('on', s.id==='tab-'+b.dataset.tab));
-  document.querySelectorAll('.tabbar button').forEach(x=>x.classList.toggle('on',x===b));
   window.scrollTo({top:0,behavior:'smooth'});
   Object.values(chartRefs).forEach(c=>c && c.resize && c.resize());
 });
@@ -271,12 +284,14 @@ function renderNav(d){
   const badge=document.getElementById('nav-badge');
   const list=document.getElementById('nav-list');
   const stats=document.getElementById('nav-stats');
+  const listCount=document.getElementById('nav-list-count');
   if(!rows.length){
-    badge.textContent='데이터 없음'; stats.innerHTML=''; list.innerHTML='';
+    badge.textContent='데이터 없음'; stats.innerHTML=''; list.innerHTML=''; listCount.textContent='';
     return;
   }
   const last=rows[rows.length-1];
   badge.textContent=`${rows.length}영업일`;
+  listCount.textContent=`전체 ${rows.length}일 · 최신순`;
   stats.innerHTML =
     kvRow('누적 수익률', fmtPct(st.ret), cls(st.ret)) +
     kvRow('일간 손익', fmtPct(st.dret), cls(st.dret)) +
@@ -294,7 +309,7 @@ function renderNav(d){
   mkChart('nav-chart',{type:'line',
     data:{labels,datasets:[
       {label:'내 자산',data:nav,borderColor:BLUE,fill:true,
-       backgroundColor:c=>{try{return grad(c.chart.ctx,BLUE)}catch(e){return '#3182f622'}},
+       backgroundColor:c=>{try{return grad(c.chart.ctx,BLUE)}catch(e){return '#4e9bff22'}},
        tension:.25,pointRadius:0,borderWidth:2},
       {label:'S&P500',data:spyEq,borderColor:GRAY,borderDash:[4,4],fill:false,tension:.25,pointRadius:0,borderWidth:1.4}]},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
@@ -303,12 +318,13 @@ function renderNav(d){
   const dr=rows.map(r=>r.dret);
   mkChart('dret-chart',{type:'bar',
     data:{labels,datasets:[{data:dr,borderWidth:0,borderRadius:3,
-      backgroundColor:dr.map(v=> v==null?'#eef1f4':(v>=0?UP+'99':DOWN+'99'))}]},
+      backgroundColor:dr.map(v=> v==null?'#2c2d35':(v>=0?UP+'99':DOWN+'99'))}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:c=>' 일간 '+fmtPct(c.parsed.y)}}},
       scales:{x:{ticks:{display:false},grid:{display:false},border:{display:false}},
-        y:{position:'right',ticks:{color:GRAY,font:{size:10,...TOSS_FONT},maxTicksLimit:3,callback:v=>v+'%'},grid:{color:LINE,drawTicks:false},border:{display:false}}}}});
-  list.innerHTML = rows.slice(-10).reverse().map(r=>{
+        y:{position:'right',ticks:{color:GRAY,font:{size:10,...TOSS_FONT},maxTicksLimit:3,callback:v=>v+'%'},grid:{color:GRID,drawTicks:false},border:{display:false}}}}});
+  // 전체 일자 (최신순) — 스크롤 가능
+  list.innerHTML = rows.slice().reverse().map(r=>{
     const ex=(r.ret!=null&&r.spy_ret!=null)?r.ret-r.spy_ret:null;
     return `<div class="row">
       <div class="row-l"><div class="row-t">${r.date}${r.live?' <span style="color:var(--blue);font-size:11px">실측</span>':''}</div>
@@ -352,15 +368,15 @@ function renderPrice(d){
   mkChart('px-chart',{type:'line',
     data:{labels,datasets:[
       {label:pxTicker,data:close,borderColor:lineColor,fill:true,
-       backgroundColor:c=>{try{return grad(c.chart.ctx,lineColor)}catch(e){return '#3182f622'}},
+       backgroundColor:c=>{try{return grad(c.chart.ctx,lineColor)}catch(e){return '#4e9bff22'}},
        tension:.2,pointRadius:0,borderWidth:2},
-      {label:'MA20',data:ma(close,20),borderColor:'#d1d6db',borderDash:[4,3],pointRadius:0,borderWidth:1.2,fill:false}]},
+      {label:'MA20',data:ma(close,20),borderColor:'#4a4b55',borderDash:[4,3],pointRadius:0,borderWidth:1.2,fill:false}]},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
       plugins:{legend:LEG,tooltip:{...TIP,callbacks:{label:c=>` ${c.dataset.label} $${c.parsed.y==null?'—':c.parsed.y.toFixed(2)}`}}},
       scales:AXIS(v=>'$'+v)}});
   mkChart('vol-chart',{type:'bar',
     data:{labels,datasets:[{data:vol,borderWidth:0,borderRadius:2,
-      backgroundColor:close.map((v,i)=> (i===0||v>=close[i-1])?UP+'55':DOWN+'55')}]},
+      backgroundColor:close.map((v,i)=> (i===0||v>=close[i-1])?UP+'66':DOWN+'66')}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:c=>' '+fmtVol(c.parsed.y)+'주'}}},
       scales:{x:{ticks:{display:false},grid:{display:false},border:{display:false}},
@@ -425,8 +441,8 @@ function renderWatch(d){
 }
 
 function renderHist(d){
-  const hist=[...d.history].reverse().slice(0,20);
-  document.getElementById('hist-count').textContent=`${d.history.length}건`;
+  const hist=[...d.history].reverse();
+  document.getElementById('hist-count').textContent=`전체 ${d.history.length}건`;
   document.getElementById('hist-body').innerHTML=hist.map(h=>{
     const pnl=h.pnl||0;
     const pct=h.entry_price?(h.exit_price/h.entry_price-1)*100*(h.side==='SHORT'?-1:1):null;
