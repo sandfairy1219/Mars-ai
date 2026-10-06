@@ -77,6 +77,10 @@ b.up,b.down{font-weight:700}
 .scrollbox::-webkit-scrollbar-thumb{background:#3a3b44;border-radius:3px}
 .scrollbox::-webkit-scrollbar-track{background:transparent}
 .scrollhint{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11.5px;color:var(--ter);padding:9px 0 2px}
+.tablebox{max-height:420px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-right:4px}
+.tablebox::-webkit-scrollbar{width:3px}
+.tablebox::-webkit-scrollbar-thumb{background:#3a3b44;border-radius:3px}
+.tablebox thead th{position:sticky;top:0;background:var(--card);z-index:2}
 
 /* 진행바 */
 .progress{position:relative;background:var(--card2);border-radius:100px;height:4px;margin-top:9px;overflow:visible}
@@ -178,11 +182,14 @@ tr:last-child td{border-bottom:none}
         </div>
         <div class="chartbox h240"><canvas id="px-chart"></canvas></div>
         <div class="chartbox h80"><canvas id="vol-chart"></canvas></div>
-        <div class="tbl-title">일자별 시세</div>
-        <table>
-          <thead><tr><th>일자</th><th>시가</th><th>고가</th><th>저가</th><th>종가</th><th>등락</th><th>거래량</th></tr></thead>
-          <tbody id="ohlc-body"></tbody>
-        </table>
+        <div class="tbl-title">일자별 시세 <span id="ohlc-count" style="color:var(--ter);font-weight:600"></span></div>
+        <div class="tablebox">
+          <table>
+            <thead><tr><th>일자</th><th>시가</th><th>고가</th><th>저가</th><th>종가</th><th>등락</th><th>거래량</th></tr></thead>
+            <tbody id="ohlc-body"></tbody>
+          </table>
+        </div>
+        <div class="scrollhint">↕ 스크롤해서 전체 일자 보기</div>
       </div>
     </section>
 
@@ -329,8 +336,8 @@ function renderNav(d){
     return `<div class="row">
       <div class="row-l"><div class="row-t">${r.date}${r.live?' <span style="color:var(--blue);font-size:11px">실측</span>':''}</div>
         <div class="row-s">보유 ${r.n}종목 · 지수 ${fmtPct(r.spy_ret)}</div></div>
-      <div class="row-r"><div class="row-v num">${fmt$(r.nav)}</div>
-        <div class="row-sr ${cls(ex)}">${fmtPct(r.dret)} · 초과 ${fmtPp(ex)}</div></div>
+      <div class="row-r"><div class="row-v num ${cls(r.dret)}">${fmt$(r.nav)}</div>
+        <div class="row-sr ${cls(r.dret)}">${r.dret==null?'':(r.dret>0?'▲':r.dret<0?'▼':'')}${fmtPct(r.dret)} · 초과 ${fmtPp(ex)}</div></div>
     </div>`;
   }).join('');
 }
@@ -381,12 +388,14 @@ function renderPrice(d){
       plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:c=>' '+fmtVol(c.parsed.y)+'주'}}},
       scales:{x:{ticks:{display:false},grid:{display:false},border:{display:false}},
         y:{position:'right',ticks:{color:GRAY,font:{size:10,...TOSS_FONT},maxTicksLimit:2,callback:fmtVol},grid:{display:false},border:{display:false}}}}});
-  const rows=idx.slice(-6).reverse();
+  const rows=idx.slice().reverse();           // 전체 일자 (최신순)
+  const cnt=document.getElementById('ohlc-count');
+  if(cnt) cnt.textContent=`전체 ${rows.length}일 · 최신순`;
   document.getElementById('ohlc-body').innerHTML=rows.map(i=>{
     const prev=i>0?s.c[i-1]:null, dc=prev?(s.c[i]/prev-1)*100:null;
     return `<tr><td style="color:var(--sub);font-weight:600">${s.d[i].slice(5)}</td>
       <td class="num">${fmt$(s.o[i])}</td><td class="num">${fmt$(s.h[i])}</td><td class="num">${fmt$(s.l[i])}</td>
-      <td class="num"><b>${fmt$(s.c[i])}</b></td>
+      <td class="num ${cls(dc)}"><b>${fmt$(s.c[i])}</b></td>
       <td class="num ${cls(dc)}">${dc==null?'—':fmtPct(dc)}</td>
       <td class="num" style="color:var(--sub)">${fmtVol(s.v[i])}</td></tr>`;
   }).join('');
