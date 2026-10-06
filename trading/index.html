@@ -63,9 +63,15 @@ tr:hover td{background:#1c2128}
 <div class="grid" id="stats"></div>
 
 <div class="panel">
-  <h2>🎯 목표 — 자산곡선 vs S&P 500 <span class="badge" id="curve-badge">-</span></h2>
-  <div class="chartbox h280"><canvas id="curve-chart"></canvas></div>
-  <div class="note" id="curve-note">자산곡선은 매매 틱마다 하루 1점 기록됩니다 (기준일 대비 누적 %).</div>
+  <h2>🧾 우리 자산 일일시세 <span class="badge" id="nav-badge">-</span></h2>
+  <div class="grid" id="nav-stats" style="margin-bottom:14px"></div>
+  <div class="chartbox h280"><canvas id="nav-chart"></canvas></div>
+  <div class="chartbox h90"><canvas id="dret-chart"></canvas></div>
+  <table id="nav-tbl">
+    <thead><tr><th>일자</th><th>NAV</th><th>일간</th><th>누적</th><th>S&P500 환산</th><th>초과</th><th>보유</th></tr></thead>
+    <tbody id="nav-body"></tbody>
+  </table>
+  <div class="note" id="nav-note">과거 구간은 체결 기록 + 일봉 종가로 재구성한 추정치입니다(오차 ~0.3%). 오늘부터는 매매 틱이 직접 기록합니다.</div>
 </div>
 
 <div class="panel">
@@ -152,53 +158,6 @@ function mkChart(id, cfg){
   return chartRefs[id];
 }
 
-function renderCurve(d){
-  const curve = d.equity_curve || [];
-  const badge = document.getElementById('curve-badge');
-  const note = document.getElementById('curve-note');
-  badge.textContent = curve.length ? curve.length+'일 축적' : '축적 중';
-  if(!CHART_OK){ note.textContent = '차트 라이브러리 로드 실패 (오프라인?)'; return; }
-  if(curve.length < 2){
-    if(chartRefs['curve-chart']){ chartRefs['curve-chart'].destroy(); chartRefs['curve-chart']=null; }
-    note.textContent = `자산곡선 축적 중 (${curve.length}일) — 매매 틱마다 하루 1점 쌓여서 2일치부터 그려집니다.`;
-    return;
-  }
-  const b = curve[0].total, sb = curve[0].spy;
-  const labels = curve.map(r=>r.date.slice(5));
-  const port = curve.map(r=>+( (r.total/b-1)*100 ).toFixed(2));
-  const spy = curve.map(r=> (r.spy&&sb) ? +((r.spy/sb-1)*100).toFixed(2) : null);
-  const p0 = port[port.length-1], s0 = spy[spy.length-1];
-  note.textContent = `누적(${curve[0].date} 기준): 포트 ${p0>=0?'+':''}${p0}% vs S&P500 ${s0>=0?'+':''}${s0}%`
-    + (s0!=null ? ` → 초과 ${(p0-s0).toFixed(2)}%p` : '') + ` · ${curve.length}일 축적`;
-  mkChart('curve-chart', {
-    type:'line',
-    data:{labels, datasets:[
-      {label:'내 계좌', data:port, borderColor:'#3fb950', backgroundColor:'#3fb95022', fill:true, tension:.25, pointRadius:0, borderWidth:2},
-      {label:'S&P 500', data:spy, borderColor:'#8b949e', borderDash:[5,4], fill:false, tension:.25, pointRadius:0, borderWidth:1.5},
-    ]},
-    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
-      plugins:{legend:{labels:{color:'#8b949e',boxWidth:10,font:{size:11}}},
-        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y>=0?'+':''}${c.parsed.y}%`}}},
-      scales:{x:{...AXIS, ticks:{...AXIS.ticks, maxTicksLimit:8}},
-        y:{...AXIS, ticks:{...AXIS.ticks, callback:v=>(v>=0?'+':'')+v+'%'}}}}
-  });
-}
-
-function buildChips(d){
-  const el = document.getElementById('px-chips');
-  const pos = d.positions.map(p=>p.ticker);
-  const wl = d.watchlist.map(w=>w.ticker);
-  const list = [...new Set([...pos,...wl,'SPY','QQQ'])];
-  if(!pxTicker && list.length) pxTicker = pos[0] || list[0];
-  el.innerHTML = list.map(t=>{
-    const k = pos.includes(t) ? 'pos' : wl.includes(t) ? 'watch' : '';
-    const dp = (d.series&&d.series[t]) ? seriesDp(d.series[t]) : null;
-    return `<button class="chip ${k} ${t===pxTicker?'on':''}" data-t="${esc(t)}">${esc(t)}`
-      + (dp==null?'':` <span class="${dp>=0?'up':'down'}">${dp>=0?'+':''}${dp.toFixed(2)}%</span>`) + `</button>`;
-  }).join('');
-  el.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{ pxTicker=b.dataset.t; buildChips(D); renderPrice(D); });
-}
-
 function seriesDp(s){
   const n=s.c.length; if(n<2||!s.c[n-2]) return null;
   return (s.c[n-1]/s.c[n-2]-1)*100;
@@ -260,6 +219,67 @@ document.getElementById('px-ranges').querySelectorAll('.rbtn').forEach(b=>b.oncl
   document.querySelectorAll('#px-ranges .rbtn').forEach(x=>x.classList.toggle('on', x===b));
   if(D) renderPrice(D);
 });
+
+function renderNav(d){
+  const rows = d.nav_history || [], st = d.nav_stats || {};
+  const badge = document.getElementById('nav-badge');
+  if(!rows.length){
+    badge.textContent = '데이터 없음';
+    document.getElementById('nav-stats').innerHTML = '';
+    document.getElementById('nav-body').innerHTML = '';
+    return;
+  }
+  const last = rows[rows.length-1];
+  badge.textContent = `${rows[0].date} ~ ${last.date} · ${rows.length}영업일`;
+  document.getElementById('nav-stats').innerHTML =
+    statCard('내 자산 (NAV)', fmt$(st.nav), `${fmtPct(st.ret)} · 시드 대비`, cls(st.ret)) +
+    statCard('오늘 일간', fmtPct(st.dret), last.date, cls(st.dret)) +
+    statCard('S&P500 대비', fmtPct(st.excess), `SPY 환산 ${fmtPct(st.spy_ret)}`, cls(st.excess)) +
+    statCard('최대낙폭 (MDD)', (st.mdd==null?'—':st.mdd.toFixed(2)+'%'), '고점 대비', 'down') +
+    statCard('연 변동성', st.vol==null?'—':st.vol.toFixed(1)+'%', '일간 σ × √252', 'neu') +
+    statCard('상승일 비율', st.win_days==null?'—':st.win_days+'%',
+             `최고 ${fmtPct(st.best)} · 최저 ${fmtPct(st.worst)}`, 'neu');
+
+  const labels = rows.map(r=>r.date.slice(5));
+  const nav = rows.map(r=>r.nav);
+  const spyEq = rows.map(r=> r.spy_ret==null ? null : +(d.seed*(1+r.spy_ret/100)).toFixed(2));
+  if(CHART_OK){
+    mkChart('nav-chart', {
+      type:'line',
+      data:{labels, datasets:[
+        {label:'내 자산 NAV', data:nav, borderColor:'#3fb950', backgroundColor:'#3fb95022', fill:true, tension:.2, pointRadius:0, borderWidth:2},
+        {label:'S&P500 환산(시드 기준)', data:spyEq, borderColor:'#8b949e', borderDash:[5,4], fill:false, tension:.2, pointRadius:0, borderWidth:1.5},
+      ]},
+      options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+        plugins:{legend:{labels:{color:'#8b949e',boxWidth:10,font:{size:11}}},
+          tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt$(c.parsed.y)}`}}},
+        scales:{x:{...AXIS, ticks:{...AXIS.ticks, maxTicksLimit:10}},
+          y:{...AXIS, ticks:{...AXIS.ticks, callback:v=>'$'+(v/1000).toFixed(1)+'K'}}}}
+    });
+    const dr = rows.map(r=>r.dret);
+    mkChart('dret-chart', {
+      type:'bar',
+      data:{labels, datasets:[{label:'일간 수익률', data:dr,
+        backgroundColor: dr.map(v=> v==null?'#30363d':(v>=0?'#3fb95088':'#f8514988')), borderWidth:0}]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+fmtPct(c.parsed.y)}}},
+        scales:{x:{...AXIS, ticks:{display:false}, grid:{display:false}},
+          y:{...AXIS, ticks:{...AXIS.ticks, maxTicksLimit:3, callback:v=>v+'%'}}}}
+    });
+  }
+  document.getElementById('nav-body').innerHTML = rows.slice(-10).reverse().map(r=>{
+    const ex = (r.ret!=null && r.spy_ret!=null) ? r.ret - r.spy_ret : null;
+    return `<tr>
+      <td style="color:var(--muted)">${r.date}${r.live?' <span title="봇 직접 기록" style="color:var(--green)">●</span>':''}</td>
+      <td><b>${fmt$(r.nav)}</b></td>
+      <td class="${cls(r.dret)}">${fmtPct(r.dret)}</td>
+      <td class="${cls(r.ret)}">${fmtPct(r.ret)}</td>
+      <td class="${cls(r.spy_ret)}">${fmtPct(r.spy_ret)}</td>
+      <td class="${cls(ex)}"><b>${fmtPct(ex)}</b></td>
+      <td style="color:var(--muted)">${r.n}종목</td>
+    </tr>`;
+  }).join('');
+}
 
 async function refresh(){
   try{
@@ -344,7 +364,7 @@ async function refresh(){
       </tr>`).join('');
 
     // 차트 (자산곡선 + 일일 시세)
-    renderCurve(d);
+    renderNav(d);
     buildChips(d);
     renderPrice(d);
   }catch(e){

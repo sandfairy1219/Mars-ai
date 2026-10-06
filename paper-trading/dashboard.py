@@ -95,7 +95,8 @@ def get_quote(ticker):
 SERIES_TTL = 3600                     # 1시간 (일봉은 자주 안 바뀜)
 SERIES_RANGE = "6mo"
 _HERE = os.path.dirname(os.path.abspath(__file__))
-SERIES_CACHE_PATH = os.path.join(_HERE, ".series_cache.json")
+# v2: 종가(raw close) 기준으로 스키마 변경 — 구버전 캐시(수정종가)와 섞이지 않게 파일 분리
+SERIES_CACHE_PATH = os.path.join(_HERE, ".series_cache_v2.json")
 _series_cache = {}
 _series_lock = threading.Lock()
 
@@ -131,13 +132,14 @@ def _num(lst, i):
         return None
 
 
-def get_series(ticker, rng=SERIES_RANGE):
-    """Yahoo 일봉 → {d:[날짜],c:[종가],o,h,l,v:[거래량]}. 1시간 디스크 캐시."""
+def get_series(ticker, rng=SERIES_RANGE, ttl=None):
+    """Yahoo 일봉 → {d:[날짜],c:[종가:raw],a:[수정종가],o,h,l,v:[거래량]}. 디스크 캐시."""
     now = time.time()
+    ttl = SERIES_TTL if ttl is None else ttl
     cache = _load_series_cache()
     key = f"{ticker}|{rng}"
     ent = cache.get(key)
-    if ent and now - ent.get("ts", 0) < SERIES_TTL:
+    if ent and now - ent.get("ts", 0) < ttl:
         return ent.get("data")
     data = None
     try:
@@ -149,19 +151,23 @@ def get_series(ticker, rng=SERIES_RANGE):
             ts = res.get("timestamp") or []
             ind = res.get("indicators") or {}
             q = (ind.get("quote") or [{}])[0]
-            closes = ((ind.get("adjclose") or [{}])[0] or {}).get("adjclose") or q.get("close") or []
-            d, c, o, h, l, v = [], [], [], [], [], []
+            raw_c = q.get("close") or []
+            adj_c = ((ind.get("adjclose") or [{}])[0] or {}).get("adjclose") or []
+            d, c, a, o, h, l, v = [], [], [], [], [], [], []
             for i, t in enumerate(ts):
-                if i >= len(closes) or closes[i] is None:
+                rc = raw_c[i] if i < len(raw_c) else None
+                if rc is None:
                     continue
                 d.append(datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%d"))
-                c.append(round(float(closes[i]), 2))
+                c.append(round(float(rc), 2))
+                ac = adj_c[i] if i < len(adj_c) else None
+                a.append(round(float(ac), 2) if ac is not None else round(float(rc), 2))
                 o.append(_num(q.get("open") or [], i))
                 h.append(_num(q.get("high") or [], i))
                 l.append(_num(q.get("low") or [], i))
                 v.append(int((q.get("volume") or [0])[i] or 0) if i < len(q.get("volume") or []) else 0)
             if d:
-                data = {"d": d, "c": c, "o": o, "h": h, "l": l, "v": v}
+                data = {"d": d, "c": c, "a": a, "o": o, "h": h, "l": l, "v": v}
     except Exception:
         data = None
     if data:
@@ -170,6 +176,145 @@ def get_series(ticker, rng=SERIES_RANGE):
         _save_series_cache()
         return data
     return ent.get("data") if ent else None
+
+
+# ---------------------------------------------------------------- 우리 자산 일일 NAV
+# 액티브 ETF처럼 "내 계좌의 일일 시세"를 재구성한다:
+#   cash(t) = SEED + Σ(청산일<=t 실현손익) − Σ(진입일<=t 보유중 종목 원가)
+#   NAV(t)  = cash(t) + Σ(보유중 종목 일봉종가 × 수량)
+# 보유 종목 종가는 Yahoo 일봉(raw close)으로 마크투마켓. 데이터 없으면 진입가 유지.
+_NAV_CACHE = {"key": None, "data": None}
+NAV_HIST_TTL = 21600          # 청산 종목 시계열은 6시간 캐시 (과거 확정치)
+
+
+def _close_on(ser, day, fallback):
+    try:
+        s = ser.get(_t)
+        if not s:
+            return fallback
+        import bisect as _bs
+        i = _bs.bisect_right(s["d"], day) - 1
+        return s["c"][i] if i >= 0 else fallback
+    except Exception:
+        return fallback
+
+
+def build_nav_history(pf, series=None):
+    """우리 자산 일일시세 (ETF 스타일) — 재구성 + 통계. 포트폴리오 파일 변경 시에만 재계산."""
+    import bisect as _bs
+    try:
+        st = os.stat(PORTFOLIO_PATH)
+        key = (st.st_mtime, st.st_size, len(pf.get("history") or []), len(pf.get("positions") or []))
+    except Exception:
+        key = None
+    if _NAV_CACHE["key"] == key and _NAV_CACHE["data"]:
+        return _NAV_CACHE["data"]
+
+    hist = pf.get("history") or []
+    pos = pf.get("positions") or []
+    held = {p["ticker"] for p in pos} | {w["ticker"] for w in (pf.get("watchlist") or [])}
+    tickers = sorted({h["ticker"] for h in hist} | held | {"SPY"})
+
+    ser = dict(series or {})
+    need = [t for t in tickers if t not in ser]
+    if need:
+        try:
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                for t, s in zip(need, ex.map(lambda x: get_series(x, ttl=SERIES_TTL if x in held else NAV_HIST_TTL), need)):
+                    if s:
+                        ser[t] = s
+        except Exception:
+            pass
+
+    def close_on(t, day, fb):
+        s = ser.get(t)
+        if not s:
+            return fb
+        i = _bs.bisect_right(s["d"], day) - 1
+        return s["c"][i] if i >= 0 else fb
+
+    spy = ser.get("SPY")
+    days = list(spy["d"]) if spy else []
+    start = pf.get("spy_baseline_date") or (days[0] if days else None)
+    if start:
+        days = [d for d in days if d >= start]
+
+    rows = []
+    for d in days:
+        cash = SEED
+        for h in hist:
+            if (h.get("exit_date") or "")[:10] <= d:
+                cash += h.get("pnl") or 0
+            elif (h.get("date") or "")[:10] <= d:
+                cash -= h["entry_price"] * h["shares"]
+        for p in pos:
+            if (p.get("date") or "")[:10] <= d:
+                cash -= p["entry_price"] * p["shares"]
+        mv, n = 0.0, 0
+        for h in hist:
+            if (h.get("date") or "")[:10] <= d < (h.get("exit_date") or "")[:10]:
+                mv += close_on(h["ticker"], d, h["entry_price"]) * h["shares"]
+                n += 1
+        for p in pos:
+            if (p.get("date") or "")[:10] <= d:
+                mv += close_on(p["ticker"], d, p["entry_price"]) * p["shares"]
+                n += 1
+        rows.append({"date": d, "nav": round(cash + mv, 2), "n": n})
+
+    # 봇이 기록한 자산곡선(live 마크)이 있으면 그 날짜 값을 우선한다
+    live = {r.get("date"): r.get("total") for r in (pf.get("equity_curve") or []) if r.get("date")}
+    for r in rows:
+        if live.get(r["date"]):
+            r["nav"] = round(float(live[r["date"]]), 2)
+            r["live"] = True
+
+    # 일간/누적 수익률 + 벤치마크 누적
+    sb = close_on("SPY", days[0], None) if days else None
+    prev = None
+    for r in rows:
+        r["ret"] = round((r["nav"] / SEED - 1) * 100, 2)
+        r["dret"] = None if prev is None else round((r["nav"] / prev - 1) * 100, 2)
+        sp = close_on("SPY", r["date"], None)
+        r["spy_ret"] = None if (not sp or not sb) else round((sp / sb - 1) * 100, 2)
+        prev = r["nav"]
+
+    stats = {}
+    try:
+        dret = [r["dret"] for r in rows if r.get("dret") is not None]
+        peak, mdd = None, 0.0
+        for r in rows:
+            peak = r["nav"] if peak is None else max(peak, r["nav"])
+            if peak:
+                mdd = min(mdd, (r["nav"] / peak - 1) * 100)
+        if len(dret) > 1:
+            import statistics as _stat
+            vol = _stat.pstdev(dret) * (252 ** 0.5)
+        else:
+            vol = None
+        last = rows[-1] if rows else {}
+        stats = {
+            "start": rows[0]["date"] if rows else None,
+            "days": len(rows),
+            "nav": last.get("nav"),
+            "ret": last.get("ret"),
+            "dret": last.get("dret"),
+            "spy_ret": last.get("spy_ret"),
+            "excess": (round(last.get("ret", 0) - last.get("spy_ret", 0), 2)
+                       if last.get("spy_ret") is not None else None),
+            "mdd": round(mdd, 2),
+            "vol": None if vol is None else round(vol, 2),
+            "best": max(dret) if dret else None,
+            "worst": min(dret) if dret else None,
+            "win_days": (round(sum(1 for x in dret if x > 0) / len(dret) * 100, 1) if dret else None),
+            "estimate": not all(r.get("live") for r in rows[-1:]),
+        }
+    except Exception:
+        pass
+
+    out = {"rows": rows, "stats": stats}
+    _NAV_CACHE["key"] = key
+    _NAV_CACHE["data"] = out
+    return out
 
 
 # ---------------------------------------------------------------- Portfolio
@@ -266,12 +411,21 @@ def build_payload():
     except Exception:
         pass
 
+    # 우리 자산 일일시세(ETF 스타일 NAV) — 재구성 + 통계
+    nav = {"rows": [], "stats": {}}
+    try:
+        nav = build_nav_history(pf, series)
+    except Exception:
+        pass
+
     return {
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "market_open": is_us_market_open(),
         "seed": SEED,
         "series": series,
         "series_range": SERIES_RANGE,
+        "nav_history": nav.get("rows") or [],
+        "nav_stats": nav.get("stats") or {},
         "equity_curve": pf.get("equity_curve", []),
         "cash": round(cash, 2),
         "invested": round(invested, 2),
