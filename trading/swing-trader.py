@@ -1724,7 +1724,12 @@ def ai_apply_exits(portfolio, today, max_exits=3):
     want = {str(t).upper() for t in (alloc.get("exit_tickers") or [])}
     if not want:
         return []
-    closed, keep = [], []
+    # 최소 보유일 가드: 너무 잦은 섹터 전환 청산(왕복 비용)을 AI가 스스로 조절하는 노브
+    try:
+        _min_hold = max(0, min(30, int(alloc.get("exit_min_hold_days", 1))))
+    except (TypeError, ValueError):
+        _min_hold = 1
+    closed, keep, held_back = [], [], []
     for pos in portfolio["positions"]:
         if len(closed) >= max_exits or pos.get("long_term") or pos["ticker"].upper() not in want:
             keep.append(pos)
@@ -1739,6 +1744,11 @@ def ai_apply_exits(portfolio, today, max_exits=3):
         else:
             cur = prices[-1]
         days_held = (datetime.datetime.strptime(today, "%Y-%m-%d") - datetime.datetime.strptime(pos["date"], "%Y-%m-%d")).days
+        if days_held < _min_hold:
+            pos["_exit_hold"] = f"AI 청산 보류 (보유 {days_held}일 < 최소 {_min_hold}일)"
+            held_back.append(pos["ticker"])
+            keep.append(pos)
+            continue
         pnl = (cur - pos["entry_price"]) * pos["shares"]
         closed.append({**pos, "exit_price": round(cur, 2), "exit_date": today,
                        "pnl": round(pnl, 2), "days_held": days_held,
@@ -1746,6 +1756,8 @@ def ai_apply_exits(portfolio, today, max_exits=3):
         portfolio["cash"] += pos["shares"] * cur
     portfolio["positions"] = keep
     portfolio["history"].extend(closed)
+    if held_back:
+        print(f"[AI 청산 보류] 최소 보유일({_min_hold}일) 미달: {', '.join(held_back)}")
     return closed
 
 
@@ -2159,6 +2171,11 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             lines.append("• 🎛️ **AI 배분 지시**: " + " | ".join(_bits))
     _mn_disp = P.get('max_new_per_tick')
     lines.append(f"• 🧮 **배분 한도(AI 조정가)**: 섹터≤{P.get('sector_limit', 3)} · 종목≤{int(P.get('max_positions', MAX_POSITIONS))} · 신규≤{('공격도 자동' if _mn_disp is None else int(_mn_disp))} · 현금하한 {('%.0f%%' % (float(P['min_cash_pct'])*100)) if P.get('min_cash_pct') is not None else '공격도 자동'} · 중형최소 {P.get('cap_min_mid',0)} · 소형최소 {P.get('cap_min_small',0)}")
+    try:
+        _mh = load_ai_alloc().get("exit_min_hold_days", 1)
+        lines.append(f"• 🛑 **AI 청산 최소 보유일**: {_mh}일 (섹터 전환 청산 남발 방지 노브 — AI 조정가)")
+    except Exception:
+        pass
     lines.append(f"• 🎚️ **후보 스크린(AI 조정가)**: 후보점수≥{P.get('min_candidate_score',4)} · 최소포지션 ${float(P.get('min_position_size',3000)):,.0f} · 업종≤{P.get('industry_limit',2)} · 퀄리티≥{P.get('quality_min',0) or '게이트 없음'}")
     _qm2 = [p for p in (positions or []) if p.get("quality") is not None]
     if _qm2:
@@ -2169,6 +2186,46 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
         _al = json.load(open(ALPHA_PATH))
     except Exception:
         _al = {}
+    # 🔄 회전 기록 — AI가 자기 틸트 변경·청산 지시 성적을 보고 스스로 줄일 수 있게 한다
+    try:
+        _sh = json.load(open(os.path.expanduser("~/.hermes/scripts/swing_ai_overrides.json"))).get("history") or []
+        def _sg(a):
+            if not isinstance(a, dict):
+                return None
+            return (tuple(sorted((a.get("sector_tilt") or {}).items())),
+                    tuple(sorted((a.get("industry_tilt") or {}).items())),
+                    tuple(sorted(a.get("exit_tickers") or [])))
+        _sigs = [(h.get("ts"), _sg(h.get("alloc"))) for h in _sh if _sg(h.get("alloc"))]
+        if len(_sigs) >= 3:
+            _chg = sum(1 for i in range(1, len(_sigs)) if _sigs[i][1] != _sigs[i-1][1])
+            _rate = _chg / max(1, len(_sigs) - 1) * 100
+            lines.append(f"🔄 **회전 기록 (AI 자기 성적 — 판단 재료)**")
+            lines.append(f"  · 최근 {len(_sigs)}틱 중 배분(틸트·청산지시) 변경 **{_chg}회 ({_rate:.0f}%)**")
+            _last = [s for _, s in _sigs[-3:]]
+            for _i, _s in enumerate(_last):
+                _st = ", ".join(f"{k}{v:+g}" for k, v in _s[0]) or "-"
+                _ex = ",".join(_s[2]) or "없음"
+                lines.append(f"    - {_i+1}틱 전: 섹터[{_st}] 청산지시[{_ex}]")
+        # 청산 사유별 실제 성적 (AI 청산 vs 기계적 청산)
+        _by = {}
+        for _h in (history or []):
+            _r = _h.get("exit_reason") or ""
+            _k = ("AI배분청산" if ("섹터 전환" in _r or "AI 배분" in _r) else
+                  "시간초과" if "시간 초과" in _r else "스톱" if "스톱" in _r else
+                  "목표" if "목표" in _r else "로테이션" if "로테이션" in _r else "기타")
+            _n, _p = _by.get(_k, (0, 0.0))
+            _by[_k] = (_n + 1, _p + (_h.get("pnl") or 0))
+        if _by:
+            _seg = " · ".join(f"{k} {n}건 ${p/n:+.0f}/건" for k, (n, p) in
+                              sorted(_by.items(), key=lambda x: -x[1][0]))
+            lines.append(f"  · 청산 성적: {_seg}")
+            _ai_n, _ai_p = _by.get("AI배분청산", (0, 0.0))
+            if _ai_n >= 3:
+                lines.append(f"    ↳ ⚠️ AI 섹터전환 청산 {_ai_n}건 평균 ${_ai_p/_ai_n:+.2f}/건 — "
+                             f"기계적 청산(목표 ${_by.get('목표',(0,1))[1]/max(1,_by.get('목표',(0,1))[0]):+.0f})과 비교해 판단하라. "
+                             f"잦은 전환 청산은 왕복 비용이다 → exit_tickers 남발 금지, exit_min_hold_days로 스스로 제한하라.")
+    except Exception as _e:
+        _soft("회전 기록", _e)
     if _SOFT_ERRORS:
         lines.append(f"• ⚠️ **내부 경고**({len(_SOFT_ERRORS)}): " + ", ".join(_SOFT_ERRORS[:6]))
     if _al.get("tickers"):

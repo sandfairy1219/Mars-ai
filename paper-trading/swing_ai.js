@@ -224,6 +224,9 @@ function validateAlloc(alloc) {
     if (k && isFinite(n)) hd[String(k).toUpperCase()] = Math.max(1, Math.min(120, n));
   }
   if (Object.keys(hd).length) out.hold_days = hd;
+  // 청산 최소 보유일 (섹터 전환 청산 남발 방지 — AI 자율)
+  const mh = Number(alloc.exit_min_hold_days);
+  if (isFinite(mh)) out.exit_min_hold_days = Math.max(0, Math.min(30, Math.round(mh)));
   return Object.keys(out).length ? out : null;
 }
 
@@ -351,6 +354,14 @@ Computer Hardware, Communication Equipment, Banks - Diversified, Oil & Gas E&P, 
   처럼 업종 점수 가감(-3~+3). 섹터보다 세분되므로 이쪽을 우선 활용해라.
 · focus_tickers / avoid_tickers — 종목 최대 8개 지정(가산 +2)/제외
 · exit_tickers — 보유 중인 종목을 최대 4개까지 청산 지시(틱당 최대 3건 집행, long_term 제외).
+  ⚠️ exit_tickers는 **점수 조정이 아니라 실제 매도**다. 왕복 비용·타이밍 리스크가 발생한다.
+  리포트 '🔄 회전 기록'에 네 틸트 변경률과 청산 성적(사유별 건당 평균 손익)이 나온다.
+  섹터전환 청산의 건당 평균이 기계적 청산(목표·시간초과)보다 나쁘면 회전을 줄여라.
+  틸트(sector_tilt/industry_tilt)를 매 틱 바꾸는 건 점수 가감일 뿐 비용이 없지만,
+  청산 지시는 비용이 있다 — 이 둘을 구분해서 써라.
+· exit_min_hold_days (0~30, 기본 1) — **AI 청산 지시의 최소 보유일**. 이 일수 미만인 종목은
+  네가 청산을 지시해도 집행되지 않고 보류된다(리포트에 보류 내역이 찍힌다).
+  잦은 섹터 전환으로 사고팔이를 반복하고 있다면 이 값을 올려라(예: 3~5).
 · stop_adjust — {\"PTEN\": 0.6} 처럼 **종목별 스톱 거리 배수**(0.3~2.0, 1.0=원래대로, 0.6=타이트).
   롱 기준: 배수가 작으면 스톱이 진입가에 가까워져 먼저 잘린다. 리포트의 🎯 종목별 특성·피어를
   보고 판단한다 — 업종 내에서 뒤처지면서 섹터와 같이 빠지는 종목(동조형+낮은 백분위)은 조이고,
