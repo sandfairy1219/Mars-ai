@@ -1668,6 +1668,8 @@ def _scan_one(ticker):
         "price": price, "rsi": round(rsi, 1),
         "ma20": round(ma20, 2), "ma50": round(ma50, 2),
         "side": "LONG", "score": lscore,
+        "base_score": raw_lscore,          # 순수 기술점수 (0~8) — 만점 기준
+        "bonus": ({"특성": int(round(_cb))} if (_ch and _ch.get("label") in ("독립형", "역상관형") and _cb > 0) else {}),
         "dist_ma20": round(abs(prices[-1]-ma20)/prices[-1]*100, 2),
         "atr_pct": round(atr/prices[-1]*100, 2) if atr else 0,
         "rel_20d": _rel20,
@@ -1676,6 +1678,16 @@ def _scan_one(ticker):
         "raw_score": raw_lscore,
         "character": _ch,
     }
+
+def _bump(c, key, val):
+    """후보 점수 가산 + 내역 기록 (표시용). score = base_score + Σbonus 불변식 유지."""
+    try:
+        b = c.setdefault("bonus", {})
+        b[key] = round(float(b.get(key, 0)) + float(val), 2)
+        c["score"] = round(float(c.get("score", 0)) + float(val), 2)
+    except Exception:
+        c["score"] = c.get("score", 0) + val
+
 
 def scan_tickers(tickers, is_full=False):
     _PEER_PRICES.clear()
@@ -2024,7 +2036,9 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
             # thesis-tracker: 왜 샀고 어떤 조건이면 파는지 — 청산·주간 리뷰가 이 기록을 검증한다
             "thesis": {
                 "date": today,
-                "why": (f"기술 {c['score']}/8 · RSI {c['rsi']} · MA20>MA50 "
+                "why": (f"기술 {c.get('raw_score', c['score'])}/8"
+                        + (f"+{c['score'] - c.get('raw_score', c['score']):g}" if c['score'] != c.get('raw_score', c['score']) else "")
+                        + f" · RSI {c['rsi']} · MA20>MA50 "
                         f"· 상대강도 {_rel if _rel is not None else '?'}%p "
                         f"· {sec}/{c.get('industry') or '?'} · 퀄리티 {_q.get('score','?')}/{_q.get('measured','?')}"),
                 "quality": _q.get("score"),
@@ -2497,7 +2511,11 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             _pw = w.get("peer")
             if _pw:
                 _ind_w += f" | {peer_describe(_pw)}"
-            lines.append(f"{emoji} {w['ticker']} [{w['side']}] 점수 {_raw}/8{_tag}{_ind_w} | RSI {w['rsi']} | ${w['price']}")
+            _bd = w.get("bonus") or {}
+            _bs = w.get("base_score", _raw)
+            _extra = (w["score"] - _bs)
+            _btxt = (f" +{_extra:g}" + ("(" + "·".join(f"{k}{v:+g}" for k, v in _bd.items()) + ")" if _bd else "")) if _extra else ""
+            lines.append(f"{emoji} {w['ticker']} [{w['side']}] 기술 {_bs:g}/8{_btxt}{_tag}{_ind_w} | RSI {w['rsi']} | ${w['price']}")
         lines.append("")
     
     # Strategy note: S&P 500 벤치마크 & VIX
@@ -2677,7 +2695,7 @@ def main():
                     _r["peer"] = _ps
                     _pts = (1 if _ps["rank_pct"] >= 80 else 0) + (1 if _ps["excess_20d"] >= 5.0 else 0)
                     if _pts:
-                        _r["score"] += min(_pb, _pts)
+                        _bump(_r, "피어", min(_pb, _pts))
         for _r in results:
             if _r["ticker"] in _etf_tk:
                 _r["instrument"] = "ETF"
@@ -2686,11 +2704,11 @@ def main():
                 if _r["ticker"] in _alpha_tk:
                     _r["alpha"] = True
                     _r.setdefault("raw_score", _r["score"])
-                    _r["score"] += 1
+                    _bump(_r, "알파", 1)
                 elif _r["ticker"] in _flow_tk:
                     _r["flow_track"] = True
                     _r.setdefault("raw_score", _r["score"])
-                    _r["score"] += 1
+                    _bump(_r, "흐름", 1)
         
         # For full scans, rebuild watchlist
         if is_full:
@@ -2704,7 +2722,7 @@ def main():
             if aggression < 0.5:
                 for w in watchlist:
                     if w["sector"] in DEFENSIVE:
-                        w["score"] += 2  # 방어 섹터 롱 보너스
+                        _bump(w, "방어섹터", 2)   # 방어 섹터 롱 보너스
             
             # ── AI 배분 지시 적용 (섹터 틸트 · 종목 지정/제외) ──
             _alloc = load_ai_alloc()
@@ -2718,11 +2736,11 @@ def main():
                 for w in watchlist:
                     w.setdefault("raw_score", w["score"])   # 배분 개입 전 원점수 (사이즈 보너스는 원점수 기준)
                     if _tilt and w.get("sector") in _tilt:
-                        w["score"] += _tilt[w["sector"]]
+                        _bump(w, "섹터틸트", _tilt[w["sector"]])
                     if _itilt and w.get("industry") in _itilt:
-                        w["score"] += _itilt[w["industry"]]      # 업종 틸트(섹터보다 세분)
+                        _bump(w, "업종틸트", _itilt[w["industry"]])   # 업종 틸트(섹터보다 세분)
                     if _focus and w["ticker"].upper() in _focus:
-                        w["score"] += 2          # 지정 종목 가산
+                        _bump(w, "지정", 2)      # 지정 종목 가산
             watchlist.sort(key=lambda x: x["score"], reverse=True)
             portfolio["watchlist"] = watchlist[:20]
         else:
