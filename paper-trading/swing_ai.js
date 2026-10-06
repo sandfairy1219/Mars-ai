@@ -211,6 +211,10 @@ function validateAlloc(alloc) {
   const f = tick(alloc.focus_tickers); if (f.length) out.focus_tickers = f;
   const a = tick(alloc.avoid_tickers); if (a.length) out.avoid_tickers = a;
   const x = tick(alloc.exit_tickers).slice(0, 4); if (x.length) out.exit_tickers = x;
+  // 장기보유 지정: 시간초과·AI청산 면제 (장기 초과수익용 코어)
+  if (Array.isArray(alloc.long_term_tickers)) {
+    out.long_term_tickers = tick(alloc.long_term_tickers).slice(0, 8);
+  }
   // 종목별 조정: 스톱 거리 배수 / 보유일 상한 (하드코딩 규칙 없음 — AI가 특성·피어를 보고 정한다)
   const sa = {};
   for (const [k, v] of Object.entries(alloc.stop_adjust || {})) {
@@ -300,7 +304,16 @@ async function main() {
   // 2) LLM 결정 요청
   const baseline = readWeeklyParams();
   const effective = currentEffective();
-  const prompt = `너는 모의투자 스윙트레이더의 AI 결정권자다. 아래 리포트를 분석해서 (A) 해석과 (B) 파라미터 결정을 낸다.
+  const prompt = `너는 모의투자 스윙트레이더의 AI 결정권자다.
+
+[최종 목표 — 이걸 기준으로 모든 판단을 하라]
+**S&P 500을 장기적으로(주~월 단위) 이기는 것.** 일간 롱숏을 맞추거나 틸트를 자주 바꾸는 것은
+목표가 아니다. 리포트 최상단 '🎯 목표' 블록의 **누적 초과수익**이 네 성적표다.
+따라서:
+· 논문(thesis)이 살아있는 승자는 오래 들고 가라 — alloc.long_term_tickers로 지정하면
+  시간초과 청산과 AI 청산에서 면제된다(최대 8종목). 잦은 교체는 왕복 비용만 만든다.
+· '🔄 회전 기록'에서 네 배분 변경률과 청산 성적을 확인하고, 회전이 손실이면 줄여라.
+· 일간 변동성이 아니라 누적 초과수익·PF·기대값으로 스스로를 평가하라. 아래 리포트를 분석해서 (A) 해석과 (B) 파라미터 결정을 낸다.
 
 [현재 파라미터 — 이 숫자가 기준이다]
 · 주간학습 기준값(브레이크 기준점): ${fmtParams(baseline)}
@@ -359,6 +372,10 @@ Computer Hardware, Communication Equipment, Banks - Diversified, Oil & Gas E&P, 
   섹터전환 청산의 건당 평균이 기계적 청산(목표·시간초과)보다 나쁘면 회전을 줄여라.
   틸트(sector_tilt/industry_tilt)를 매 틱 바꾸는 건 점수 가감일 뿐 비용이 없지만,
   청산 지시는 비용이 있다 — 이 둘을 구분해서 써라.
+· long_term_tickers — ["MU","MSFT"] 처럼 **장기보유 지정**(최대 8종목). 지정된 종목은
+  시간초과 청산과 AI 청산(exit_tickers)에서 면제된다. 논문이 살아있고 업종 내 상대강도가
+  유지되는 승자를 주~월 단위로 들고 가는 용도다. 키를 아예 빼면 기존 지정이 유지되고,
+  목록을 주면 그 목록으로 교체된다(빈 배열이면 전부 해제).
 · exit_min_hold_days (0~30, 기본 1) — **AI 청산 지시의 최소 보유일**. 이 일수 미만인 종목은
   네가 청산을 지시해도 집행되지 않고 보류된다(리포트에 보류 내역이 찍힌다).
   잦은 섹터 전환으로 사고팔이를 반복하고 있다면 이 값을 올려라(예: 3~5).

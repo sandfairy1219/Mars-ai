@@ -283,6 +283,47 @@ def load_ai_alloc():
     except Exception:
         return {}
 
+def record_equity(portfolio, today, ctx):
+    """자산곡선 1일 1점 기록 → 5/20일 초과수익 계산 근거 (장기 성과 추적)."""
+    try:
+        invested = sum(p["shares"] * p.get("current_price", p["entry_price"]) for p in portfolio["positions"])
+        total = round(portfolio["cash"] + invested, 2)
+        spy = (ctx.get("S&P 500") or {}).get("price")
+        qqq = (ctx.get("Nasdaq 100") or {}).get("price")
+        curve = portfolio.setdefault("equity_curve", [])
+        row = {"date": today, "total": total,
+               "spy": None if spy is None else round(float(spy), 2),
+               "qqq": None if qqq is None else round(float(qqq), 2)}
+        if curve and curve[-1].get("date") == today:
+            curve[-1] = row
+        else:
+            curve.append(row)
+        del curve[:-260]
+    except Exception as _e:
+        _soft("자산곡선 기록", _e)
+
+
+def apply_long_term(portfolio, alloc):
+    """AI가 지정한 장기보유 종목(alloc.long_term_tickers)을 반영.
+    키가 없으면 기존 지정을 유지(실수로 해제되지 않게), 있으면 그 목록으로 교체."""
+    try:
+        if "long_term_tickers" not in (alloc or {}):
+            return [p["ticker"] for p in portfolio["positions"] if p.get("long_term")]
+        want = {str(t).upper() for t in (alloc.get("long_term_tickers") or [])}
+        today = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+        for p in portfolio["positions"]:
+            if p["ticker"].upper() in want and not p.get("long_term"):
+                p["long_term"] = True
+                p["long_term_since"] = today
+            elif p["ticker"].upper() not in want and p.get("long_term"):
+                p.pop("long_term", None)
+                p.pop("long_term_since", None)
+        return sorted(want)
+    except Exception as _e:
+        _soft("장기보유 지정", _e)
+        return []
+
+
 def ai_pos_tuning(ticker):
     """AI의 종목별 조정: alloc.stop_adjust(스톱 거리 배수) · alloc.hold_days(보유일 상한).
     하드코딩 규칙 없음 — 종목 특성·피어 데이터를 본 AI가 직접 정한다."""
@@ -2127,6 +2168,47 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     lines.append("")
     
     # Portfolio summary
+    # 🎯 목표 블록 — "일간 롱숏·틸트 변경은 목표가 아니다, 지수 장기 초과수익이 목표다"
+    try:
+        _pf = json.load(open(PORTFOLIO_PATH))
+        curve = _pf.get("equity_curve") or []
+        _tot = summary.get("total_value")
+        _ret = summary.get("return_pct")
+        _spy_ret = summary.get("spy_return_pct")
+        lines.append("🎯 **목표: S&P 500 장기 초과수익** — 일간 롱숏 맞추기·틸트 변경은 목표가 아니다")
+        if _ret is not None and _spy_ret is not None:
+            _ex = _ret - _spy_ret
+            lines.append(f"  · 누적({_pf.get('spy_baseline_date','?')} 기준): 포트 {_ret:+.2f}% vs SPY {_spy_ret:+.2f}% "
+                         f"→ **초과 {_ex:+.2f}%p** {'🟢' if _ex >= 0 else '🔵'}")
+        if len(curve) >= 6:
+            def _exc(n):
+                a, b = curve[-n], curve[-1]
+                if not a.get("total") or not a.get("spy") or not b.get("spy"):
+                    return None
+                pr = (b["total"] / a["total"] - 1) * 100
+                sr = (b["spy"] / a["spy"] - 1) * 100
+                return pr - sr
+            _e5, _e20 = _exc(5), _exc(20)
+            _parts = []
+            if _e5 is not None:
+                _parts.append(f"5일 초과 {_e5:+.2f}%p")
+            if len(curve) >= 21 and _e20 is not None:
+                _parts.append(f"20일 초과 {_e20:+.2f}%p")
+            if _parts:
+                lines.append("  · " + " · ".join(_parts) + f" (자산곡선 {len(curve)}일 축적)")
+        else:
+            lines.append(f"  · 5/20일 초과수익: 자산곡선 축적 중 ({len(curve)}일)")
+        if history:
+            _w = [h for h in history if (h.get("pnl") or 0) > 0]
+            _l = [h for h in history if (h.get("pnl") or 0) <= 0]
+            _gp = sum(h.get("pnl") or 0 for h in _w)
+            _gl = abs(sum(h.get("pnl") or 0 for h in _l))
+            _pf_ = (round(_gp / _gl, 2) if _gl else 999)
+            lines.append(f"  · 승률 {len(_w)/max(1,len(history))*100:.1f}% · PF {_pf_} · "
+                         f"기대값 ${sum(h.get('pnl') or 0 for h in history)/max(1,len(history)):+.2f}/건 "
+                         f"({len(history)}건)")
+    except Exception as _e:
+        _soft("목표 블록", _e)
     lines.append("💼 **포트폴리오**")
     cash_ratio = summary['cash'] / SEED * 100
     invested_ratio = summary['invested'] / SEED * 100
@@ -2573,6 +2655,8 @@ def main():
                                              + sorted(_flow_tk) + sorted(_etf_tk)))
         
         # Update existing positions (check stops/targets/time)
+        # AI 장기보유 지정 (시간초과·AI청산 면제) — update_positions 전에 반영해야 유효하다
+        _lt = apply_long_term(portfolio, load_ai_alloc())
         closed = update_positions(portfolio, today)
         # AI 배분 지시에 따른 청산 (최대 3건/틱) — 슬롯·현금을 만들어 섹터 전환을 집행
         closed.extend(ai_apply_exits(portfolio, today))
@@ -2656,6 +2740,7 @@ def main():
         
         summary = portfolio_summary(portfolio)
         if not CONTEXT_ONLY:
+            record_equity(portfolio, today, ctx)
             save_portfolio(portfolio)
         
         # Build and send message

@@ -502,45 +502,6 @@
       "flow_track": true
     },
     {
-      "ticker": "COHU",
-      "sector": "Technology",
-      "industry": "Semiconductor Equipment & Materials",
-      "price": 73.73,
-      "rsi": 93.2,
-      "ma20": 61.17,
-      "ma50": 55.05,
-      "side": "LONG",
-      "score": 10.0,
-      "dist_ma20": 17.03,
-      "atr_pct": 2.66,
-      "rel_20d": 44.77,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 3,
-        "measured": 6
-      },
-      "raw_score": 5,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.89,
-        "beta_spy": 4.13,
-        "decouple_pct": 12.0,
-        "sec_down_ret": -2.23,
-        "up_capture": 2.28,
-        "down_capture": 1.97,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 10,
-        "rank_pct": 100.0,
-        "excess_20d": 21.7,
-        "corr": 0.93,
-        "decouple_pct": 16.7,
-        "basis": "Semiconductor Equipment & Materials"
-      },
-      "flow_track": true
-    },
-    {
       "ticker": "OXIG.L",
       "sector": "Technology",
       "industry": "Scientific & Technical Instruments",
@@ -576,6 +537,45 @@
         "corr": -0.15,
         "decouple_pct": 61.5,
         "basis": "Scientific & Technical Instruments"
+      },
+      "flow_track": true
+    },
+    {
+      "ticker": "COHU",
+      "sector": "Technology",
+      "industry": "Semiconductor Equipment & Materials",
+      "price": 73.73,
+      "rsi": 93.2,
+      "ma20": 61.17,
+      "ma50": 55.05,
+      "side": "LONG",
+      "score": 10.0,
+      "dist_ma20": 17.03,
+      "atr_pct": 2.66,
+      "rel_20d": 44.77,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 3,
+        "measured": 6
+      },
+      "raw_score": 5,
+      "character": {
+        "proxy": "SMH",
+        "corr_sector": 0.89,
+        "beta_spy": 4.13,
+        "decouple_pct": 12.0,
+        "sec_down_ret": -2.23,
+        "up_capture": 2.28,
+        "down_capture": 1.97,
+        "label": "동조형"
+      },
+      "peer": {
+        "n": 10,
+        "rank_pct": 100.0,
+        "excess_20d": 21.7,
+        "corr": 0.93,
+        "decouple_pct": 16.7,
+        "basis": "Semiconductor Equipment & Materials"
       },
       "flow_track": true
     },
@@ -921,44 +921,6 @@
       }
     },
     {
-      "ticker": "MRVL",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 272.71,
-      "rsi": 81.5,
-      "ma20": 248.56,
-      "ma50": 228.27,
-      "side": "LONG",
-      "score": 8.0,
-      "dist_ma20": 8.36,
-      "atr_pct": 2.07,
-      "rel_20d": 20.74,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 5,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.82,
-        "beta_spy": 3.42,
-        "decouple_pct": 12.0,
-        "sec_down_ret": -1.53,
-        "up_capture": 1.75,
-        "down_capture": 1.67,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 19,
-        "rank_pct": 78.9,
-        "excess_20d": 8.07,
-        "corr": 0.82,
-        "decouple_pct": 19.2,
-        "basis": "Semiconductors"
-      }
-    },
-    {
       "ticker": "PLTR",
       "sector": "Technology",
       "industry": "Software - Infrastructure",
@@ -996,6 +958,44 @@
         "basis": "Software - Infrastructure"
       },
       "alpha": true
+    },
+    {
+      "ticker": "MRVL",
+      "sector": "Technology",
+      "industry": "Semiconductors",
+      "price": 272.71,
+      "rsi": 81.5,
+      "ma20": 248.56,
+      "ma50": 228.27,
+      "side": "LONG",
+      "score": 8.0,
+      "dist_ma20": 8.36,
+      "atr_pct": 2.07,
+      "rel_20d": 20.74,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "raw_score": 5,
+      "character": {
+        "proxy": "SMH",
+        "corr_sector": 0.82,
+        "beta_spy": 3.42,
+        "decouple_pct": 12.0,
+        "sec_down_ret": -1.53,
+        "up_capture": 1.75,
+        "down_capture": 1.67,
+        "label": "동조형"
+      },
+      "peer": {
+        "n": 19,
+        "rank_pct": 78.9,
+        "excess_20d": 8.07,
+        "corr": 0.82,
+        "decouple_pct": 19.2,
+        "basis": "Semiconductors"
+      }
     }
   ],
   "history": [
@@ -3132,5 +3132,13 @@
   "dia_baseline_date": "2026-07-24",
   "iwm_current_price": 283.15,
   "iwm_baseline_price": 293.26,
-  "iwm_baseline_date": "2026-07-24"
+  "iwm_baseline_date": "2026-07-24",
+  "equity_curve": [
+    {
+      "date": "2026-10-06",
+      "total": 106417.69,
+      "spy": 774.94,
+      "qqq": 756.43
+    }
+  ]
 }
