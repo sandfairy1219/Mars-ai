@@ -6,8 +6,11 @@ Mars Paper-Trading Dashboard — 모의투자 실시간 대시보드
 
 import json
 import os
+import threading
 import time
+import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
@@ -87,6 +90,88 @@ def get_quote(ticker):
     return result
 
 
+# ---------------------------------------------------------------- 일봉 시계열
+
+SERIES_TTL = 3600                     # 1시간 (일봉은 자주 안 바뀜)
+SERIES_RANGE = "6mo"
+_HERE = os.path.dirname(os.path.abspath(__file__))
+SERIES_CACHE_PATH = os.path.join(_HERE, ".series_cache.json")
+_series_cache = {}
+_series_lock = threading.Lock()
+
+
+def _load_series_cache():
+    with _series_lock:
+        if not _series_cache:
+            try:
+                with open(SERIES_CACHE_PATH) as f:
+                    _series_cache.update(json.load(f))
+            except Exception:
+                pass
+        return _series_cache
+
+
+def _save_series_cache():
+    try:
+        with _series_lock:
+            data = dict(_series_cache)
+        tmp = SERIES_CACHE_PATH + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(data, f)
+        os.replace(tmp, SERIES_CACHE_PATH)
+    except Exception:
+        pass
+
+
+def _num(lst, i):
+    try:
+        v = lst[i]
+        return None if v is None else round(float(v), 2)
+    except Exception:
+        return None
+
+
+def get_series(ticker, rng=SERIES_RANGE):
+    """Yahoo 일봉 → {d:[날짜],c:[종가],o,h,l,v:[거래량]}. 1시간 디스크 캐시."""
+    now = time.time()
+    cache = _load_series_cache()
+    key = f"{ticker}|{rng}"
+    ent = cache.get(key)
+    if ent and now - ent.get("ts", 0) < SERIES_TTL:
+        return ent.get("data")
+    data = None
+    try:
+        url = ("https://query1.finance.yahoo.com/v8/finance/chart/"
+               + urllib.parse.quote(ticker) + f"?range={rng}&interval=1d")
+        raw = _http_json(url, timeout=8)
+        res = ((raw.get("chart") or {}).get("result") or [None])[0]
+        if res:
+            ts = res.get("timestamp") or []
+            ind = res.get("indicators") or {}
+            q = (ind.get("quote") or [{}])[0]
+            closes = ((ind.get("adjclose") or [{}])[0] or {}).get("adjclose") or q.get("close") or []
+            d, c, o, h, l, v = [], [], [], [], [], []
+            for i, t in enumerate(ts):
+                if i >= len(closes) or closes[i] is None:
+                    continue
+                d.append(datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%d"))
+                c.append(round(float(closes[i]), 2))
+                o.append(_num(q.get("open") or [], i))
+                h.append(_num(q.get("high") or [], i))
+                l.append(_num(q.get("low") or [], i))
+                v.append(int((q.get("volume") or [0])[i] or 0) if i < len(q.get("volume") or []) else 0)
+            if d:
+                data = {"d": d, "c": c, "o": o, "h": h, "l": l, "v": v}
+    except Exception:
+        data = None
+    if data:
+        with _series_lock:
+            _series_cache[key] = {"ts": now, "data": data}
+        _save_series_cache()
+        return data
+    return ent.get("data") if ent else None
+
+
 # ---------------------------------------------------------------- Portfolio
 
 
@@ -117,6 +202,7 @@ def build_payload():
 
     total_unrealized = 0.0
     invested = 0.0
+    market_value = 0.0
     for p in positions:
         q = quotes.get(p["ticker"]) or {}
         live = q.get("price")
@@ -129,10 +215,12 @@ def build_payload():
         )
         total_unrealized += p["unrealized_live"]
         invested += p["entry_price"] * p["shares"]
+        market_value += p["live_price"] * p["shares"]
 
+    # 총자산 = 현금 + 보유종목 시가평가 (실현수익은 이미 현금에 반영됨)
+    # = SEED + 실현누적 + 미실현 → 크론 swing-trader.py portfolio_summary()와 동일한 식
     cash = pf.get("cash", SEED)
-    equity = SEED + total_unrealized
-
+    equity = cash + market_value
     realized = sum(h.get("pnl", 0) for h in history)
 
     def bench(prefix, name):
@@ -154,7 +242,7 @@ def build_payload():
         bench("dia", "Dow Jones"),
         bench("iwm", "Russell 2000"),
     ]
-    equity_return = round(total_unrealized / SEED * 100, 2)
+    equity_return = round((equity - SEED) / SEED * 100, 2)
 
     watch_out = []
     for w in watchlist:
@@ -165,10 +253,26 @@ def build_payload():
             "live_dp": q.get("dp"),
         })
 
+    # 일봉 시계열 (차트용) — 보유 + 워치리스트 + 벤치마크, 6개월
+    ser_tickers = list(dict.fromkeys(
+        [p["ticker"] for p in positions] + [w["ticker"] for w in watchlist] + ["SPY", "QQQ"]
+    ))[:20]
+    series = {}
+    try:
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            for _t, _s in zip(ser_tickers, ex.map(lambda x: get_series(x), ser_tickers)):
+                if _s:
+                    series[_t] = _s
+    except Exception:
+        pass
+
     return {
         "updated_at": datetime.now(timezone.utc).isoformat(),
         "market_open": is_us_market_open(),
         "seed": SEED,
+        "series": series,
+        "series_range": SERIES_RANGE,
+        "equity_curve": pf.get("equity_curve", []),
         "cash": round(cash, 2),
         "invested": round(invested, 2),
         "equity": round(equity, 2),
@@ -224,8 +328,17 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+    # 시계열 캐시 예열 (첫 요청이 14초 걸리는 것 방지) — 실패해도 서버는 뜬다
+    threading.Thread(target=lambda: _safe_warm(), daemon=True).start()
     print(f"dashboard on :{PORT}", flush=True)
     srv.serve_forever()
+
+
+def _safe_warm():
+    try:
+        build_payload()
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

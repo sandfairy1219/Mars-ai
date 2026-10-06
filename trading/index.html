@@ -39,6 +39,21 @@ tr:hover td{background:#1c2128}
 .dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
 .dot.off{background:var(--red)}
 @media(max-width:640px){body{padding:10px}.card .value{font-size:1.15rem}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{background:#21262d;border:1px solid var(--border);color:var(--text);border-radius:14px;padding:4px 11px;font-size:.78rem;cursor:pointer;font-variant-numeric:tabular-nums}
+.chip:hover{border-color:var(--blue)}
+.chip.on{background:#1f6feb33;border-color:var(--blue);color:var(--blue);font-weight:700}
+.chip.pos{border-color:#23863688}
+.chip.watch{border-color:#30363d}
+.rbtns{display:flex;gap:6px;margin-bottom:10px}
+.rbtn{background:#21262d;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 12px;font-size:.78rem;cursor:pointer}
+.rbtn.on{background:#1f6feb33;border-color:var(--blue);color:var(--blue);font-weight:700}
+.chartbox{position:relative;width:100%}
+.chartbox.h280{height:280px}
+.chartbox.h90{height:90px;margin-top:6px}
+#ohlc-tbl{margin-top:12px}
+#ohlc-tbl th,#ohlc-tbl td{font-size:.78rem}
+.note{color:var(--muted);font-size:.75rem;margin-top:8px}
 </style>
 </head>
 <body>
@@ -46,6 +61,29 @@ tr:hover td{background:#1c2128}
 <div class="sub">갱신: <span id="upd">-</span> · <span id="auto">자동 새로고침 60초</span></div>
 
 <div class="grid" id="stats"></div>
+
+<div class="panel">
+  <h2>🎯 목표 — 자산곡선 vs S&P 500 <span class="badge" id="curve-badge">-</span></h2>
+  <div class="chartbox h280"><canvas id="curve-chart"></canvas></div>
+  <div class="note" id="curve-note">자산곡선은 매매 틱마다 하루 1점 기록됩니다 (기준일 대비 누적 %).</div>
+</div>
+
+<div class="panel">
+  <h2>📉 일일 시세 차트 <span class="badge" id="px-badge">-</span></h2>
+  <div class="chips" id="px-chips"></div>
+  <div class="rbtns" id="px-ranges">
+    <button class="rbtn" data-r="21">1개월</button>
+    <button class="rbtn" data-r="63">3개월</button>
+    <button class="rbtn on" data-r="0">6개월</button>
+  </div>
+  <div class="chartbox h280"><canvas id="px-chart"></canvas></div>
+  <div class="chartbox h90"><canvas id="vol-chart"></canvas></div>
+  <table id="ohlc-tbl">
+    <thead><tr><th>일자</th><th>시가</th><th>고가</th><th>저가</th><th>종가</th><th>일간</th><th>거래량</th></tr></thead>
+    <tbody id="ohlc-body"></tbody>
+  </table>
+  <div class="note">일봉 데이터: Yahoo Finance (1시간 캐시) · 초록=상승일 / 빨강=하락일</div>
+</div>
 
 <div class="panel">
   <h2>💼 보유 포지션 <span class="badge" id="pos-count">-</span></h2>
@@ -86,6 +124,7 @@ tr:hover td{background:#1c2128}
   </table>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 const fmt$ = v => v==null ? '—' : '$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtK$ = v => v==null ? '—' : (Math.abs(v)>=1000 ? '$'+(v/1000).toFixed(1)+'K' : '$'+v.toFixed(0));
@@ -99,9 +138,133 @@ function statCard(label, value, delta, deltaCls){
     ${delta!=null?`<div class="delta ${deltaCls||'neu'}">${delta}</div>`:''}</div>`;
 }
 
+// ─────────────────────────── 차트 (자산곡선 + 일일 시세) ───────────────────────────
+let D = null, pxTicker = null, pxRange = 0;
+const chartRefs = {};
+const CHART_OK = typeof Chart !== 'undefined';
+const AXIS = {ticks:{color:'#8b949e',font:{size:10}},grid:{color:'#21262d'}};
+const fmtVol = v => v==null?'—':(v>=1e9?(v/1e9).toFixed(2)+'B':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':String(v));
+
+function mkChart(id, cfg){
+  const cv = document.getElementById(id); if(!cv) return null;
+  if(chartRefs[id]) chartRefs[id].destroy();
+  chartRefs[id] = new Chart(cv, cfg);
+  return chartRefs[id];
+}
+
+function renderCurve(d){
+  const curve = d.equity_curve || [];
+  const badge = document.getElementById('curve-badge');
+  const note = document.getElementById('curve-note');
+  badge.textContent = curve.length ? curve.length+'일 축적' : '축적 중';
+  if(!CHART_OK){ note.textContent = '차트 라이브러리 로드 실패 (오프라인?)'; return; }
+  if(curve.length < 2){
+    if(chartRefs['curve-chart']){ chartRefs['curve-chart'].destroy(); chartRefs['curve-chart']=null; }
+    note.textContent = `자산곡선 축적 중 (${curve.length}일) — 매매 틱마다 하루 1점 쌓여서 2일치부터 그려집니다.`;
+    return;
+  }
+  const b = curve[0].total, sb = curve[0].spy;
+  const labels = curve.map(r=>r.date.slice(5));
+  const port = curve.map(r=>+( (r.total/b-1)*100 ).toFixed(2));
+  const spy = curve.map(r=> (r.spy&&sb) ? +((r.spy/sb-1)*100).toFixed(2) : null);
+  const p0 = port[port.length-1], s0 = spy[spy.length-1];
+  note.textContent = `누적(${curve[0].date} 기준): 포트 ${p0>=0?'+':''}${p0}% vs S&P500 ${s0>=0?'+':''}${s0}%`
+    + (s0!=null ? ` → 초과 ${(p0-s0).toFixed(2)}%p` : '') + ` · ${curve.length}일 축적`;
+  mkChart('curve-chart', {
+    type:'line',
+    data:{labels, datasets:[
+      {label:'내 계좌', data:port, borderColor:'#3fb950', backgroundColor:'#3fb95022', fill:true, tension:.25, pointRadius:0, borderWidth:2},
+      {label:'S&P 500', data:spy, borderColor:'#8b949e', borderDash:[5,4], fill:false, tension:.25, pointRadius:0, borderWidth:1.5},
+    ]},
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#8b949e',boxWidth:10,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y>=0?'+':''}${c.parsed.y}%`}}},
+      scales:{x:{...AXIS, ticks:{...AXIS.ticks, maxTicksLimit:8}},
+        y:{...AXIS, ticks:{...AXIS.ticks, callback:v=>(v>=0?'+':'')+v+'%'}}}}
+  });
+}
+
+function buildChips(d){
+  const el = document.getElementById('px-chips');
+  const pos = d.positions.map(p=>p.ticker);
+  const wl = d.watchlist.map(w=>w.ticker);
+  const list = [...new Set([...pos,...wl,'SPY','QQQ'])];
+  if(!pxTicker && list.length) pxTicker = pos[0] || list[0];
+  el.innerHTML = list.map(t=>{
+    const k = pos.includes(t) ? 'pos' : wl.includes(t) ? 'watch' : '';
+    const dp = (d.series&&d.series[t]) ? seriesDp(d.series[t]) : null;
+    return `<button class="chip ${k} ${t===pxTicker?'on':''}" data-t="${esc(t)}">${esc(t)}`
+      + (dp==null?'':` <span class="${dp>=0?'up':'down'}">${dp>=0?'+':''}${dp.toFixed(2)}%</span>`) + `</button>`;
+  }).join('');
+  el.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{ pxTicker=b.dataset.t; buildChips(D); renderPrice(D); });
+}
+
+function seriesDp(s){
+  const n=s.c.length; if(n<2||!s.c[n-2]) return null;
+  return (s.c[n-1]/s.c[n-2]-1)*100;
+}
+
+function renderPrice(d){
+  const s = (d.series||{})[pxTicker];
+  const badge = document.getElementById('px-badge');
+  if(!s){ badge.textContent='데이터 없음'; document.getElementById('ohlc-body').innerHTML=''; return; }
+  const n = pxRange ? Math.min(pxRange, s.c.length) : s.c.length;
+  const idx = s.d.map((_,i)=>i).slice(-n);
+  const labels = idx.map(i=>s.d[i].slice(5));
+  const close = idx.map(i=>s.c[i]);
+  const vol = idx.map(i=>s.v[i]);
+  const up = close.map((v,i)=> i===0 ? true : v >= close[i-1]);
+  const p = seriesDp(s);
+  badge.textContent = `${pxTicker} · ${s.d[idx[0]]}~${s.d[idx[idx.length-1]]} · ${n}일`
+    + (p==null?'':` · 일간 ${p>=0?'+':''}${p.toFixed(2)}%`);
+  if(!CHART_OK) return;
+  const ma = (arr,w)=>arr.map((_,i)=> i<w-1 ? null : +(arr.slice(i-w+1,i+1).reduce((a,b)=>a+b,0)/w).toFixed(2));
+  mkChart('px-chart', {
+    type:'line',
+    data:{labels, datasets:[
+      {label:pxTicker, data:close, borderColor:'#58a6ff', backgroundColor:'#58a6ff22', fill:true, tension:.2, pointRadius:0, borderWidth:2},
+      {label:'MA20', data:ma(close.map(v=>v),20), borderColor:'#d29922', borderDash:[4,3], pointRadius:0, borderWidth:1.3, fill:false},
+    ]},
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#8b949e',boxWidth:10,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: $${c.parsed.y==null?'—':c.parsed.y.toFixed(2)}`}}},
+      scales:{x:{...AXIS, ticks:{...AXIS.ticks, maxTicksLimit:8}},
+        y:{...AXIS, ticks:{...AXIS.ticks, callback:v=>'$'+v}}}}
+  });
+  mkChart('vol-chart', {
+    type:'bar',
+    data:{labels, datasets:[{label:'거래량', data:vol,
+      backgroundColor: up.map(u=> u?'#3fb95066':'#f8514966'), borderWidth:0}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+fmtVol(c.parsed.y)+'주'}}},
+      scales:{x:{...AXIS, ticks:{display:false}, grid:{display:false}},
+        y:{...AXIS, ticks:{...AXIS.ticks, maxTicksLimit:3, callback:fmtVol}}}}
+  });
+  // 마지막 6일 일일 시세 표
+  const rows = idx.slice(-6).reverse();
+  document.getElementById('ohlc-body').innerHTML = rows.map(i=>{
+    const prev = i>0 ? s.c[i-1] : null;
+    const dc = prev ? (s.c[i]/prev-1)*100 : null;
+    return `<tr>
+      <td style="color:var(--muted)">${s.d[i]}</td>
+      <td>${fmt$(s.o[i])}</td><td>${fmt$(s.h[i])}</td><td>${fmt$(s.l[i])}</td>
+      <td><b>${fmt$(s.c[i])}</b></td>
+      <td class="${cls(dc)}">${dc==null?'—':fmtPct(dc)}</td>
+      <td style="color:var(--muted)">${fmtVol(s.v[i])}</td>
+    </tr>`;
+  }).join('');
+}
+
+document.getElementById('px-ranges').querySelectorAll('.rbtn').forEach(b=>b.onclick=()=>{
+  pxRange = +b.dataset.r;
+  document.querySelectorAll('#px-ranges .rbtn').forEach(x=>x.classList.toggle('on', x===b));
+  if(D) renderPrice(D);
+});
+
 async function refresh(){
   try{
     const d = await (await fetch('/api/summary')).json();
+    D = d;
 
     // market status
     document.getElementById('mkt').innerHTML =
@@ -179,6 +342,11 @@ async function refresh(){
         <td class="${cls(b.return_pct)}"><b>${fmtPct(b.return_pct)}</b></td>
         <td class="${cls(d.equity_return_pct - (b.return_pct||0))}">${fmtPct(d.equity_return_pct - (b.return_pct||0))}</td>
       </tr>`).join('');
+
+    // 차트 (자산곡선 + 일일 시세)
+    renderCurve(d);
+    buildChips(d);
+    renderPrice(d);
   }catch(e){
     document.getElementById('upd').textContent = '로드 실패: '+e.message;
   }
