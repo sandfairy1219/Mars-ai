@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordle — Unblocked</title>
+<style>
+/* Dark mode is the default (no .light class on body) */
+:root { --bg:#121213; --tile:#3a3a3c; --border:#3a3a3c; --border-filled:#565758; --text:#ffffff; --key:#818384; --correct:#538d4e; --present:#b59f3b; --absent:#3a3a3c; --modal:#1a1a1b; }
+body.light { --bg:#ffffff; --tile:#ffffff; --border:#d3d6da; --border-filled:#878a8c; --text:#1a1a1b; --key:#d3d6da; --correct:#6aaa64; --present:#c9b458; --absent:#787c7e; --modal:#ffffff; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Helvetica Neue',Arial,sans-serif; display:flex; flex-direction:column; align-items:center; min-height:100vh; }
+header { width:100%; max-width:500px; display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--tile); }
+h1 { font-size:26px; letter-spacing:3px; }
+header button { background:none; border:1px solid var(--border); color:var(--text); border-radius:6px; padding:6px 10px; cursor:pointer; font-size:13px; }
+#board { display:grid; grid-template-rows:repeat(6,1fr); gap:5px; padding:10px; margin-top:20px; }
+.row { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; }
+.tile { width:62px; height:62px; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:bold; text-transform:uppercase; user-select:none; }
+.tile.filled { border-color:var(--border-filled); animation:pop .1s; }
+.tile.correct { background:var(--correct); border-color:var(--correct); color:#fff; }
+.tile.present { background:var(--present); border-color:var(--present); color:#fff; }
+.tile.absent  { background:var(--absent);  border-color:var(--absent);  color:#fff; }
+.tile.flip { animation:flip .5s ease; }
+@keyframes flip { 0%{transform:rotateX(0)} 50%{transform:rotateX(90deg)} 100%{transform:rotateX(0)} }
+@keyframes pop { 50%{transform:scale(1.08)} }
+.row.shake { animation:shake .6s; }
+@keyframes shake { 10%,90%{transform:translateX(-2px)} 20%,80%{transform:translateX(4px)} 30%,50%,70%{transform:translateX(-6px)} 40%,60%{transform:translateX(6px)} }
+#keyboard { margin-top:auto; padding:14px 0 24px; width:100%; max-width:500px; }
+.kb-row { display:flex; gap:6px; justify-content:center; margin-bottom:8px; padding:0 6px; }
+.key { flex:1; max-width:44px; height:58px; background:var(--key); color:#fff; border:none; border-radius:4px; font-size:14px; font-weight:bold; cursor:pointer; text-transform:uppercase; }
+.key.wide { max-width:68px; flex:1.5; font-size:12px; }
+.key.correct{background:var(--correct)} .key.present{background:var(--present)} .key.absent{background:var(--absent)}
+body.light .key { color:#1a1a1b; }
+body.light .key.correct, body.light .key.present, body.light .key.absent { color:#fff; }
+#toast { position:fixed; top:70px; left:50%; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:12px 18px; border-radius:6px; font-weight:bold; opacity:0; transition:opacity .3s; pointer-events:none; z-index:30; }
+#toast.show { opacity:1; }
+#modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:20; }
+#modal-overlay.show { display:flex; }
+#modal { background:var(--modal); border-radius:12px; padding:26px; max-width:340px; width:90%; text-align:center; animation:slidein .3s; }
+@keyframes slidein { from{transform:translateY(30px); opacity:0} to{transform:translateY(0); opacity:1} }
+#modal h2 { margin-bottom:8px; }
+#answer-reveal { font-weight:bold; margin:6px 0; letter-spacing:3px; }
+#emoji-grid { font-size:22px; letter-spacing:4px; margin:14px 0; white-space:pre; }
+#stats { display:flex; justify-content:space-around; margin:14px 0; }
+#stats .num { font-size:24px; font-weight:bold; }
+#stats .lbl { font-size:11px; opacity:.7; }
+#modal button { margin:8px 4px 0; padding:10px 18px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:14px; }
+#share-btn { background:var(--correct); color:#fff; }
+#again-btn { background:var(--key); color:#fff; }
+@media (max-width:420px){ .tile{width:54px;height:54px;font-size:26px} }
+</style>
+</head>
+<body>
+<header>
+  <button id="theme-btn" title="Toggle theme">☀/🌙</button>
+  <h1>WORDLE</h1>
+  <button id="practice-btn" title="New practice game">🔁 Practice</button>
+</header>
+<div id="board"></div>
+<div id="keyboard"></div>
+<div id="toast"></div>
+<div id="modal-overlay">
+  <div id="modal">
+    <h2 id="modal-title"></h2>
+    <div id="answer-reveal"></div>
+    <div id="emoji-grid"></div>
+    <div id="stats">
+      <div><div class="num" id="st-played">0</div><div class="lbl">Played</div></div>
+      <div><div class="num" id="st-win">0</div><div class="lbl">Win %</div></div>
+      <div><div class="num" id="st-streak">0</div><div class="lbl">Streak</div></div>
+      <div><div class="num" id="st-max">0</div><div class="lbl">Max</div></div>
+    </div>
+    <button id="share-btn">Share</button>
+    <button id="again-btn">Play again</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ---------- Word list: guess validation + fallback/practice answers ---------- */
+const WORDS = `ABOUT ABOVE ABUSE ACTOR ACUTE ADMIT ADOPT ADORE ADULT AFTER AGAIN AGENT AGREE AHEAD ALARM ALBUM ALERT ALIKE ALIVE ALLOW ALONE ALONG ALOUD ALTER ANGEL ANGER ANGLE ANGRY APART APPLE APPLY ARENA ARGUE ARISE ARMOR AROMA ARRAY ASIDE ASSET AUDIO AVOID AWAKE AWARD AWARE BADGE BADLY BAKER BASIC BEACH BEGAN BEGIN BEING BELOW BENCH BIRTH BLACK BLAME BLANK BLAST BLEND BLESS BLIND BLOCK BLOOD BOARD BONUS BOOST BOUND BRAIN BRAND BRAVE BREAD BREAK BRICK BRIDE BRIEF BRING BROAD BROKE BROWN BRUSH BUILD BUNCH BUYER CABIN CABLE CANDY CARGO CARRY CATCH CAUSE CHAIN CHAIR CHAOS CHARM CHART CHASE CHEAP CHECK CHESS CHEST CHIEF CHILD CHINA CHOIR CHOSE CIVIL CLAIM CLASS CLEAN CLEAR CLERK CLICK CLIFF CLIMB CLOCK CLOSE CLOTH CLOUD COACH COAST COLOR COMET CORAL COUCH COUGH COULD COUNT COURT COVER CRACK CRAFT CRANE CRASH CREAM CRIME CRISP CROSS CROWD CROWN CRUDE CRUSH CURVE CYCLE DAILY DAIRY DANCE DEALT DEATH DEBUT DECOR DELAY DELTA DENSE DEPTH DIARY DIRTY DITCH DOUBT DOZEN DRAFT DRAIN DRAMA DRANK DREAM DRESS DRIED DRIFT DRILL DRINK DRIVE DROVE DYING EAGER EAGLE EARLY EARTH EIGHT ELBOW ELDER ELECT ELITE EMPTY ENEMY ENJOY ENTER ENTRY EQUAL ERROR ESSAY EVENT EVERY EXACT EXIST EXTRA FAINT FAITH FALSE FANCY FATAL FAULT FAVOR FEAST FENCE FEVER FIBER FIELD FIFTY FIGHT FINAL FIRST FLAME FLASH FLEET FLESH FLOAT FLOOD FLOOR FLOUR FLUID FOCUS FORCE FORTH FORTY FORUM FOUND FRAME FRESH FRONT FROST FRUIT FULLY FUNNY GIANT GIVEN GLASS GLOBE GLORY GLOVE GRACE GRADE GRAIN GRAND GRANT GRAPE GRAPH GRASP GRASS GRAVE GREAT GREEN GREET GRILL GROUP GROVE GROWN GUARD GUESS GUEST GUIDE HABIT HAPPY HARSH HEART HEAVY HEDGE HELLO HENCE HOBBY HONEY HONOR HORSE HOTEL HOUSE HUMAN HUMOR HURRY IDEAL IMAGE IMPLY INDEX INNER INPUT ISSUE IVORY JELLY JEWEL JOINT JUDGE JUICE KNIFE KNOCK KNOWN LABEL LABOR LARGE LASER LATER LAUGH LAYER LEARN LEASE LEAST LEAVE LEGAL LEMON LEVEL LIGHT LIMIT LIVER LOCAL LODGE LOGIC LOOSE LOWER LOYAL LUCKY LUNCH LYING MAGIC MAJOR MAKER MANGO MARCH MATCH MAYBE MAYOR MEANT MEDAL MEDIA MERCY MERGE METAL METER MIDST MIGHT MINOR MINUS MODEL MOIST MONEY MONTH MORAL MOTOR MOUNT MOUSE MOUTH MOVIE MUSIC NAIVE NASTY NAVAL NERVE NEVER NEWLY NIGHT NOBLE NOISE NORTH NOTED NOVEL NURSE OCCUR OCEAN OFFER OFTEN OLDER OLIVE ONION ONSET OPERA ORBIT ORDER OTHER OUGHT OUTER OWNER OXIDE PAINT PANEL PAPER PARTY PASTA PATCH PAUSE PEACE PEACH PEARL PENNY PHASE PHONE PHOTO PIANO PIECE PILOT PITCH PLACE PLAIN PLANE PLANT PLATE PLAZA POINT POLAR PORCH POUND POWER PRESS PRICE PRIDE PRIME PRINT PRIOR PRIZE PROOF PROUD PROVE PUPIL QUEEN QUICK QUIET QUITE QUOTA QUOTE RADAR RADIO RAISE RALLY RANCH RANGE RAPID RATIO REACH REACT READY REALM REBEL REFER REIGN RELAX REPLY RIDGE RIFLE RIGHT RIGID RIVER ROAST ROBIN ROCKY ROUGH ROUND ROUTE ROYAL RURAL SALAD SAUCE SCALE SCARE SCENE SCENT SCOPE SCORE SCOUT SCREW SENSE SERVE SEVEN SHADE SHAKE SHALL SHAME SHAPE SHARE SHARK SHARP SHEEP SHEET SHELF SHELL SHIFT SHINE SHIRT SHOCK SHONE SHOOK SHOOT SHORE SHORT SHOUT SHOWN SIGHT SINCE SIXTH SKILL SKIRT SLEEP SLICE SLIDE SLOPE SMALL SMART SMELL SMILE SMOKE SNAKE SNEAK SOLAR SOLID SOLVE SORRY SOUND SOUTH SPACE SPARE SPARK SPEAK SPEED SPELL SPEND SPICE SPILL SPINE SPOKE SPORT SPRAY STAFF STAGE STAIR STAKE STAND STARE START STATE STEAK STEAL STEAM STEEL STEEP STEER STICK STILL STOCK STONE STOOD STORE STORM STORY STRIP STUCK STUDY STUFF STYLE SUGAR SUITE SUNNY SUPER SURGE SWEET SWEPT SWIFT SWING SWORD TABLE TAKEN TASTE TEACH TEETH THANK THEFT THEIR THEME THERE THESE THICK THING THINK THIRD THOSE THREE THREW THROW THUMB TIGER TIGHT TIMER TIRED TITLE TODAY TOKEN TOOTH TOPIC TOTAL TOUCH TOUGH TOWEL TOWER TOXIC TRACE TRACK TRADE TRAIL TRAIN TRAIT TREAT TREND TRIAL TRIBE TRICK TRIED TROOP TRUCK TRULY TRUNK TRUST TRUTH TWICE TWIST UNCLE UNDER UNION UNITE UNITY UNTIL UPPER UPSET URBAN USAGE USUAL VAGUE VALID VALUE VIDEO VIGOR VILLA VIRUS VISIT VITAL VIVID VOICE VOTER WAGON WAIST WASTE WATCH WATER WEARY WEAVE WEDGE WEIGH WEIRD WHALE WHEAT WHEEL WHERE WHICH WHILE WHITE WHOLE WHOSE WIDEN WIDOW WIDTH WINDY WOMAN WOMEN WORLD WORRY WORSE WORST WORTH WOULD WOUND WRIST WRITE WRONG WROTE YACHT YEARN YIELD YOUNG YOUTH ZEBRA`.split(/\s+/);
+const WORDSET = new Set(WORDS);
+
+/* ---------- Daily answer fetching (NYT + 2 CORS mirrors + seeded fallback) ---------- */
+const utcToday = () => new Date().toISOString().slice(0, 10);            // e.g. "2026-09-21"
+const nytUrl = d => `https://www.nytimes.com/svc/wordle/v2/${d}.json`;
+const MIRRORS = [
+  u => u,                                                                // 1) direct (often CORS-blocked)
+  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),             // 2) mirror #1
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),    // 3) mirror #2
+];
+async function fetchDailyWord(dateStr) {
+  for (const wrap of MIRRORS) {
+    try {
+      // Note: browsers silently drop User-Agent (forbidden header) — sent anyway for non-browser runtimes.
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);                // 8s per source, then move on
+      const res = await fetch(wrap(nytUrl(dateStr)), {
+        headers: { 'Accept': 'application/json', 'User-Agent': navigator.userAgent },
+        signal: ctrl.signal,
+      });
+      clearTimeout(timer);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data && data.solution) return data.solution.toUpperCase();
+    } catch (e) { /* CORS/network/timeout -> try next source */ }
+  }
+  return null;
+}
+// Deterministic fallback: same UTC date always maps to the same backup word.
+function seededFallback(dateStr) {
+  let h = 0;
+  for (const ch of dateStr) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return WORDS[h % WORDS.length];
+}
+
+/* ---------- NYT-exact scoring (duplicate letters handled: greens first, then yellows consume the remaining pool) ---------- */
+function score(guess, answer) {
+  const out = Array(5).fill('absent');
+  const counts = {};
+  for (let i = 0; i < 5; i++) if (guess[i] === answer[i]) out[i] = 'correct';
+  for (let i = 0; i < 5; i++) if (out[i] !== 'correct') counts[answer[i]] = (counts[answer[i]] || 0) + 1;
+  for (let i = 0; i < 5; i++) {
+    if (out[i] === 'correct') continue;
+    if (counts[guess[i]] > 0) { out[i] = 'present'; counts[guess[i]]--; }
+  }
+  return out;
+}
+
+/* ---------- Game state ---------- */
+const FLIP_MS = 250;                       // per-tile flip stagger
+const EMOJI = { correct: '🟩', present: '🟨', absent: '⬛' };
+const PRIORITY = { correct: 3, present: 2, absent: 1 };
+let answer = '', mode = 'daily', dateStr = utcToday();
+let guesses = [], cur = '', status = 'playing', animating = false, modalOpen = false;
+const keyState = {};                       // letter -> best known result
+const stats = JSON.parse(localStorage.getItem('wordle-stats') || '{"played":0,"wins":0,"streak":0,"maxStreak":0}');
+const saveStats = () => localStorage.setItem('wordle-stats', JSON.stringify(stats));
+const saveDaily = counted => localStorage.setItem('wordle-daily', JSON.stringify({ date: dateStr, answer, guesses, status, counted: !!counted }));
+const loadDaily = () => { try { return JSON.parse(localStorage.getItem('wordle-daily')); } catch { return null; } };
+
+/* ---------- DOM helpers ---------- */
+const $ = id => document.getElementById(id);
+const boardEl = $('board'), kbEl = $('keyboard'), toastEl = $('toast');
+let toastTimer;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1600);
+}
+function buildBoard() {
+  boardEl.innerHTML = '';
+  for (let r = 0; r < 6; r++) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    for (let c = 0; c < 5; c++) { const t = document.createElement('div'); t.className = 'tile'; row.appendChild(t); }
+    boardEl.appendChild(row);
+  }
+}
+function buildKeyboard() {
+  kbEl.innerHTML = '';
+  ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'].forEach((row, i) => {
+    const div = document.createElement('div');
+    div.className = 'kb-row';
+    if (i === 2) { const e = document.createElement('button'); e.className = 'key wide'; e.textContent = 'Enter'; e.onclick = submitGuess; div.appendChild(e); }
+    for (const ch of row) { const b = document.createElement('button'); b.className = 'key'; b.id = 'key-' + ch; b.textContent = ch; b.onclick = () => addLetter(ch); div.appendChild(b); }
+    if (i === 2) { const bk = document.createElement('button'); bk.className = 'key wide'; bk.textContent = '⌫'; bk.onclick = delLetter; div.appendChild(bk); }
+    kbEl.appendChild(div);
+  });
+}
+const tileAt = (r, c) => boardEl.children[r].children[c];
+
+/* ---------- Input ---------- */
+function addLetter(ch) {
+  if (status !== 'playing' || animating || modalOpen || cur.length >= 5) return;
+  cur += ch;
+  const t = tileAt(guesses.length, cur.length - 1);
+  t.textContent = ch;
+  t.classList.add('filled');
+}
+function delLetter() {
+  if (status !== 'playing' || animating || modalOpen || !cur.length) return;
+  const t = tileAt(guesses.length, cur.length - 1);
+  t.textContent = '';
+  t.classList.remove('filled');
+  cur = cur.slice(0, -1);
+}
+function shakeRow() {
+  const row = boardEl.children[guesses.length];
+  row.classList.add('shake');
+  setTimeout(() => row.classList.remove('shake'), 650);
+}
+function submitGuess() {
+  if (status !== 'playing' || animating || modalOpen) return;
+  if (cur.length < 5) { toast('Not enough letters'); shakeRow(); return; }
+  if (!WORDSET.has(cur)) { toast('Not in word list'); shakeRow(); return; }
+  const results = score(cur, answer);
+  const rowIdx = guesses.length;
+  guesses.push({ guess: cur, results });
+  animating = true;
+  // Flip each tile in sequence; reveal its color at the animation midpoint.
+  for (let i = 0; i < 5; i++) {
+    const t = tileAt(rowIdx, i);
+    setTimeout(() => t.classList.add('flip'), i * FLIP_MS);
+    setTimeout(() => {
+      t.classList.add(results[i]);
+      // keyboard gets the best-known state per letter
+      const k = cur[i];
+      if (!keyState[k] || PRIORITY[results[i]] > PRIORITY[keyState[k]]) {
+        keyState[k] = results[i];
+        const keyEl = $('key-' + k);
+        keyEl.classList.remove('correct', 'present', 'absent');
+        keyEl.classList.add(results[i]);
+      }
+    }, i * FLIP_MS + FLIP_MS);
+  }
+  cur = '';
+  setTimeout(() => {
+    animating = false;
+    const won = results.every(r => r === 'correct');
+    if (won) endGame(true);
+    else if (guesses.length === 6) endGame(false);
+    else if (mode === 'daily') saveDaily(false);
+  }, 4 * FLIP_MS + 600);
+}
+
+/* ---------- End of game / modal / share ---------- */
+function emojiGrid() { return guesses.map(g => g.results.map(r => EMOJI[r]).join('')).join('\n'); }
+function shareText() {
+  const n = status === 'won' ? guesses.length : 'X';
+  const label = mode === 'daily' ? `Wordle ${dateStr}` : 'Wordle (practice)';
+  return `${label} ${n}/6\n\n${emojiGrid()}`;
+}
+async function copyShare() {
+  const text = shareText();
+  try { await navigator.clipboard.writeText(text); }
+  catch { // clipboard API fallback for non-secure contexts
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+  }
+  toast('Copied to clipboard');
+}
+function renderStats() {
+  $('st-played').textContent = stats.played;
+  $('st-win').textContent = stats.played ? Math.round(100 * stats.wins / stats.played) : 0;
+  $('st-streak').textContent = stats.streak;
+  $('st-max').textContent = stats.maxStreak;
+}
+function endGame(won) {
+  status = won ? 'won' : 'lost';
+  if (mode === 'daily') {
+    const saved = loadDaily();
+    if (!saved || !saved.counted) {           // count each daily game once
+      stats.played++;
+      if (won) { stats.wins++; stats.streak++; stats.maxStreak = Math.max(stats.maxStreak, stats.streak); }
+      else stats.streak = 0;
+      saveStats();
+    }
+    saveDaily(true);
+  }
+  setTimeout(() => showModal(won), 900);      // let the last row finish flipping
+}
+function showModal(won) {
+  modalOpen = true;
+  $('modal-title').textContent = won ? ['Genius', 'Magnificent', 'Impressive', 'Splendid', 'Great', 'Phew'][guesses.length - 1] : 'Better luck next time';
+  $('answer-reveal').textContent = won ? '' : 'Answer: ' + answer;
+  $('emoji-grid').textContent = emojiGrid();
+  renderStats();
+  $('modal-overlay').classList.add('show');
+}
+function hideModal() { modalOpen = false; $('modal-overlay').classList.remove('show'); }
+
+/* ---------- Game setup ---------- */
+function resetGame(newAnswer, newMode) {
+  answer = newAnswer; mode = newMode;
+  guesses = []; cur = ''; status = 'playing'; animating = false;
+  for (const k in keyState) delete keyState[k];
+  buildBoard(); buildKeyboard();
+  hideModal();
+}
+function startPractice() {
+  resetGame(WORDS[Math.floor(Math.random() * WORDS.length)], 'practice');
+  toast('Practice mode — random word');
+}
+async function startDaily() {
+  resetGame('.....', 'daily');
+  toast("Loading today's word…");
+  const fetched = await fetchDailyWord(dateStr);
+  answer = fetched || seededFallback(dateStr);   // always playable
+  if (!fetched) toast('Offline mode — backup word');
+  // Restore today's earlier session if it used the same answer
+  const saved = loadDaily();
+  if (saved && saved.date === dateStr && saved.answer === answer) {
+    saved.guesses.forEach((g, r) => {
+      g.results.forEach((res, c) => {
+        const t = tileAt(r, c);
+        t.textContent = g.guess[c];
+        t.classList.add('filled', res);
+        if (!keyState[g.guess[c]] || PRIORITY[res] > PRIORITY[keyState[g.guess[c]]]) {
+          keyState[g.guess[c]] = res;
+          $('key-' + g.guess[c]).classList.add(res);
+        }
+      });
+    });
+    guesses = saved.guesses;
+    status = saved.status;
+  }
+}
+
+/* ---------- Wiring ---------- */
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === 'Enter') submitGuess();
+  else if (e.key === 'Backspace') delLetter();
+  else if (/^[a-zA-Z]$/.test(e.key)) addLetter(e.key.toUpperCase());
+});
+$('share-btn').onclick = copyShare;
+$('again-btn').onclick = startPractice;         // random backup word; daily stats untouched
+$('practice-btn').onclick = startPractice;
+$('theme-btn').onclick = () => document.body.classList.toggle('light');
+buildBoard(); buildKeyboard();
+startDaily();
+</script>
+</body>
+</html>
