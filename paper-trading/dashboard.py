@@ -426,6 +426,7 @@ def build_payload():
         "series_range": SERIES_RANGE,
         "nav_history": nav.get("rows") or [],
         "nav_stats": nav.get("stats") or {},
+        "market": pf.get("market_info") or {},
         "equity_curve": pf.get("equity_curve", []),
         "cash": round(cash, 2),
         "invested": round(invested, 2),

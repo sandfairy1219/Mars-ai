@@ -2792,6 +2792,27 @@ def main():
         
         summary = portfolio_summary(portfolio)
         if not CONTEXT_ONLY:
+            # 시장 인식(공격도·폭) 저장 — 대시보드가 "AI가 왜 강세/약세로 보는지" 보여줄 수 있게
+            try:
+                _rsp = ctx.get("S&P 500 (동일가중)", {}) or {}
+                _spy = ctx.get("S&P 500", {}) or {}
+                _rus = ctx.get("Russell 2000", {}) or {}
+                _spread = (round(float(_rsp.get("20d")) - float(_spy.get("20d")), 2)
+                           if _rsp.get("20d") is not None and _spy.get("20d") is not None else None)
+                portfolio["market_info"] = {
+                    "date": today,
+                    "aggression": round(float(aggression), 3),
+                    "spread": _spread,
+                    "rsp20": _rsp.get("20d"), "spy20": _spy.get("20d"),
+                    "iwm20": _rus.get("20d"),
+                    "iwm_below_ma50": bool(_rus.get("price") and _rus.get("ma50")
+                                           and _rus["price"] < _rus["ma50"]),
+                    "vix": (ctx.get("VIX") or {}).get("price"),
+                    "sentiment": (news_sentiment or {}).get("sentiment_score"),
+                    "aggression_bias": params().get("aggression_bias"),
+                }
+            except Exception as _e:
+                _soft("시장 정보 저장", _e)
             record_equity(portfolio, today, ctx)
             save_portfolio(portfolio)
         
