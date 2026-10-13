@@ -32,7 +32,14 @@ def main():
 
     today = datetime.datetime.utcnow().strftime("%Y-%m-%d")
     portfolio = st.load_portfolio()
-    score_min = st.params().get("score_min", 5)
+    _P = st.params()
+    score_min = _P.get("score_min", 5)
+    # 실전 기준(슬리피지) + AI 회전 게이트 — swing-trader.py와 동일 규칙을 따른다
+    _slip_bps = _P.get("slippage_bps", 5.0)
+    _alloc = st.load_ai_alloc()
+    _min_hold = int(_alloc.get("exit_min_hold_days", 5) or 0)
+    _min_pnl = float(_alloc.get("rotate_min_pnl", 0.0) or 0.0)
+    _near_tgt = float(_alloc.get("rotate_near_target_pct", 5.0) or 0.0)
 
     # 벤치마크(SPY 20일) 세팅 — score_long의 상대강도 항
     spy = st.fetch_chart("SPY")
@@ -65,12 +72,27 @@ def main():
     print("전체 보유 점수 (낮은 순):")
     for r in rows:
         p = r["pos"]
-        pnl = (r["cur"] - p["entry_price"]) * p["shares"]
-        flag = "← 정리 대상" if (r["score"] < score_min and not p.get("long_term")) else ""
+        _fill = st._slip(r["cur"], False, _slip_bps)          # 실전 매도 체결가
+        pnl = (_fill - p["entry_price"]) * p["shares"]
+        _hold = (datetime.datetime.strptime(today, "%Y-%m-%d")
+                 - datetime.datetime.strptime(p["date"], "%Y-%m-%d")).days
+        _pnl_pct = (_fill / p["entry_price"] - 1) * 100 if p["entry_price"] else 0.0
+        _tgt = p.get("target_price")
+        _block = None
+        if _hold < _min_hold:
+            _block = f"보유 {_hold}일<{_min_hold}일"
+        elif _pnl_pct < _min_pnl:
+            _block = f"손실 {_pnl_pct:+.1f}%"
+        elif _tgt and _near_tgt > 0 and _fill >= float(_tgt) * (1 - _near_tgt / 100.0):
+            _block = "목표 임박"
+        flag = ("← 정리 대상" if (r["score"] < score_min and not p.get("long_term"))
+                else f"보류({_block})" if _block and r["score"] < score_min else "")
+        r["_block"] = _block
         print(f"  {p['ticker']:6s} {r['score']}/8 | 매수가 {p['entry_price']:>8.2f} 현재 {r['cur']:>8.2f} | "
               f"P&L {pnl:+9.2f} | {p['sector'][:14]:14s} {flag}")
 
-    picks = [r for r in rows if r["score"] < score_min and not r["pos"].get("long_term")][:max_n]
+    picks = [r for r in rows if (r["score"] < score_min and not r["pos"].get("long_term")
+                                 and not r.get("_block"))][:max_n]
     print("-" * 78)
     if not picks:
         print("정리 대상 없음 — 모든 보유 종목이 진입 기준을 충족.")
@@ -95,13 +117,14 @@ def main():
             keep.append(p)
             continue
         cur = match["cur"]
-        pnl = (cur - p["entry_price"]) * p["shares"]
+        fill = st._slip(cur, False, _slip_bps)        # 실전 매도 체결가(슬리피지)
+        pnl = (fill - p["entry_price"]) * p["shares"]
         days_held = (datetime.datetime.strptime(today, "%Y-%m-%d")
                      - datetime.datetime.strptime(p["date"], "%Y-%m-%d")).days
-        rec = {**p, "exit_price": round(cur, 2), "exit_date": today, "pnl": round(pnl, 2),
+        rec = {**p, "exit_price": round(fill, 2), "exit_date": today, "pnl": round(pnl, 2),
                "exit_reason": f"로테이션 정리 ({match['score']}/8 < 진입기준 {score_min}) — 상대강도/모멘텀 항 도입 후 기준 미달"}
         closed.append(rec)
-        portfolio["cash"] += p["shares"] * cur
+        portfolio["cash"] += p["shares"] * fill
         print(f"청산 {p['ticker']}: P&L ${pnl:+,.2f} ({pnl/(p['entry_price']*p['shares'])*100:+.2f}%)")
     portfolio["positions"] = keep
     portfolio["history"].extend(closed)
