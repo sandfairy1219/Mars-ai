@@ -1588,6 +1588,23 @@ def market_aggression(ctx, news_sentiment=None):
         elif vp > vix_ceiling: score -= 0.3
         elif vp > vix_ceiling - 5: score -= 0.2
     
+    # ── 시장 폭(breadth) — 지수(시총가중)만 오르고 평균 종목은 빠지는 '좁은 장세' 감지 ──
+    # 동일가중(RSP) vs 시총가중(SPY) 20일 스프레드 + 소형주(IWM) 추세/50일선
+    rsp = ctx.get("S&P 500 (동일가중)", {})
+    russ = ctx.get("Russell 2000", {})
+    breadth = 0.0
+    if rsp.get("20d") is not None and spy.get("20d") is not None:
+        spread = rsp["20d"] - spy["20d"]           # 음수 = 소수 대형주가 지수를 견인 (폭 좁음)
+        if spread < -2.0: breadth -= 0.15
+        elif spread < -0.5: breadth -= 0.08
+        elif spread > 2.0: breadth += 0.10
+    if russ.get("20d") is not None:
+        if russ["20d"] < -3.0: breadth -= 0.10
+        elif russ["20d"] > 3.0: breadth += 0.05
+    if russ.get("price") and russ.get("ma50") and russ["price"] < russ["ma50"]:
+        breadth -= 0.05
+    score += breadth
+
     # 뉴스 센티먼트 반영
     if news_sentiment is not None:
         sent = news_sentiment.get("sentiment_score", 0.0)
@@ -1599,7 +1616,8 @@ def market_aggression(ctx, news_sentiment=None):
 
 def market_context():
     ctx = {}
-    for t, name in [("SPY","S&P 500"), ("QQQ","Nasdaq 100"), ("%5EVIX","VIX"), ("DIA","Dow Jones"), ("IWM","Russell 2000")]:
+    for t, name in [("SPY","S&P 500"), ("QQQ","Nasdaq 100"), ("%5EVIX","VIX"), ("DIA","Dow Jones"),
+                    ("IWM","Russell 2000"), ("RSP","S&P 500 (동일가중)")]:
         prices = fetch_chart(t)
         if prices and len(prices) >= 6:
             c5 = (prices[-1] - prices[-6]) / prices[-6] * 100
@@ -1610,9 +1628,11 @@ def market_context():
                 price = live if live is not None else prices[-1]
             else:
                 price = prices[-1]
-            ctx[name] = {"price": round(price, 2), "5d": round(c5, 2), "20d": round(c20, 2)}
+            _ma50 = calc_ma(prices, 50) if len(prices) >= 50 else None
+            ctx[name] = {"price": round(price, 2), "5d": round(c5, 2), "20d": round(c20, 2),
+                         "ma50": round(_ma50, 2) if _ma50 else None}
         else:
-            ctx[name] = {"price": None, "5d": None, "20d": None}
+            ctx[name] = {"price": None, "5d": None, "20d": None, "ma50": None}
         time.sleep(0.2)
     return ctx
 
@@ -2272,6 +2292,20 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
         lines.append(f"• 🛑 **AI 청산 최소 보유일**: {_mh}일 (섹터 전환 청산 남발 방지 노브 — AI 조정가)")
     except Exception:
         pass
+    try:
+        _rsp = ctx.get("S&P 500 (동일가중)", {}); _rus = ctx.get("Russell 2000", {})
+        if _rsp.get("20d") is not None and ctx.get("S&P 500", {}).get("20d") is not None:
+            _sp = _rsp["20d"] - ctx["S&P 500"]["20d"]
+            _verdict = ("🔴 폭 좁음(소수 대형주 견인)" if _sp < -2 else
+                        "🟡 다소 좁음" if _sp < -0.5 else
+                        "🟢 폭 넓음" if _sp > 2 else "⚪ 중립")
+            _iwm = (f" · 소형주 20일 {_rus['20d']:+.2f}%" if _rus.get("20d") is not None else "")
+            _below = (" · 소형주 50일선 아래" if (_rus.get("price") and _rus.get("ma50")
+                                               and _rus["price"] < _rus["ma50"]) else "")
+            lines.append(f"• 🌡️ **시장 폭(breadth)**: 동일가중 {_rsp['20d']:+.2f}% vs 시총가중 "
+                         f"{ctx['S&P 500']['20d']:+.2f}% (스프레드 {_sp:+.2f}%p) → {_verdict}{_iwm}{_below}")
+    except Exception as _e:
+        _soft("시장 폭 라인", _e)
     lines.append(f"• 🎚️ **후보 스크린(AI 조정가)**: 후보점수≥{P.get('min_candidate_score',4)} · 최소포지션 ${float(P.get('min_position_size',3000)):,.0f} · 업종≤{P.get('industry_limit',2)} · 퀄리티≥{P.get('quality_min',0) or '게이트 없음'}")
     _qm2 = [p for p in (positions or []) if p.get("quality") is not None]
     if _qm2:
