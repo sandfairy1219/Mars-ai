@@ -35,7 +35,7 @@ def main():
     _P = st.params()
     score_min = _P.get("score_min", 5)
     # 실전 기준(슬리피지) + AI 회전 게이트 — swing-trader.py와 동일 규칙을 따른다
-    _slip_bps = _P.get("slippage_bps", 5.0)
+    # 슬리피지는 유동성 구간별 (st.slip_bps_for) — swing-trader와 동일 규칙
     _alloc = st.load_ai_alloc()
     _min_hold = int(_alloc.get("exit_min_hold_days", 5) or 0)
     _min_pnl = float(_alloc.get("rotate_min_pnl", 0.0) or 0.0)
@@ -72,7 +72,7 @@ def main():
     print("전체 보유 점수 (낮은 순):")
     for r in rows:
         p = r["pos"]
-        _fill = st._slip(r["cur"], False, _slip_bps)          # 실전 매도 체결가
+        _fill = st._slip(r["cur"], False, st.slip_bps_for(p["ticker"]))          # 실전 매도 체결가
         pnl = (_fill - p["entry_price"]) * p["shares"]
         _hold = (datetime.datetime.strptime(today, "%Y-%m-%d")
                  - datetime.datetime.strptime(p["date"], "%Y-%m-%d")).days
@@ -117,7 +117,7 @@ def main():
             keep.append(p)
             continue
         cur = match["cur"]
-        fill = st._slip(cur, False, _slip_bps)        # 실전 매도 체결가(슬리피지)
+        fill = st._slip(cur, False, st.slip_bps_for(p["ticker"]))        # 실전 매도 체결가(슬리피지)
         pnl = (fill - p["entry_price"]) * p["shares"]
         days_held = (datetime.datetime.strptime(today, "%Y-%m-%d")
                      - datetime.datetime.strptime(p["date"], "%Y-%m-%d")).days

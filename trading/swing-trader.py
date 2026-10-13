@@ -54,7 +54,9 @@ def load_learned_params():
         "max_new_per_tick": None,   # 틱당 신규 진입 수. None이면 공격도 규칙(max(4, 4+agg*6))
         "min_position_size": 3000,  # 이보다 작은 포지션은 건너뜀 ($)
         # ── 실전 리얼리즘 (2026-10-13): 실제 돈 매매 기준 — 전부 AI 조정 가능 ──
-        "slippage_bps": 5.0,          # 편도 슬리피지(bp). 매수 +, 매도 - 로 체결가 보정
+        "slippage_bps": 5.0,          # 편도 슬리피지 '기준값'(bp). 구간표를 비례 스케일한다
+        # 유동성 구간별 슬리피지 [(20일 달러거래대금 $M 상한, bp)] — 얇을수록 불리
+        "slippage_tiers": [[50.0, 15.0], [200.0, 10.0], [1000.0, 6.0], [float("inf"), 3.0]],
         "risk_per_trade_pct": 1.0,    # 한 종목 손절 시 감수할 자산 대비 손실(%)
         "max_position_pct": 15.0,     # 단일 포지션 최대 비중(자산 대비 %)
         "min_dollar_vol_m": 20.0,     # 최소 20일 평균 달러 거래대금($M) — 유동성 가드(0=off)
@@ -1438,6 +1440,38 @@ def _slip(price, is_buy, bps):
     return round(p * (1 + (b / 10000.0) * (1 if is_buy else -1)), 2)
 
 
+DEFAULT_SLIP_TIERS = ((50.0, 15.0), (200.0, 10.0), (1000.0, 6.0), (float("inf"), 3.0))
+_BASE_SLIP_REF = 5.0          # slippage_bps 기본값 = 이 값 기준으로 구간 스케일
+
+
+def slip_bps_for(ticker):
+    """유동성 구간별 편도 슬리피지(bp) — 얇은 종목일수록 넓은 스프레드를 가정.
+
+    slippage_bps(기준값)/5.0 을 구간표 전체 배수로 곱한다(AI가 한 노브로 조절 가능).
+    거래대금을 못 받으면 기준값을 그대로 쓴다.
+    """
+    try:
+        _P = params()
+        base = float(_P.get("slippage_bps", _BASE_SLIP_REF))
+    except Exception:
+        _P, base = {}, _BASE_SLIP_REF
+    try:
+        tiers = sorted([(float(t[0]), float(t[1])) for t in (_P.get("slippage_tiers") or DEFAULT_SLIP_TIERS)],
+                       key=lambda x: x[0])
+        if not tiers:
+            tiers = list(DEFAULT_SLIP_TIERS)
+    except Exception:
+        tiers = list(DEFAULT_SLIP_TIERS)
+    dv = fetch_dollar_vol_m(ticker)
+    if dv is None:
+        return max(0.0, base)
+    scale = (base / _BASE_SLIP_REF) if base > 0 else 0.0
+    for lim, bp in tiers:
+        if dv <= lim:
+            return max(0.0, round(bp * scale, 2))
+    return max(0.0, base)
+
+
 def fetch_dollar_vol_m(ticker):
     """20일 평균 달러 거래대금($M) — 실전 유동성 가드(실제 돈은 못 빠져나오는 종목 배제)."""
     if ticker in _DVOL_CACHE:
@@ -1890,7 +1924,7 @@ def ai_apply_exits(portfolio, today, max_exits=3):
             held_back.append(f"{pos['ticker']}({_defer.split(' ')[0]})")
             keep.append(pos)
             continue
-        _fill = _slip(cur, False, params().get("slippage_bps", 5.0))   # 매도 슬리피지
+        _fill = _slip(cur, False, slip_bps_for(pos["ticker"]))   # 유동성 구간별 매도 슬리피지
         pnl = (_fill - pos["entry_price"]) * pos["shares"]
         closed.append({**pos, "exit_price": _fill, "exit_date": today,
                        "pnl": round(pnl, 2), "days_held": days_held,
@@ -1934,7 +1968,7 @@ def update_positions(portfolio, today):
             exit_reason = f"시간 초과 ({days_held}일 보유 ≥ {_hold}일{_h_note})"
         
         if exit_reason:
-            _fill = _slip(current, False, params().get("slippage_bps", 5.0))   # 매도 슬리피지
+            _fill = _slip(current, False, slip_bps_for(pos["ticker"]))   # 유동성 구간별 매도 슬리피지
             pnl = (_fill - pos["entry_price"]) * pos["shares"]
             closed.append({**pos, "exit_price": _fill, "exit_date": today, "pnl": round(pnl, 2), "exit_reason": exit_reason})
             portfolio["cash"] += pos["shares"] * _fill
@@ -2135,7 +2169,7 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
             skipped.add(c["ticker"])          # 사이즈 미달 → 재선택 금지
             continue
 
-        entry = _slip(c["price"], True, _slip_bps)      # 실전 체결가(슬리피지)
+        entry = _slip(c["price"], True, slip_bps_for(c["ticker"]))   # 유동성 구간별 슬리피지
         shares = math.floor(size / entry)
         if shares < 1:
             skipped.add(c["ticker"])          # 1주도 못 사면 재선택 금지
@@ -2386,7 +2420,16 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
         if _bits:
             lines.append("• 🎛️ **AI 배분 지시**: " + " | ".join(_bits))
     try:
-        lines.append(f"• 🧱 **실전 기준(비용·리스크)**: 슬리피지 {float(P.get('slippage_bps',5)):g}bp/편도 · "
+        _tiers_r = sorted([(float(t[0]), float(t[1])) for t in (P.get("slippage_tiers")
+                                                                or DEFAULT_SLIP_TIERS)], key=lambda x: x[0])
+        _tl = []
+        for _i, (_lim, _bp) in enumerate(_tiers_r[:4]):
+            if _lim == float("inf"):
+                _prev = _tiers_r[_i - 1][0] if _i > 0 else 1000.0
+                _tl.append(f">${_prev:g}M {_bp:g}bp")
+            else:
+                _tl.append(f"≤${_lim:g}M {_bp:g}bp")
+        lines.append(f"• 🧱 **실전 기준(비용·리스크)**: 슬리피지 {' / '.join(_tl)} (기준 {float(P.get('slippage_bps',5)):g}bp) · "
                      f"종목당 리스크 {float(P.get('risk_per_trade_pct',1)):g}%(손절 시) · "
                      f"최대 비중 {float(P.get('max_position_pct',15)):g}% · "
                      f"최소 거래대금 ${float(P.get('min_dollar_vol_m',20)):g}M/일")
