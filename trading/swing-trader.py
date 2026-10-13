@@ -53,6 +53,11 @@ def load_learned_params():
         # ─── 이하 3개도 2026-10-01 AI로 이관 (기존 하드코딩) ───
         "max_new_per_tick": None,   # 틱당 신규 진입 수. None이면 공격도 규칙(max(4, 4+agg*6))
         "min_position_size": 3000,  # 이보다 작은 포지션은 건너뜀 ($)
+        # ── 실전 리얼리즘 (2026-10-13): 실제 돈 매매 기준 — 전부 AI 조정 가능 ──
+        "slippage_bps": 5.0,          # 편도 슬리피지(bp). 매수 +, 매도 - 로 체결가 보정
+        "risk_per_trade_pct": 1.0,    # 한 종목 손절 시 감수할 자산 대비 손실(%)
+        "max_position_pct": 15.0,     # 단일 포지션 최대 비중(자산 대비 %)
+        "min_dollar_vol_m": 20.0,     # 최소 20일 평균 달러 거래대금($M) — 유동성 가드(0=off)
         "min_candidate_score": 4,   # 후보 스크린: 이 점수 미만은 워치리스트에 안 올림 (0~8)
         "industry_limit": 2,        # 같은 업종(반도체·소프트웨어 등) 최대 보유 수 (1~6)
         "quality_min": 0,           # 퀄리티 스크린 통과 최소 점수 (0~7, 0=게이트 없음)
@@ -1416,6 +1421,45 @@ def fetch_chart(ticker):
     except Exception:
         return None
 
+_DVOL_CACHE = {}
+
+def _slip(price, is_buy, bps):
+    """실전 체결가 보정 — 슬리피지. 매수는 불리하게(+), 매도는 불리하게(-)."""
+    try:
+        p = float(price)
+    except (TypeError, ValueError):
+        return price
+    try:
+        b = max(0.0, min(200.0, float(bps or 0)))
+    except (TypeError, ValueError):
+        b = 0.0
+    if b <= 0:
+        return round(p, 2)
+    return round(p * (1 + (b / 10000.0) * (1 if is_buy else -1)), 2)
+
+
+def fetch_dollar_vol_m(ticker):
+    """20일 평균 달러 거래대금($M) — 실전 유동성 가드(실제 돈은 못 빠져나오는 종목 배제)."""
+    if ticker in _DVOL_CACHE:
+        return _DVOL_CACHE[ticker]
+    val = None
+    try:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=3mo"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read())
+        q = data["chart"]["result"][0]["indicators"]["quote"][0]
+        cl = [x for x in q.get("close") or [] if x is not None]
+        vo = [x for x in q.get("volume") or [] if x]
+        n = min(20, len(cl), len(vo))
+        if n > 0:
+            val = round(sum(cl[-n:][i] * vo[-n:][i] for i in range(n)) / n / 1_000_000, 1)
+    except Exception:
+        val = None
+    _DVOL_CACHE[ticker] = val
+    return val
+
+
 def fetch_live_price(ticker):
     """
     현재 라이브 가격 (프리마켓/정규장/애프터마켓 반영).
@@ -1846,11 +1890,12 @@ def ai_apply_exits(portfolio, today, max_exits=3):
             held_back.append(f"{pos['ticker']}({_defer.split(' ')[0]})")
             keep.append(pos)
             continue
-        pnl = (cur - pos["entry_price"]) * pos["shares"]
-        closed.append({**pos, "exit_price": round(cur, 2), "exit_date": today,
+        _fill = _slip(cur, False, params().get("slippage_bps", 5.0))   # 매도 슬리피지
+        pnl = (_fill - pos["entry_price"]) * pos["shares"]
+        closed.append({**pos, "exit_price": _fill, "exit_date": today,
                        "pnl": round(pnl, 2), "days_held": days_held,
                        "exit_reason": "AI 배분 청산 (섹터 전환 지시)"})
-        portfolio["cash"] += pos["shares"] * cur
+        portfolio["cash"] += pos["shares"] * _fill
     portfolio["positions"] = keep
     portfolio["history"].extend(closed)
     if held_back:
@@ -1889,9 +1934,10 @@ def update_positions(portfolio, today):
             exit_reason = f"시간 초과 ({days_held}일 보유 ≥ {_hold}일{_h_note})"
         
         if exit_reason:
-            pnl = (current - pos["entry_price"]) * pos["shares"]
-            closed.append({**pos, "exit_price": round(current, 2), "exit_date": today, "pnl": round(pnl, 2), "exit_reason": exit_reason})
-            portfolio["cash"] += pos["shares"] * current
+            _fill = _slip(current, False, params().get("slippage_bps", 5.0))   # 매도 슬리피지
+            pnl = (_fill - pos["entry_price"]) * pos["shares"]
+            closed.append({**pos, "exit_price": _fill, "exit_date": today, "pnl": round(pnl, 2), "exit_reason": exit_reason})
+            portfolio["cash"] += pos["shares"] * _fill
         else:
             pos["current_price"] = round(current, 2)
             pos["days_held"] = days_held
@@ -1967,6 +2013,18 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         min_small = max(0, int(P.get("cap_min_small", 0)))
     except (TypeError, ValueError):
         min_mid = min_small = 0
+    # ── 실전 기준 (2026-10-13 sp: "실제 돈으로 매매하는 것처럼 신중하게") ──
+    def _pnum(key, default, lo, hi):
+        try:
+            return max(lo, min(hi, float(P.get(key, default))))
+        except (TypeError, ValueError):
+            return default
+    _slip_bps = _pnum("slippage_bps", 5.0, 0.0, 200.0)
+    _risk_pct = _pnum("risk_per_trade_pct", 1.0, 0.1, 5.0)
+    _maxpos_pct = _pnum("max_position_pct", 15.0, 1.0, 50.0)
+    _min_dv = _pnum("min_dollar_vol_m", 20.0, 0.0, 5000.0)
+    _equity = portfolio["cash"] + sum(p["shares"] * p.get("current_price", p["entry_price"])
+                                      for p in portfolio["positions"])
     
     # Split candidates by tier and sort each by score desc
     by_tier = {"large": [], "mid": [], "small": []}
@@ -2028,6 +2086,13 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         c = pick_next()
         if not c:
             break
+
+        # 유동성 가드 — 실제 돈은 거래대금이 얇은 종목에서 못 빠져나온다
+        if _min_dv > 0:
+            _dv = fetch_dollar_vol_m(c["ticker"])
+            if _dv is not None and _dv < _min_dv:
+                skipped.add(c["ticker"])
+                continue
         
         sec = c["sector"]
         tier = CAP_TIER.get(c["ticker"], "large")
@@ -2046,26 +2111,35 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
         if c.get("flow_track"):
             size *= flow_size_mult      # 흐름 트랙은 기본 0.6배 (펀더멘털 미달)
         
-        # Enforce dynamic minimum cash
-        if portfolio["cash"] - size < min_cash:
-            size = portfolio["cash"] - min_cash
-        
-        if size < min_size:
-            skipped.add(c["ticker"])          # 사이즈 미달 → 재선택 금지
-            continue
-        
-        shares = math.floor(size / c["price"])
-        if shares < 1:
-            skipped.add(c["ticker"])          # 1주도 못 사면 재선택 금지
-            continue
-        
-        entry = c["price"]
-        
-        # Dynamic stop / target based on aggression + tier + 학습 배수
+        # Dynamic stop / target (사이즈 캡에 필요하므로 먼저 계산)
         base_stop = {"large": 0.05, "mid": 0.07, "small": 0.10}[tier]
         base_tgt = {"large": 0.10, "mid": 0.12, "small": 0.15}[tier]
         stop_pct = base_stop * (0.8 + aggression * 0.5) * P.get("stop_mult", 1.0)   # 0.8x ~ 1.3x × 학습배수
         tgt_pct = base_tgt * (0.8 + aggression * 0.6) * P.get("target_mult", 1.0)    # 0.8x ~ 1.4x × 학습배수
+
+        # 리스크 기반 사이징 (실전 원칙): 손절 시 잃는 금액 ≤ 자산의 risk_per_trade_pct
+        _sp_frac = max(0.005, float(stop_pct))
+        _risk_cap = _equity * (_risk_pct / 100.0) / _sp_frac      # 손절폭이 넓을수록 사이즈 축소
+        _wt_cap = _equity * (_maxpos_pct / 100.0)                 # 단일 종목 최대 비중
+        _capped = min(size, _risk_cap, _wt_cap)
+        if _capped < size - 0.5:
+            _why = "리스크" if _risk_cap <= _wt_cap else "비중"
+            print(f"[실전 사이징] {c['ticker']} ${size:,.0f} → ${_capped:,.0f} ({_why} 캡)")
+        size = _capped
+
+        # Enforce dynamic minimum cash
+        if portfolio["cash"] - size < min_cash:
+            size = portfolio["cash"] - min_cash
+
+        if size < min_size:
+            skipped.add(c["ticker"])          # 사이즈 미달 → 재선택 금지
+            continue
+
+        entry = _slip(c["price"], True, _slip_bps)      # 실전 체결가(슬리피지)
+        shares = math.floor(size / entry)
+        if shares < 1:
+            skipped.add(c["ticker"])          # 1주도 못 사면 재선택 금지
+            continue
         
         stop = round(entry * (1 - stop_pct), 2)
         target = round(entry * (1 + tgt_pct), 2)
@@ -2311,6 +2385,13 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
             _bits.append("제외 " + ",".join(_alloc["avoid_tickers"][:5]))
         if _bits:
             lines.append("• 🎛️ **AI 배분 지시**: " + " | ".join(_bits))
+    try:
+        lines.append(f"• 🧱 **실전 기준(비용·리스크)**: 슬리피지 {float(P.get('slippage_bps',5)):g}bp/편도 · "
+                     f"종목당 리스크 {float(P.get('risk_per_trade_pct',1)):g}%(손절 시) · "
+                     f"최대 비중 {float(P.get('max_position_pct',15)):g}% · "
+                     f"최소 거래대금 ${float(P.get('min_dollar_vol_m',20)):g}M/일")
+    except Exception as _e:
+        _soft("실전 기준 라인", _e)
     _mn_disp = P.get('max_new_per_tick')
     lines.append(f"• 🧮 **배분 한도(AI 조정가)**: 섹터≤{P.get('sector_limit', 3)} · 종목≤{int(P.get('max_positions', MAX_POSITIONS))} · 신규≤{('공격도 자동' if _mn_disp is None else int(_mn_disp))} · 현금하한 {('%.0f%%' % (float(P['min_cash_pct'])*100)) if P.get('min_cash_pct') is not None else '공격도 자동'} · 중형최소 {P.get('cap_min_mid',0)} · 소형최소 {P.get('cap_min_small',0)}")
     try:
