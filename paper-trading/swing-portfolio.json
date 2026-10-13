@@ -11,13 +11,11 @@
       "date": "2026-10-01",
       "stop_price": 53.64,
       "target_price": 65.02,
-      "current_price": 61.25,
+      "current_price": 61.22,
       "days_held": 12,
-      "unrealized": 300.14,
+      "unrealized": 297.56,
       "industry": "Oil & Gas E&P",
-      "quality": 7,
-      "long_term": true,
-      "long_term_since": "2026-10-12"
+      "quality": 7
     },
     {
       "ticker": "HPE",
@@ -29,9 +27,9 @@
       "date": "2026-10-01",
       "stop_price": 59.78,
       "target_price": 75.25,
-      "current_price": 69.75,
+      "current_price": 69.62,
       "days_held": 12,
-      "unrealized": 387.0,
+      "unrealized": 375.99,
       "industry": "Communication Equipment",
       "quality": 6,
       "long_term": true,
@@ -47,11 +45,13 @@
       "date": "2026-10-01",
       "stop_price": 484.63,
       "target_price": 581.33,
-      "current_price": 541.5,
+      "current_price": 540.52,
       "days_held": 12,
-      "unrealized": 364.0,
+      "unrealized": 350.28,
       "industry": "Software - Infrastructure",
-      "quality": 7
+      "quality": 7,
+      "long_term": true,
+      "long_term_since": "2026-10-13"
     },
     {
       "ticker": "GME",
@@ -64,9 +64,9 @@
       "date": "2026-10-05",
       "stop_price": 23.04,
       "target_price": 29.03,
-      "current_price": 27.04,
+      "current_price": 27.09,
       "days_held": 8,
-      "unrealized": 432.45,
+      "unrealized": 442.75,
       "quality": 6,
       "thesis": {
         "date": "2026-10-05",
@@ -90,9 +90,9 @@
       "date": "2026-10-05",
       "stop_price": 77.05,
       "target_price": 92.5,
-      "current_price": 80.06,
+      "current_price": 81.06,
       "days_held": 8,
-      "unrealized": -220.8,
+      "unrealized": -105.8,
       "quality": 7,
       "thesis": {
         "date": "2026-10-05",
@@ -116,9 +116,9 @@
       "date": "2026-10-05",
       "stop_price": 22.61,
       "target_price": 27.52,
-      "current_price": 25.42,
+      "current_price": 25.34,
       "days_held": 8,
-      "unrealized": 557.5,
+      "unrealized": 521.82,
       "quality": 7,
       "thesis": {
         "date": "2026-10-05",
@@ -144,9 +144,9 @@
       "date": "2026-10-08",
       "stop_price": 55.82,
       "target_price": 71.73,
-      "current_price": 62.48,
+      "current_price": 62.64,
       "days_held": 5,
-      "unrealized": 143.25,
+      "unrealized": 164.82,
       "quality": 6,
       "thesis": {
         "date": "2026-10-08",
@@ -170,9 +170,9 @@
       "date": "2026-10-09",
       "stop_price": 154.46,
       "target_price": 186.61,
-      "current_price": 162.36,
+      "current_price": 163.4,
       "days_held": 4,
-      "unrealized": -55.9,
+      "unrealized": -30.96,
       "quality": 2,
       "thesis": {
         "date": "2026-10-09",
@@ -196,9 +196,9 @@
       "date": "2026-10-09",
       "stop_price": 9.37,
       "target_price": 11.41,
-      "current_price": 10.09,
+      "current_price": 10.02,
       "days_held": 4,
-      "unrealized": 24.54,
+      "unrealized": 0.0,
       "quality": 3,
       "thesis": {
         "date": "2026-10-09",
@@ -222,9 +222,9 @@
       "date": "2026-10-12",
       "stop_price": 195.88,
       "target_price": 236.09,
-      "current_price": 208.52,
+      "current_price": 208.08,
       "days_held": 1,
-      "unrealized": -6.8,
+      "unrealized": -24.4,
       "quality": 6,
       "thesis": {
         "date": "2026-10-12",
@@ -235,9 +235,7 @@
         "entry_quality": 6,
         "entry_tilted": true,
         "invalidation": "스톱 $195.88 이탈 / 목표 $236.09 도달 / 업종 틸트 소멸"
-      },
-      "long_term": true,
-      "long_term_since": "2026-10-13"
+      }
     }
   ],
   "watchlist": [
@@ -245,7 +243,7 @@
       "ticker": "MRVL",
       "sector": "Technology",
       "industry": "Semiconductors",
-      "price": 261.5,
+      "price": 260.87,
       "rsi": 52.3,
       "ma20": 260.82,
       "ma50": 238.06,
@@ -289,7 +287,7 @@
       "ticker": "FORM",
       "sector": "Technology",
       "industry": "Semiconductor Equipment & Materials",
-      "price": 132.8,
+      "price": 130.32,
       "rsi": 54.0,
       "ma20": 131.1,
       "ma50": 120.28,
@@ -325,17 +323,63 @@
         "n": 11,
         "rank_pct": 90.9,
         "excess_20d": 14.12,
-        "corr": 0.9,
+        "corr": 0.89,
         "decouple_pct": 12.5,
         "basis": "Semiconductor Equipment & Materials"
       },
       "alpha": true
     },
     {
+      "ticker": "OXIG.L",
+      "sector": "Technology",
+      "industry": "Scientific & Technical Instruments",
+      "price": 3064.0,
+      "rsi": 57.8,
+      "ma20": 2931.0,
+      "ma50": 2857.64,
+      "side": "LONG",
+      "score": 12.0,
+      "base_score": 6,
+      "bonus": {
+        "특성": 1,
+        "피어": 2.0,
+        "흐름": 1.0,
+        "섹터틸트": 2.0
+      },
+      "dist_ma20": 4.34,
+      "atr_pct": 1.92,
+      "rel_20d": 15.13,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "raw_score": 6,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": -0.1,
+        "beta_spy": -0.41,
+        "decouple_pct": 53.1,
+        "sec_down_ret": 1.12,
+        "up_capture": -0.03,
+        "down_capture": -0.12,
+        "label": "역상관형"
+      },
+      "peer": {
+        "n": 40,
+        "rank_pct": 87.5,
+        "excess_20d": 12.26,
+        "corr": 0.56,
+        "decouple_pct": 30.0,
+        "basis": "Scientific & Technical Instruments"
+      },
+      "flow_track": true
+    },
+    {
       "ticker": "COHU",
       "sector": "Technology",
       "industry": "Semiconductor Equipment & Materials",
-      "price": 64.03,
+      "price": 64.2,
       "rsi": 51.6,
       "ma20": 64.88,
       "ma50": 57.48,
@@ -381,7 +425,7 @@
       "ticker": "META",
       "sector": "Technology",
       "industry": "Internet Content & Information",
-      "price": 741.5,
+      "price": 736.43,
       "rsi": 51.6,
       "ma20": 723.05,
       "ma50": 643.46,
@@ -424,7 +468,7 @@
       "ticker": "CRWD",
       "sector": "Technology",
       "industry": "Software - Infrastructure",
-      "price": 262.52,
+      "price": 261.2,
       "rsi": 57.2,
       "ma20": 259.09,
       "ma50": 230.15,
@@ -468,7 +512,7 @@
       "ticker": "ALAB",
       "sector": "Technology",
       "industry": "Semiconductors",
-      "price": 318.0,
+      "price": 319.2,
       "rsi": 36.0,
       "ma20": 341.4,
       "ma50": 317.72,
@@ -514,7 +558,7 @@
       "ticker": "MTSI",
       "sector": "Technology",
       "industry": "Semiconductors",
-      "price": 306.36,
+      "price": 300.72,
       "rsi": 58.7,
       "ma20": 294.02,
       "ma50": 284.78,
@@ -557,10 +601,56 @@
       "alpha": true
     },
     {
+      "ticker": "SOI.PA",
+      "sector": "Technology",
+      "industry": "Semiconductor Equipment & Materials",
+      "price": 152.4,
+      "rsi": 50.2,
+      "ma20": 151.64,
+      "ma50": 133.91,
+      "side": "LONG",
+      "score": 11.0,
+      "base_score": 5,
+      "bonus": {
+        "피어": 2.0,
+        "흐름": 1.0,
+        "섹터틸트": 2.0,
+        "업종틸트": 1.0
+      },
+      "dist_ma20": 0.5,
+      "atr_pct": 3.34,
+      "rel_20d": 21.24,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 3,
+        "measured": 6
+      },
+      "raw_score": 5,
+      "character": {
+        "proxy": "SMH",
+        "corr_sector": 0.52,
+        "beta_spy": 2.09,
+        "decouple_pct": 17.9,
+        "sec_down_ret": 0.1,
+        "up_capture": 1.94,
+        "down_capture": 0.95,
+        "label": "보통"
+      },
+      "peer": {
+        "n": 11,
+        "rank_pct": 81.8,
+        "excess_20d": 11.06,
+        "corr": 0.23,
+        "decouple_pct": 38.7,
+        "basis": "Semiconductor Equipment & Materials"
+      },
+      "flow_track": true
+    },
+    {
       "ticker": "AMD",
       "sector": "Technology",
       "industry": "Semiconductors",
-      "price": 590.0,
+      "price": 588.2,
       "rsi": 40.1,
       "ma20": 603.11,
       "ma50": 531.28,
@@ -604,7 +694,7 @@
       "ticker": "NVDA",
       "sector": "Technology",
       "industry": "Semiconductors",
-      "price": 224.45,
+      "price": 224.99,
       "rsi": 46.4,
       "ma20": 227.5,
       "ma50": 222.59,
@@ -647,7 +737,7 @@
       "ticker": "MSTR",
       "sector": "Technology",
       "industry": "Software - Application",
-      "price": 149.35,
+      "price": 154.75,
       "rsi": 33.5,
       "ma20": 154.32,
       "ma50": 131.01,
@@ -690,7 +780,7 @@
       "ticker": "ACN",
       "sector": "Technology",
       "industry": "Information Technology Services",
-      "price": 215.8,
+      "price": 215.0,
       "rsi": 67.8,
       "ma20": 191.25,
       "ma50": 185.08,
@@ -813,7 +903,7 @@
         "n": 11,
         "rank_pct": 36.4,
         "excess_20d": -1.94,
-        "corr": 0.89,
+        "corr": 0.87,
         "decouple_pct": 21.2,
         "basis": "Semiconductor Equipment & Materials"
       },
@@ -823,7 +913,7 @@
       "ticker": "SMTC",
       "sector": "Technology",
       "industry": "Semiconductors",
-      "price": 166.71,
+      "price": 166.79,
       "rsi": 46.4,
       "ma20": 180.05,
       "ma50": 154.6,
@@ -866,55 +956,10 @@
       "alpha": true
     },
     {
-      "ticker": "TER",
-      "sector": "Technology",
-      "industry": "Semiconductor Equipment & Materials",
-      "price": 381.0,
-      "rsi": 45.0,
-      "ma20": 394.8,
-      "ma50": 383.21,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 6,
-      "bonus": {
-        "알파": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 1.0
-      },
-      "dist_ma20": 2.85,
-      "atr_pct": 2.78,
-      "rel_20d": 14.34,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.86,
-        "beta_spy": 2.74,
-        "decouple_pct": 17.9,
-        "sec_down_ret": -1.23,
-        "up_capture": 1.86,
-        "down_capture": 1.61,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 11,
-        "rank_pct": 72.7,
-        "excess_20d": 4.16,
-        "corr": 0.89,
-        "decouple_pct": 22.6,
-        "basis": "Semiconductor Equipment & Materials"
-      },
-      "alpha": true
-    },
-    {
       "ticker": "CAMT",
       "sector": "Technology",
       "industry": "Semiconductor Equipment & Materials",
-      "price": 147.63,
+      "price": 144.94,
       "rsi": 46.9,
       "ma20": 149.81,
       "ma50": 149.24,
@@ -949,54 +994,8 @@
         "n": 11,
         "rank_pct": 27.3,
         "excess_20d": -2.89,
-        "corr": 0.82,
-        "decouple_pct": 20.0,
-        "basis": "Semiconductor Equipment & Materials"
-      },
-      "flow_track": true
-    },
-    {
-      "ticker": "ACLS",
-      "sector": "Technology",
-      "industry": "Semiconductor Equipment & Materials",
-      "price": 127.63,
-      "rsi": 60.0,
-      "ma20": 124.77,
-      "ma50": 125.33,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 4,
-      "bonus": {
-        "피어": 2.0,
-        "흐름": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 1.0
-      },
-      "dist_ma20": 2.24,
-      "atr_pct": 3.31,
-      "rel_20d": 18.93,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 4,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.85,
-        "beta_spy": 2.97,
-        "decouple_pct": 17.9,
-        "sec_down_ret": -0.96,
-        "up_capture": 1.39,
-        "down_capture": 1.48,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 11,
-        "rank_pct": 81.8,
-        "excess_20d": 8.76,
-        "corr": 0.9,
-        "decouple_pct": 12.5,
+        "corr": 0.81,
+        "decouple_pct": 21.9,
         "basis": "Semiconductor Equipment & Materials"
       },
       "flow_track": true
@@ -1049,24 +1048,24 @@
       "flow_track": true
     },
     {
-      "ticker": "OXIG.L",
+      "ticker": "TER",
       "sector": "Technology",
-      "industry": "Scientific & Technical Instruments",
-      "price": 2966.0,
-      "rsi": 53.8,
-      "ma20": 2908.3,
-      "ma50": 2851.0,
+      "industry": "Semiconductor Equipment & Materials",
+      "price": 379.0,
+      "rsi": 45.0,
+      "ma20": 394.8,
+      "ma50": 383.21,
       "side": "LONG",
       "score": 10.0,
       "base_score": 6,
       "bonus": {
-        "특성": 1,
-        "흐름": 1.0,
-        "섹터틸트": 2.0
+        "알파": 1.0,
+        "섹터틸트": 2.0,
+        "업종틸트": 1.0
       },
-      "dist_ma20": 1.68,
-      "atr_pct": 1.82,
-      "rel_20d": 4.91,
+      "dist_ma20": 2.85,
+      "atr_pct": 2.78,
+      "rel_20d": 14.34,
       "instrument": "STOCK",
       "quality": {
         "score": 7,
@@ -1074,66 +1073,66 @@
       },
       "raw_score": 6,
       "character": {
-        "proxy": "XLK",
-        "corr_sector": -0.1,
-        "beta_spy": -0.41,
-        "decouple_pct": 53.1,
-        "sec_down_ret": 1.12,
-        "up_capture": -0.03,
-        "down_capture": -0.12,
-        "label": "역상관형"
+        "proxy": "SMH",
+        "corr_sector": 0.86,
+        "beta_spy": 2.74,
+        "decouple_pct": 17.9,
+        "sec_down_ret": -1.23,
+        "up_capture": 1.86,
+        "down_capture": 1.61,
+        "label": "동조형"
       },
       "peer": {
-        "n": 40,
-        "rank_pct": 62.5,
-        "excess_20d": 2.04,
-        "corr": -0.14,
-        "decouple_pct": 56.7,
-        "basis": "Scientific & Technical Instruments"
+        "n": 11,
+        "rank_pct": 63.6,
+        "excess_20d": 4.16,
+        "corr": 0.89,
+        "decouple_pct": 24.2,
+        "basis": "Semiconductor Equipment & Materials"
       },
-      "flow_track": true
+      "alpha": true
     },
     {
-      "ticker": "AAPL",
+      "ticker": "INTC",
       "sector": "Technology",
-      "industry": "Consumer Electronics",
-      "price": 341.34,
-      "rsi": 51.3,
-      "ma20": 335.78,
-      "ma50": 323.03,
+      "industry": "Semiconductors",
+      "price": 101.7,
+      "rsi": 23.2,
+      "ma20": 114.03,
+      "ma50": 103.3,
       "side": "LONG",
       "score": 9.0,
-      "base_score": 6,
+      "base_score": 5,
       "bonus": {
-        "특성": 1,
-        "섹터틸트": 2.0
+        "섹터틸트": 2.0,
+        "업종틸트": 2.0
       },
-      "dist_ma20": 1.52,
-      "atr_pct": 0.98,
-      "rel_20d": 0.11,
+      "dist_ma20": 12.52,
+      "atr_pct": 2.96,
+      "rel_20d": 2.02,
       "instrument": "STOCK",
       "quality": {
-        "score": 6,
-        "measured": 7
+        "score": 4,
+        "measured": 6
       },
-      "raw_score": 6,
+      "raw_score": 5,
       "character": {
-        "proxy": "XLK",
-        "corr_sector": -0.14,
-        "beta_spy": 0.11,
-        "decouple_pct": 59.4,
-        "sec_down_ret": 1.28,
-        "up_capture": -0.01,
-        "down_capture": -0.27,
-        "label": "역상관형"
+        "proxy": "SMH",
+        "corr_sector": 0.85,
+        "beta_spy": 3.41,
+        "decouple_pct": 14.3,
+        "sec_down_ret": -1.06,
+        "up_capture": 1.53,
+        "down_capture": 1.53,
+        "label": "동조형"
       },
       "peer": {
-        "n": 40,
-        "rank_pct": 32.5,
-        "excess_20d": -3.7,
-        "corr": -0.32,
-        "decouple_pct": 63.3,
-        "basis": "Consumer Electronics"
+        "n": 19,
+        "rank_pct": 36.8,
+        "excess_20d": -2.02,
+        "corr": 0.82,
+        "decouple_pct": 11.5,
+        "basis": "Semiconductors"
       }
     }
   ],
@@ -3469,17 +3468,17 @@
   "total_invested": 0.0,
   "spy_baseline_price": 741.75,
   "spy_baseline_date": "2026-06-15",
-  "spy_current_price": 777.31,
+  "spy_current_price": 778.31,
   "qqq_current_price": 706.52,
   "qqq_baseline_price": 706.52,
   "qqq_baseline_date": "2026-06-27",
-  "nasdaq_current_price": 743.86,
+  "nasdaq_current_price": 742.74,
   "nasdaq_baseline_price": 709.43,
   "nasdaq_baseline_date": "2026-07-08",
-  "dia_current_price": 518.04,
+  "dia_current_price": 520.74,
   "dia_baseline_price": 517.84,
   "dia_baseline_date": "2026-07-24",
-  "iwm_current_price": 277.6,
+  "iwm_current_price": 279.0,
   "iwm_baseline_price": 293.26,
   "iwm_baseline_date": "2026-07-24",
   "equity_curve": [
@@ -3515,21 +3514,21 @@
     },
     {
       "date": "2026-10-13",
-      "total": 104661.61,
-      "spy": 777.31,
-      "qqq": 743.86
+      "total": 104728.34,
+      "spy": 778.31,
+      "qqq": 742.74
     }
   ],
   "market_info": {
     "date": "2026-10-13",
-    "aggression": 0.605,
+    "aggression": 0.555,
     "spread": -3.11,
     "rsp20": -0.85,
     "spy20": 2.26,
     "iwm20": -3.48,
     "iwm_below_ma50": true,
-    "vix": 15.21,
+    "vix": 15.4,
     "sentiment": 0.7,
-    "aggression_bias": 0.3
+    "aggression_bias": 0.25
   }
 }

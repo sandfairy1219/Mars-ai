@@ -228,9 +228,14 @@ function validateAlloc(alloc) {
     if (k && isFinite(n)) hd[String(k).toUpperCase()] = Math.max(1, Math.min(120, n));
   }
   if (Object.keys(hd).length) out.hold_days = hd;
-  // 청산 최소 보유일 (섹터 전환 청산 남발 방지 — AI 자율)
+  // 회전 청산 신중 게이트 (섹터 전환 청산 남발 방지 — AI 자율)
   const mh = Number(alloc.exit_min_hold_days);
   if (isFinite(mh)) out.exit_min_hold_days = Math.max(0, Math.min(30, Math.round(mh)));
+  const rp = Number(alloc.rotate_min_pnl);
+  if (isFinite(rp)) out.rotate_min_pnl = Math.max(-10, Math.min(10, rp));
+  const rt = Number(alloc.rotate_near_target_pct);
+  if (isFinite(rt)) out.rotate_near_target_pct = Math.max(0, Math.min(20, rt));
+  if (typeof alloc.rotate_require_full === 'boolean') out.rotate_require_full = alloc.rotate_require_full;
   return Object.keys(out).length ? out : null;
 }
 
@@ -376,9 +381,15 @@ Computer Hardware, Communication Equipment, Banks - Diversified, Oil & Gas E&P, 
   시간초과 청산과 AI 청산(exit_tickers)에서 면제된다. 논문이 살아있고 업종 내 상대강도가
   유지되는 승자를 주~월 단위로 들고 가는 용도다. 키를 아예 빼면 기존 지정이 유지되고,
   목록을 주면 그 목록으로 교체된다(빈 배열이면 전부 해제).
-· exit_min_hold_days (0~30, 기본 1) — **AI 청산 지시의 최소 보유일**. 이 일수 미만인 종목은
-  네가 청산을 지시해도 집행되지 않고 보류된다(리포트에 보류 내역이 찍힌다).
-  잦은 섹터 전환으로 사고팔이를 반복하고 있다면 이 값을 올려라(예: 3~5).
+· **회전 청산 신중 게이트 (4종, 전부 네가 조정)** — exit_tickers는 아래 게이트를 통과해야만 집행된다.
+  · exit_min_hold_days (0~30, 기본 **5**) — 최소 보유일. 미달이면 보류.
+  · rotate_min_pnl (−10~+10, 기본 **0**) — 이 수익률(%) 미만이면 보류. 즉 **손실 중엔 교체 청산 금지**.
+  · rotate_near_target_pct (0~20, 기본 **5**) — 현재가가 목표가의 이 % 이내면 보류(**목표 도달 우선**).
+  · rotate_require_full (기본 **true**) — 보유 슬롯에 여유가 있으면 보류(팔 필요 없이 신규 진입 가능 = 교체가 아님).
+  보류된 건은 리포트에 사유가 찍힌다. 게이트를 느슨하게 풀고 싶으면 해당 값을 조정해라.
+  ⚠️ 실측(2026-10-13): 섹터전환 청산 18건 **−$76/건**(합 −$1,374, 승률 39%) vs
+  목표 도달 8건 **+$1,188/건**(합 +$9,503, 승률 100%). 회전으로 목표 근처에서 잘라내면
+  큰 수익 기회를 버린다. **회전은 교체가 확실하고 이익 중일 때만.**
 · stop_adjust — {\"PTEN\": 0.6} 처럼 **종목별 스톱 거리 배수**(0.3~2.0, 1.0=원래대로, 0.6=타이트).
   롱 기준: 배수가 작으면 스톱이 진입가에 가까워져 먼저 잘린다. 리포트의 🎯 종목별 특성·피어를
   보고 판단한다 — 업종 내에서 뒤처지면서 섹터와 같이 빠지는 종목(동조형+낮은 백분위)은 조이고,
@@ -421,7 +432,7 @@ Computer Hardware, Communication Equipment, Banks - Diversified, Oil & Gas E&P, 
 2) 마지막에 \`\`\`json 블록으로 결정 (키 이름 정확히 "params"):
 \`\`\`json
 {"params": {"aggression_bias": <float>, "base_position_mult": <float>, "vix_floor": <float>, "vix_ceiling": <float>, "sector_limit": <int>, "max_positions": <int>, "min_cash_pct": <float|null>, "cap_min_mid": <int>, "cap_min_small": <int>, "max_new_per_tick": <int|null>, "min_position_size": <number>, "min_candidate_score": <int>, "industry_limit": <int>, "quality_min": <int>, "flow_size_mult": <float>, "char_bonus": <float>, "peer_bonus": <int>, "note": "<조정 사유 한 줄>"},
- "alloc": {"sector_tilt": {"<섹터>": <float>}, "industry_tilt": {"<업종>": <float>}, "focus_tickers": ["<TICKER>"], "avoid_tickers": ["<TICKER>"], "exit_tickers": ["<청산할 보유종목>"]}}
+ "alloc": {"sector_tilt": {"<섹터>": <float>}, "industry_tilt": {"<업종>": <float>}, "focus_tickers": ["<TICKER>"], "avoid_tickers": ["<TICKER>"], "exit_tickers": ["<청산할 보유종목>"], "exit_min_hold_days": 5, "rotate_min_pnl": 0, "rotate_near_target_pct": 5}}
 \`\`\`
 바꿀 게 없으면 현재 값 그대로 넣어라. 리포트가 비었거나 결정 불가면 {"params":{}}만 출력해라.
 

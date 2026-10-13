@@ -1797,11 +1797,24 @@ def ai_apply_exits(portfolio, today, max_exits=3):
     want = {str(t).upper() for t in (alloc.get("exit_tickers") or [])}
     if not want:
         return []
-    # 최소 보유일 가드: 너무 잦은 섹터 전환 청산(왕복 비용)을 AI가 스스로 조절하는 노브
+    # ── 신중 게이트 (2026-10-13) ─────────────────────────────────────────
+    # 실측: AI 섹터전환 청산 18건 -$1,374(건당 -$76) vs 목표 도달 8건 +$9,503(건당 +$1,188)
+    # → 목표 근처에서 잘라먹는 구조. 전부 AI가 조정 가능한 노브, 기본값만 신중하게 뒀다.
+    def _num(key, default, lo, hi):
+        try:
+            return max(lo, min(hi, float(alloc.get(key, default))))
+        except (TypeError, ValueError):
+            return default
+    _min_hold = int(_num("exit_min_hold_days", 5, 0, 30))          # 기본 1 → 5일
+    _min_pnl = _num("rotate_min_pnl", 0.0, -10.0, 10.0)           # 본전 이상일 때만 교체 청산
+    _near_tgt = _num("rotate_near_target_pct", 5.0, 0.0, 20.0)    # 목표 임박이면 보류
+    _need_full = bool(alloc.get("rotate_require_full", True))     # 여유 슬롯 있으면 보류
     try:
-        _min_hold = max(0, min(30, int(alloc.get("exit_min_hold_days", 1))))
+        _maxpos = int(params().get("max_positions", MAX_POSITIONS))
     except (TypeError, ValueError):
-        _min_hold = 1
+        _maxpos = MAX_POSITIONS
+    _book = len([p for p in portfolio["positions"] if not p.get("long_term")])
+    _full = _book >= _maxpos
     closed, keep, held_back = [], [], []
     for pos in portfolio["positions"]:
         if len(closed) >= max_exits or pos.get("long_term") or pos["ticker"].upper() not in want:
@@ -1817,9 +1830,20 @@ def ai_apply_exits(portfolio, today, max_exits=3):
         else:
             cur = prices[-1]
         days_held = (datetime.datetime.strptime(today, "%Y-%m-%d") - datetime.datetime.strptime(pos["date"], "%Y-%m-%d")).days
+        _pnl_pct = (cur / pos["entry_price"] - 1) * 100 if pos.get("entry_price") else 0.0
+        _tgt = pos.get("target_price")
+        _defer = None
         if days_held < _min_hold:
-            pos["_exit_hold"] = f"AI 청산 보류 (보유 {days_held}일 < 최소 {_min_hold}일)"
-            held_back.append(pos["ticker"])
+            _defer = f"보유 {days_held}일 < 최소 {_min_hold}일"
+        elif _pnl_pct < _min_pnl:
+            _defer = f"손실 {_pnl_pct:+.1f}% (교체 청산은 {_min_pnl:+g}% 이상일 때만)"
+        elif _tgt and _near_tgt > 0 and cur >= float(_tgt) * (1 - _near_tgt / 100.0):
+            _defer = f"목표 임박 (현재가 ${cur:.2f} · 목표 ${float(_tgt):.2f} · {_near_tgt:g}% 이내)"
+        elif _need_full and not _full:
+            _defer = f"여유 슬롯 {_maxpos - _book}개 — 매도 없이 신규 진입 가능(교체 불필요)"
+        if _defer:
+            pos["_exit_hold"] = f"AI 청산 보류 — {_defer}"
+            held_back.append(f"{pos['ticker']}({_defer.split(' ')[0]})")
             keep.append(pos)
             continue
         pnl = (cur - pos["entry_price"]) * pos["shares"]
@@ -1830,7 +1854,8 @@ def ai_apply_exits(portfolio, today, max_exits=3):
     portfolio["positions"] = keep
     portfolio["history"].extend(closed)
     if held_back:
-        print(f"[AI 청산 보류] 최소 보유일({_min_hold}일) 미달: {', '.join(held_back)}")
+        print(f"[AI 청산 보류 {len(held_back)}건] " + " · ".join(held_back)
+              + f"  (게이트: 최소보유 {_min_hold}일 · 본전 {_min_pnl:+g}% · 목표임박 {_near_tgt:g}% · 슬롯조건 {'on' if _need_full else 'off'})")
     return closed
 
 
@@ -2222,7 +2247,8 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
                 pr = (b["total"] / a["total"] - 1) * 100
                 sr = (b["spy"] / a["spy"] - 1) * 100
                 return pr - sr
-            _e5, _e20 = _exc(5), _exc(20)
+            _e5 = _exc(5)
+            _e20 = _exc(20) if len(curve) >= 21 else None
             _parts = []
             if _e5 is not None:
                 _parts.append(f"5일 초과 {_e5:+.2f}%p")
@@ -2288,8 +2314,13 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
     _mn_disp = P.get('max_new_per_tick')
     lines.append(f"• 🧮 **배분 한도(AI 조정가)**: 섹터≤{P.get('sector_limit', 3)} · 종목≤{int(P.get('max_positions', MAX_POSITIONS))} · 신규≤{('공격도 자동' if _mn_disp is None else int(_mn_disp))} · 현금하한 {('%.0f%%' % (float(P['min_cash_pct'])*100)) if P.get('min_cash_pct') is not None else '공격도 자동'} · 중형최소 {P.get('cap_min_mid',0)} · 소형최소 {P.get('cap_min_small',0)}")
     try:
-        _mh = load_ai_alloc().get("exit_min_hold_days", 1)
-        lines.append(f"• 🛑 **AI 청산 최소 보유일**: {_mh}일 (섹터 전환 청산 남발 방지 노브 — AI 조정가)")
+        _a2 = load_ai_alloc()
+        _mh = _a2.get("exit_min_hold_days", 5)
+        _mp = _a2.get("rotate_min_pnl", 0.0)
+        _nt = _a2.get("rotate_near_target_pct", 5.0)
+        _rf = _a2.get("rotate_require_full", True)
+        lines.append(f"• 🛑 **회전 청산 신중 게이트(AI 조정가)**: 최소보유 {_mh}일 · 본전 {float(_mp):+g}% 이상만 · "
+                     f"목표 {float(_nt):g}% 이내면 보류 · 여유슬롯이면 보류({'on' if _rf else 'off'})")
     except Exception:
         pass
     try:
@@ -2350,10 +2381,21 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
                               sorted(_by.items(), key=lambda x: -x[1][0]))
             lines.append(f"  · 청산 성적: {_seg}")
             _ai_n, _ai_p = _by.get("AI배분청산", (0, 0.0))
+            _tg_n, _tg_p = _by.get("목표", (0, 0.0))
             if _ai_n >= 3:
-                lines.append(f"    ↳ ⚠️ AI 섹터전환 청산 {_ai_n}건 평균 ${_ai_p/_ai_n:+.2f}/건 — "
-                             f"기계적 청산(목표 ${_by.get('목표',(0,1))[1]/max(1,_by.get('목표',(0,1))[0]):+.0f})과 비교해 판단하라. "
-                             f"잦은 전환 청산은 왕복 비용이다 → exit_tickers 남발 금지, exit_min_hold_days로 스스로 제한하라.")
+                _ratio = _ai_n / max(1, _tg_n)
+                lines.append(f"    ↳ ⚠️ AI 섹터전환 청산 **{_ai_n}건 ${_ai_p/_ai_n:+.0f}/건**(합 ${_ai_p:+,.0f}) vs "
+                             f"목표 도달 {_tg_n}건 ${_tg_p/max(1,_tg_n):+.0f}/건(합 ${_tg_p:+,.0f}) → "
+                             f"섹터전환이 목표 도달의 **{_ratio:.1f}배**")
+                if _ai_p < 0 <= _tg_p:
+                    _cmp = (f"AI 청산은 손실(${_ai_p/_ai_n:+.0f}/건)인데 목표 도달은 이익(${_tg_p/max(1,_tg_n):+.0f}/건) — "
+                            f"**회전으로 팔면 오히려 손해**")
+                elif _ai_p:
+                    _cmp = f"목표 도달이 AI 청산보다 건당 {(_tg_p/max(1,_tg_n))/(_ai_p/_ai_n):.1f}배 크다"
+                else:
+                    _cmp = "AI 청산은 손익 0"
+                lines.append(f"      → {_cmp}. **목표 근처에서 회전으로 잘라내면 수익 기회를 버리는 것** — "
+                             f"교체가 확실하고 이익 중일 때만 회전하라.")
     except Exception as _e:
         _soft("회전 기록", _e)
     if _SOFT_ERRORS:
