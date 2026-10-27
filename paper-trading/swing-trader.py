@@ -1721,8 +1721,18 @@ def market_context():
             else:
                 price = prices[-1]
             _ma50 = calc_ma(prices, 50) if len(prices) >= 50 else None
-            ctx[name] = {"price": round(price, 2), "5d": round(c5, 2), "20d": round(c20, 2),
-                         "ma50": round(_ma50, 2) if _ma50 else None}
+            _ma20 = calc_ma(prices, 20) if len(prices) >= 20 else None
+            _ma200 = calc_ma(prices, 200) if len(prices) >= 200 else None
+            _hi20 = max(prices[-20:]) if len(prices) >= 20 else None
+            _c1 = ((prices[-1] - prices[-2]) / prices[-2] * 100) if len(prices) >= 2 else 0.0
+            ctx[name] = {"price": round(price, 2), "1d": round(_c1, 2), "5d": round(c5, 2),
+                         "20d": round(c20, 2),
+                         "ma20": round(_ma20, 2) if _ma20 else None,
+                         "ma50": round(_ma50, 2) if _ma50 else None,
+                         "ma200": round(_ma200, 2) if _ma200 else None,
+                         "hi20_gap": round((price / _hi20 - 1) * 100, 2) if _hi20 else None,
+                         "above_ma50": (price > _ma50) if _ma50 else None,
+                         "above_ma200": (price > _ma200) if _ma200 else None}
         else:
             ctx[name] = {"price": None, "5d": None, "20d": None, "ma50": None}
         time.sleep(0.2)
@@ -2378,7 +2388,7 @@ def portfolio_summary(portfolio):
         "open_count": len(portfolio["positions"])
     }
 
-def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered, today, aggression=0.5, history=None, news_sentiment=None, earnings_ctx=None):
+def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered, today, aggression=0.5, history=None, news_sentiment=None, earnings_ctx=None, portfolio=None):
     labels = {
         "pre_market_1": "✅ 오버나이트 스캔 1",
         "pre_market_2": "🌅 프리장 스캔 2 (오픈 준비)",
@@ -2406,11 +2416,48 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
         lines.append(earnings_ctx)
     else:
         lines.append("• 실적 일정 조회 실패 — 실적 임박 여부 판단 불가. 실적 관련 파라미터 변경 금지")
-    for name, data in ctx.items():
-        if data["price"]:
-            lines.append(f"• {name}: ${data['price']} (5일: {data['5d']}%, 20일: {data['20d']}%)")
-        else:
-            lines.append(f"• {name}: 데이터 불가")
+    # ── 지수 우선 (2026-10-27 sp: "지수 위주로 확인해야지 최근 장은") ──
+    def _idx_tag(d):
+        """지수 위치 판정 — MA50·MA200·20일 고점으로 상승/조정/약세."""
+        if d.get("above_ma200") is False:
+            return "🔴 약세"
+        if d.get("above_ma50") is False:
+            return "🟡 조정(MA50 아래)"
+        if d.get("hi20_gap") is not None and d["hi20_gap"] > -2:
+            return "🟢 상승(고점권)"
+        return "🟢 상승"
+    _core = ["S&P 500", "Nasdaq 100", "Dow Jones", "Russell 2000", "S&P 500 (동일가중)"]
+    _rows = []
+    for name in _core + ["VIX"]:
+        d = ctx.get(name) or {}
+        if not d.get("price"):
+            continue
+        _ma = d.get("ma50")
+        _pos = ("MA50 위" if d.get("above_ma50") else "MA50 아래") if _ma else "MA50 -"
+        if _ma and d.get("price"):
+            _pos += f"({(d['price'] / _ma - 1) * 100:+.1f}%)"
+        _gap = d.get("hi20_gap")
+        _tag = _idx_tag(d) if name != "VIX" else ("🟡 경계" if (d.get("20d") or 0) > 5 else "🟢 안정")
+        _rows.append(f"• {name} **${d['price']}** · 1d {d.get('1d', 0):+.1f}% · 5d {d.get('5d', 0):+.1f}% · "
+                     f"20d {d.get('20d', 0):+.1f}% · {_pos}"
+                     + (f" · 20일고점 {_gap:+.1f}%" if _gap is not None else "")
+                     + f" → {_tag}")
+    if _rows:
+        lines.append("")
+        lines.append("**📈 지수 (지수 우선 판단)**")
+        lines.extend(_rows)
+        # 폭 판정 — 동일가중 vs 시총가중
+        _sp, _rsp, _iwm = ctx.get("S&P 500") or {}, ctx.get("S&P 500 (동일가중)") or {}, ctx.get("Russell 2000") or {}
+        if _sp.get("20d") is not None and _rsp.get("20d") is not None:
+            _spr = _rsp["20d"] - _sp["20d"]
+            _bt = ("🟢 폭 확대(동일가중 우위)" if _spr > 1.0 else
+                   "🔴 좁은 장(대형주 쏠림)" if _spr < -1.0 else "🟡 중립")
+            _extra = ""
+            if _iwm.get("above_ma50") is False:
+                _extra = " · 소형주 약함"
+            lines.append(f"• 폭: RSP−SPY 20일 **{_spr:+.2f}%p** → {_bt}{_extra}")
+    else:
+        lines.append("• 지수 데이터 불가")
     # 뉴스 센티먼트
     if news_sentiment:
         sent_score = news_sentiment.get("sentiment_score", 0.0)
@@ -2562,7 +2609,7 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
                          f"{ctx['S&P 500']['20d']:+.2f}% (스프레드 {_sp:+.2f}%p) → {_verdict}{_iwm}{_below}")
     except Exception as _e:
         _soft("시장 폭 라인", _e)
-    _pend = portfolio.get("pending") or []
+    _pend = (portfolio or {}).get("pending") or []
     if _pend:
         lines.append("• 📌 **눌림 대기(지정가)**: " + " · ".join(
             f"{o['ticker']} ≤ ${float(o.get('limit', 0)):,.2f}" for o in _pend[:8]))
@@ -2945,7 +2992,7 @@ def main():
             summary = portfolio_summary(portfolio)
             msg = build_message(scan_type, ctx, summary, portfolio["positions"],
                                 portfolio.get("watchlist", []), [], [], today, aggression,
-                                portfolio.get("history", []), news_sentiment, earnings_ctx=_earn_ctx)
+                                portfolio.get("history", []), news_sentiment, earnings_ctx=_earn_ctx, portfolio=portfolio)
             print(msg)
             return
 
@@ -3102,7 +3149,7 @@ def main():
             save_portfolio(portfolio)
         
         # Build and send message
-        msg = build_message(scan_type, ctx, summary, portfolio["positions"], portfolio.get("watchlist", []), closed, entered, today, aggression, portfolio.get("history", []), news_sentiment, earnings_ctx=_earn_ctx)
+        msg = build_message(scan_type, ctx, summary, portfolio["positions"], portfolio.get("watchlist", []), closed, entered, today, aggression, portfolio.get("history", []), news_sentiment, earnings_ctx=_earn_ctx, portfolio=portfolio)
         print(msg)
         
     except Exception as e:
