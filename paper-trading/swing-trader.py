@@ -59,7 +59,14 @@ def load_learned_params():
         "slippage_tiers": [[50.0, 15.0], [200.0, 10.0], [1000.0, 6.0], [float("inf"), 3.0]],
         "risk_per_trade_pct": 1.0,    # 한 종목 손절 시 감수할 자산 대비 손실(%)
         "max_position_pct": 15.0,     # 단일 포지션 최대 비중(자산 대비 %)
-        "min_dollar_vol_m": 20.0,     # 최소 20일 평균 달러 거래대금($M) — 유동성 가드(0=off)
+        "min_dollar_vol_m": 20.0,
+        # ── 눌림 대기(지정가) — 과열 확장주를 고점에 추격하지 않고 MA20까지 기다린다 ──
+        "dip_wait": True,             # false면 대기 없이 즉시 매수
+        "dip_ext_pct": 4.0,           # MA20 대비 이만큼 벌어져 있으면 '확장'
+        "dip_hot_rsi": 70.0,          # 이 이상이면 '과열' (확장+과열 둘 다일 때만 대기)
+        "dip_limit_pad_pct": 1.0,     # 지정가 = MA20 × (1 + pad%)
+        "dip_ttl_days": 3,            # 대기 유효기간(일)
+        "dip_max_pending": 8,         # 동시 대기 주문 수     # 최소 20일 평균 달러 거래대금($M) — 유동성 가드(0=off)
         "min_candidate_score": 4,   # 후보 스크린: 이 점수 미만은 워치리스트에 안 올림 (0~8)
         "industry_limit": 2,        # 같은 업종(반도체·소프트웨어 등) 최대 보유 수 (1~6)
         "quality_min": 0,           # 퀄리티 스크린 통과 최소 점수 (0~7, 0=게이트 없음)
@@ -1556,7 +1563,8 @@ _BENCH_20D = 0.0
 def score_long(prices, rsi, ma20, ma50, atr, bench_20d=None):
     """LONG 셋업 점수 (8점 만점).
 
-    평균회귀(과매도 반등)와 추세/모멘텀(신고가 근접·상대강도)을 함께 평가한다.
+    평균회귀(과매도 반등)·눌림 매수(추세 유지 + MA20 근접)·추세/모멘텀을 함께 평가하고,
+    과열(RSI 75+/85+)은 감점한다 — 고점 추격은 실측 승률 8~14%였다.
     2026-10-01 이전에는 평균회귀 항만 있어서, 나스닥이 주도한 랠리에서 주도주를
     구조적으로 살 수 없었다(실측: RSI 66~82 주도주 3~5점 vs 낙폭 방어주 7점 →
     포트폴리오가 소비재·금융·유틸로만 채워지고 기술주 0). 총점은 8점 유지 —
@@ -1574,9 +1582,11 @@ def score_long(prices, rsi, ma20, ma50, atr, bench_20d=None):
     # 2) 추세 (최대 2)
     if ma20 > ma50: score += 2
     elif prices[-1] > ma50: score += 1
-    # 3) MA20 근접 (최대 1) — 과확장 회피
+    # 3) MA20 근접 (최대 2) — 과확장 회피 + 눌림 매수 보상
     dist_ma20 = abs(prices[-1] - ma20) / prices[-1] * 100
     if dist_ma20 < 3: score += 1
+    # 3-b) 눌림 트랙 (2026-10-27): 추세 유지 + 중립 눌림(RSI 40~55) + MA20 근접 = 매수 기회
+    if dist_ma20 < 3 and prices[-1] > ma50 and 40 <= rsi <= 55: score += 1
     # 4) 3개월 고점 근접 (최대 1) — 추세 지속 보상
     if prices:
         window = prices[-63:] if len(prices) >= 63 else prices
@@ -1590,7 +1600,11 @@ def score_long(prices, rsi, ma20, ma50, atr, bench_20d=None):
             score += 1
     # 6) 변동성 필터 (최대 1)
     if atr and atr / prices[-1] * 100 < 3: score += 1
-    return score
+    # 7) 과열 감점 (2026-10-27 실측: RSI>=70 진입 승률 8~14%, 건당 -$553~-$629)
+    #    기존엔 과열을 0점 처리만 해서 추세 항(고점근접·상대강도·MA정배열)이 이를 덮었다.
+    if rsi >= 85: score -= 2
+    elif rsi >= 75: score -= 1
+    return max(0, min(8, score))
 
 def score_short(prices, rsi, ma20, ma50, atr):
     if not prices or rsi is None or ma20 is None or ma50 is None:
@@ -1981,7 +1995,55 @@ def update_positions(portfolio, today):
     portfolio["history"].extend(closed)
     return closed
 
-def enter_positions(portfolio, candidates, today, aggression=0.5):
+def process_dip_orders(portfolio, watchlist, today):
+    """대기 중인 눌림 지정가 주문 점검 — 지정가 이하로 오면 체결, 만료/논지훼손은 취소.
+
+    체결 후보 dict에 `_fill_limit`을 세팅해 반환한다(enter_positions가 지정가로 체결 처리).
+    """
+    P = params()
+    if not bool(P.get("dip_wait", True)):
+        portfolio["pending"] = []
+        return []
+    try:
+        ttl = max(0, int(P.get("dip_ttl_days", 3)))
+    except (TypeError, ValueError):
+        ttl = 3
+    try:
+        gate = float(P.get("score_min", 5))
+    except (TypeError, ValueError):
+        gate = 5.0
+    held = {p["ticker"] for p in portfolio.get("positions") or []}
+    by_t = {w["ticker"]: w for w in (watchlist or [])}
+    keep, fill, dropped = [], [], []
+    for o in (portfolio.get("pending") or []):
+        tk = o.get("ticker")
+        if tk in held:
+            dropped.append((tk, "이미 보유")); continue
+        w = by_t.get(tk)
+        if not w or float(w.get("score", 0) or 0) < gate:
+            dropped.append((tk, "점수 미달/후보 소멸")); continue
+        try:
+            age = (datetime.datetime.strptime(today, "%Y-%m-%d")
+                   - datetime.datetime.strptime(o.get("created") or today, "%Y-%m-%d")).days
+        except Exception:
+            age = 0
+        if age > ttl:
+            dropped.append((tk, f"만료 {age}일")); continue
+        px = w.get("price")
+        if px is not None and float(px) <= float(o.get("limit") or 0):
+            w["_fill_limit"] = float(o["limit"])      # 지정가 체결
+            fill.append(w)
+        else:
+            keep.append(o)
+    portfolio["pending"] = keep[:int(P.get("dip_max_pending", 8))]
+    if dropped:
+        print("[눌림 취소] " + " · ".join(f"{t}({r})" for t, r in dropped))
+    for w in fill:
+        print(f"[눌림 체결] {w['ticker']} 현재 ${w.get('price')} ≤ 지정가 ${w.get('_fill_limit')}")
+    return fill
+
+
+def enter_positions(portfolio, candidates, today, aggression=0.5, max_new_override=None):
     """시장 상황(aggression) + 학습 파라미터에 따라 현금 뱃스, 진입 개수, 포지션 크기를 유동적으로 조절."""
     P = params()
     entered = []
@@ -2057,6 +2119,20 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
     _risk_pct = _pnum("risk_per_trade_pct", 1.0, 0.1, 5.0)
     _maxpos_pct = _pnum("max_position_pct", 15.0, 1.0, 50.0)
     _min_dv = _pnum("min_dollar_vol_m", 20.0, 0.0, 5000.0)
+    if max_new_override is not None:          # 눌림 체결분과 신규분의 틱 예산 분배
+        try:
+            max_new = max(1, int(max_new_override))
+        except (TypeError, ValueError):
+            pass
+    # 눌림 대기(지정가) 설정
+    _dip_wait = bool(P.get("dip_wait", True))
+    _dip_ext = _pnum("dip_ext_pct", 4.0, 0.0, 50.0)
+    _dip_hot = _pnum("dip_hot_rsi", 70.0, 50.0, 100.0)
+    _dip_pad = _pnum("dip_limit_pad_pct", 1.0, 0.0, 10.0)
+    try:
+        _dip_maxp = max(1, int(P.get("dip_max_pending", 8)))
+    except (TypeError, ValueError):
+        _dip_maxp = 8
     _equity = portfolio["cash"] + sum(p["shares"] * p.get("current_price", p["entry_price"])
                                       for p in portfolio["positions"])
     
@@ -2128,6 +2204,29 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
                 skipped.add(c["ticker"])
                 continue
         
+        # ── 눌림 대기(지정가) — 과열 확장주는 고점 추격 대신 MA20까지 기다린다 ──
+        if _dip_wait:
+            try:
+                _ma20 = float(c.get("ma20") or 0)
+                _px = float(c.get("price") or 0)
+                _rsi_c = c.get("rsi")
+                if _ma20 > 0 and _px > 0 and _rsi_c is not None:
+                    _ext = (_px / _ma20 - 1) * 100
+                    if _ext > _dip_ext and float(_rsi_c) >= _dip_hot:
+                        _lim = round(_ma20 * (1 + _dip_pad / 100.0), 2)
+                        _pad_list = portfolio.setdefault("pending", [])
+                        if len(_pad_list) < _dip_maxp and not any(
+                                o.get("ticker") == c["ticker"] for o in _pad_list):
+                            _pad_list.append({"ticker": c["ticker"], "limit": _lim,
+                                              "created": today, "score": c.get("score"),
+                                              "sector": c.get("sector"), "industry": c.get("industry"),
+                                              "why": f"MA20 +{_ext:.1f}%·RSI {float(_rsi_c):.0f} → MA20 ${_lim} 대기"})
+                            print(f"[눌림 대기] {c['ticker']} ${_px:,.2f} (MA20 +{_ext:.1f}%·RSI {float(_rsi_c):.0f}) → 지정가 ${_lim}")
+                        skipped.add(c["ticker"])
+                        continue
+            except Exception as _e:
+                _soft("눌림 대기 판정", _e)
+
         sec = c["sector"]
         tier = CAP_TIER.get(c["ticker"], "large")
         
@@ -2169,7 +2268,9 @@ def enter_positions(portfolio, candidates, today, aggression=0.5):
             skipped.add(c["ticker"])          # 사이즈 미달 → 재선택 금지
             continue
 
-        entry = _slip(c["price"], True, slip_bps_for(c["ticker"]))   # 유동성 구간별 슬리피지
+        # 눌림 지정가 체결분은 지정가로 체결(갭 하락 시 더 유리할 수 있으나 보수적으로 지정가 사용)
+        _base_px = float(c.get("_fill_limit") or c["price"])
+        entry = _slip(_base_px, True, slip_bps_for(c["ticker"]))   # 유동성 구간별 슬리피지
         shares = math.floor(size / entry)
         if shares < 1:
             skipped.add(c["ticker"])          # 1주도 못 사면 재선택 금지
@@ -2461,6 +2562,10 @@ def build_message(scan_type, ctx, summary, positions, watchlist, closed, entered
                          f"{ctx['S&P 500']['20d']:+.2f}% (스프레드 {_sp:+.2f}%p) → {_verdict}{_iwm}{_below}")
     except Exception as _e:
         _soft("시장 폭 라인", _e)
+    _pend = portfolio.get("pending") or []
+    if _pend:
+        lines.append("• 📌 **눌림 대기(지정가)**: " + " · ".join(
+            f"{o['ticker']} ≤ ${float(o.get('limit', 0)):,.2f}" for o in _pend[:8]))
     lines.append(f"• 🎚️ **후보 스크린(AI 조정가)**: 후보점수≥{P.get('min_candidate_score',4)} · 최소포지션 ${float(P.get('min_position_size',3000)):,.0f} · 업종≤{P.get('industry_limit',2)} · 퀄리티≥{P.get('quality_min',0) or '게이트 없음'}")
     _qm2 = [p for p in (positions or []) if p.get("quality") is not None]
     if _qm2:
@@ -2950,7 +3055,21 @@ def main():
         entered = []
         if scan_type in ("after_hours", "regular_1"):
             candidates = [w for w in watchlist if w.get("score", 0) >= params().get("score_min", 5)]
-            entered = enter_positions(portfolio, candidates, today, aggression)
+            # 눌림 대기 주문 체결 → 남은 틱 예산으로 신규 진입
+            _dip_fills = process_dip_orders(portfolio, watchlist, today)
+            _b = params().get("max_new_per_tick")
+            try:
+                _budget = max(1, int(_b)) if _b is not None else max(4, int(4 + aggression * 6))
+            except (TypeError, ValueError):
+                _budget = max(4, int(4 + aggression * 6))
+            if _dip_fills:
+                entered += enter_positions(portfolio, _dip_fills[:max(1, _budget)], today, aggression,
+                                           max_new_override=_budget)
+            _left = max(0, _budget - len(entered))
+            _fill_set = {w["ticker"] for w in _dip_fills}
+            _rest = [w for w in candidates if w["ticker"] not in _fill_set]
+            if _left > 0 and _rest:
+                entered += enter_positions(portfolio, _rest, today, aggression, max_new_override=_left)
         
         # Recompute summary with updated prices for remaining positions
         for p in portfolio["positions"]:

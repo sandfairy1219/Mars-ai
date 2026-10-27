@@ -1,5 +1,5 @@
 {
-  "cash": 34778.75837615478,
+  "cash": 38541.84837615477,
   "positions": [
     {
       "ticker": "OXY",
@@ -11,29 +11,13 @@
       "date": "2026-10-01",
       "stop_price": 53.64,
       "target_price": 65.02,
-      "current_price": 61.14,
-      "days_held": 12,
-      "unrealized": 290.68,
+      "current_price": 63.13,
+      "days_held": 26,
+      "unrealized": 461.82,
       "industry": "Oil & Gas E&P",
-      "quality": 7
-    },
-    {
-      "ticker": "HPE",
-      "sector": "Technology",
-      "side": "LONG",
-      "cap_tier": "mid",
-      "entry_price": 65.25,
-      "shares": 86,
-      "date": "2026-10-01",
-      "stop_price": 59.78,
-      "target_price": 75.25,
-      "current_price": 69.3,
-      "days_held": 12,
-      "unrealized": 348.3,
-      "industry": "Communication Equipment",
-      "quality": 6,
+      "quality": 7,
       "long_term": true,
-      "long_term_since": "2026-10-06"
+      "long_term_since": "2026-10-20"
     },
     {
       "ticker": "MSFT",
@@ -45,93 +29,11 @@
       "date": "2026-10-01",
       "stop_price": 484.63,
       "target_price": 581.33,
-      "current_price": 541.42,
-      "days_held": 12,
-      "unrealized": 362.95,
+      "current_price": 534.24,
+      "days_held": 26,
+      "unrealized": 262.43,
       "industry": "Software - Infrastructure",
-      "quality": 7,
-      "long_term": true,
-      "long_term_since": "2026-10-13"
-    },
-    {
-      "ticker": "GME",
-      "sector": "Consumer Discretionary",
-      "industry": "Specialty Retail",
-      "side": "LONG",
-      "cap_tier": "mid",
-      "entry_price": 25.16,
-      "shares": 230,
-      "date": "2026-10-05",
-      "stop_price": 23.04,
-      "target_price": 29.03,
-      "current_price": 27.16,
-      "days_held": 8,
-      "unrealized": 460.0,
-      "quality": 6,
-      "thesis": {
-        "date": "2026-10-05",
-        "why": "기술 9/8 · RSI 68.2 · MA20>MA50 · 상대강도 28.91%p · Consumer Discretionary/Specialty Retail · 퀄리티 6/7",
-        "quality": 6,
-        "entry_score": 6,
-        "entry_rel_20d": 28.91,
-        "entry_quality": 6,
-        "entry_tilted": true,
-        "invalidation": "스톱 $23.04 이탈 / 목표 $29.03 도달 / 업종 틸트 소멸"
-      }
-    },
-    {
-      "ticker": "ABBN.SW",
-      "sector": "Industrials",
-      "industry": "Electrical Equipment & Parts",
-      "side": "LONG",
-      "cap_tier": "large",
-      "entry_price": 81.98,
-      "shares": 115,
-      "date": "2026-10-05",
-      "stop_price": 77.05,
-      "target_price": 92.5,
-      "current_price": 80.82,
-      "days_held": 8,
-      "unrealized": -133.4,
-      "quality": 7,
-      "thesis": {
-        "date": "2026-10-05",
-        "why": "기술 9/8 · RSI 68.1 · MA20>MA50 · 상대강도 3.68%p · Industrials/Electrical Equipment & Parts · 퀄리티 7/7",
-        "quality": 7,
-        "entry_score": 5,
-        "entry_rel_20d": 3.68,
-        "entry_quality": 7,
-        "entry_tilted": true,
-        "invalidation": "스톱 $77.05 이탈 / 목표 $92.5 도달 / 업종 틸트 소멸"
-      }
-    },
-    {
-      "ticker": "PBR",
-      "sector": "Energy",
-      "industry": "Oil & Gas Integrated",
-      "side": "LONG",
-      "cap_tier": "large",
-      "entry_price": 24.17,
-      "shares": 446,
-      "date": "2026-10-05",
-      "stop_price": 22.61,
-      "target_price": 27.52,
-      "current_price": 25.33,
-      "days_held": 8,
-      "unrealized": 517.36,
-      "quality": 7,
-      "thesis": {
-        "date": "2026-10-05",
-        "why": "기술 8/8 · RSI 69.1 · MA20>MA50 · 상대강도 19.47%p · Energy/Oil & Gas Integrated · 퀄리티 7/7",
-        "quality": 7,
-        "entry_score": 6,
-        "entry_rel_20d": 19.47,
-        "entry_quality": 7,
-        "entry_tilted": true,
-        "invalidation": "스톱 $22.61 이탈 / 목표 $27.52 도달 / 업종 틸트 소멸"
-      },
-      "long_term": true,
-      "long_term_since": "2026-10-09"
+      "quality": 7
     },
     {
       "ticker": "KR",
@@ -144,9 +46,9 @@
       "date": "2026-10-08",
       "stop_price": 55.82,
       "target_price": 71.73,
-      "current_price": 62.64,
-      "days_held": 5,
-      "unrealized": 164.82,
+      "current_price": 65.92,
+      "days_held": 19,
+      "unrealized": 604.34,
       "quality": 6,
       "thesis": {
         "date": "2026-10-08",
@@ -157,982 +59,978 @@
         "entry_quality": 6,
         "entry_tilted": true,
         "invalidation": "스톱 $55.82 이탈 / 목표 $71.73 도달 / 업종 틸트 소멸"
-      }
+      },
+      "long_term": true,
+      "long_term_since": "2026-10-27"
     },
     {
-      "ticker": "SPCX",
-      "sector": "Industrials",
-      "industry": "Aerospace & Defense",
+      "ticker": "OPCH",
+      "sector": "Health Care",
+      "industry": "Medical Care Facilities",
       "side": "LONG",
-      "cap_tier": "large",
-      "entry_price": 164.69,
-      "shares": 24,
-      "date": "2026-10-09",
-      "stop_price": 154.46,
-      "target_price": 186.61,
-      "current_price": 163.3,
-      "days_held": 4,
-      "unrealized": -33.36,
-      "quality": 2,
-      "thesis": {
-        "date": "2026-10-09",
-        "why": "기술 6/8+2 · RSI 60.5 · MA20>MA50 · 상대강도 7.33%p · Industrials/Aerospace & Defense · 퀄리티 2/4",
-        "quality": 2,
-        "entry_score": 6,
-        "entry_rel_20d": 7.33,
-        "entry_quality": 2,
-        "entry_tilted": true,
-        "invalidation": "스톱 $154.46 이탈 / 목표 $186.61 도달 / 업종 틸트 소멸"
-      }
-    },
-    {
-      "ticker": "ITUB",
-      "sector": "Financials",
-      "industry": "Banks - Regional",
-      "side": "LONG",
-      "cap_tier": "large",
-      "entry_price": 10.02,
-      "shares": 363,
-      "date": "2026-10-09",
-      "stop_price": 9.37,
-      "target_price": 11.41,
-      "current_price": 10.02,
-      "days_held": 4,
-      "unrealized": 0.0,
-      "quality": 3,
-      "thesis": {
-        "date": "2026-10-09",
-        "why": "기술 5/8+3 · RSI 72.2 · MA20>MA50 · 상대강도 18.62%p · Financials/Banks - Regional · 퀄리티 3/4",
-        "quality": 3,
-        "entry_score": 5,
-        "entry_rel_20d": 18.62,
-        "entry_quality": 3,
-        "entry_tilted": true,
-        "invalidation": "스톱 $9.37 이탈 / 목표 $11.41 도달 / 업종 틸트 소멸"
-      }
-    },
-    {
-      "ticker": "PLTR",
-      "sector": "Technology",
-      "industry": "Software - Infrastructure",
-      "side": "LONG",
-      "cap_tier": "large",
-      "entry_price": 208.69,
-      "shares": 40,
-      "date": "2026-10-12",
-      "stop_price": 195.88,
-      "target_price": 236.09,
-      "current_price": 208.07,
-      "days_held": 1,
-      "unrealized": -24.8,
+      "cap_tier": "small",
+      "entry_price": 31.13,
+      "shares": 100,
+      "date": "2026-10-14",
+      "stop_price": 27.92,
+      "target_price": 36.16,
+      "current_price": 31.26,
+      "days_held": 13,
+      "unrealized": 13.5,
       "quality": 6,
       "thesis": {
-        "date": "2026-10-12",
-        "why": "기술 5/8+8 · RSI 81.7 · MA20>MA50 · 상대강도 18.33%p · Technology/Software - Infrastructure · 퀄리티 6/7",
+        "date": "2026-10-14",
+        "why": "기술 5/8+5 · RSI 93.8 · MA20>MA50 · 상대강도 24.33%p · Health Care/Medical Care Facilities · 퀄리티 6/7",
         "quality": 6,
         "entry_score": 5,
-        "entry_rel_20d": 18.33,
+        "entry_rel_20d": 24.33,
         "entry_quality": 6,
         "entry_tilted": true,
-        "invalidation": "스톱 $195.88 이탈 / 목표 $236.09 도달 / 업종 틸트 소멸"
-      }
-    }
-  ],
-  "watchlist": [
+        "invalidation": "스톱 $27.92 이탈 / 목표 $36.16 도달 / 업종 틸트 소멸"
+      },
+      "_exit_hold": "AI 청산 보류 — 손실 +0.3% (교체 청산은 +3% 이상일 때만)"
+    },
     {
-      "ticker": "MRVL",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 260.25,
-      "rsi": 52.3,
-      "ma20": 260.82,
-      "ma50": 238.06,
+      "ticker": "WMT",
+      "sector": "Consumer Staples",
+      "industry": "Discount Stores",
       "side": "LONG",
-      "score": 12.0,
-      "base_score": 6,
-      "bonus": {
-        "피어": 2.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 2.0
-      },
-      "dist_ma20": 1.89,
-      "atr_pct": 2.04,
-      "rel_20d": 19.24,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.8,
-        "beta_spy": 3.27,
-        "decouple_pct": 17.9,
-        "sec_down_ret": -0.92,
-        "up_capture": 1.86,
-        "down_capture": 1.46,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 19,
-        "rank_pct": 84.2,
-        "excess_20d": 15.43,
-        "corr": 0.81,
-        "decouple_pct": 22.2,
-        "basis": "Semiconductors"
+      "cap_tier": "large",
+      "entry_price": 120.74,
+      "shares": 44,
+      "date": "2026-10-15",
+      "stop_price": 114.52,
+      "target_price": 133.74,
+      "current_price": 119.26,
+      "days_held": 12,
+      "unrealized": -65.12,
+      "quality": 6,
+      "thesis": {
+        "date": "2026-10-15",
+        "why": "기술 5/8+6 · RSI 76.6 · MA20>MA50 · 상대강도 12.59%p · Consumer Staples/Discount Stores · 퀄리티 6/7",
+        "quality": 6,
+        "entry_score": 5,
+        "entry_rel_20d": 12.59,
+        "entry_quality": 6,
+        "entry_tilted": true,
+        "invalidation": "스톱 $114.52 이탈 / 목표 $133.74 도달 / 업종 틸트 소멸"
       }
     },
     {
-      "ticker": "FORM",
-      "sector": "Technology",
-      "industry": "Semiconductor Equipment & Materials",
-      "price": 131.3,
-      "rsi": 54.0,
-      "ma20": 131.1,
-      "ma50": 120.28,
+      "ticker": "PFE",
+      "sector": "Health Care",
+      "industry": "Drug Manufacturers - General",
       "side": "LONG",
-      "score": 12.0,
-      "base_score": 6,
-      "bonus": {
-        "피어": 2.0,
-        "알파": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 1.0
+      "cap_tier": "large",
+      "entry_price": 29.48,
+      "shares": 127,
+      "date": "2026-10-19",
+      "stop_price": 28.21,
+      "target_price": 32.17,
+      "current_price": 29.75,
+      "days_held": 8,
+      "unrealized": 33.66,
+      "quality": 6,
+      "thesis": {
+        "date": "2026-10-19",
+        "why": "기술 6/8+4 · RSI 61.0 · MA20>MA50 · 상대강도 6.74%p · Health Care/Drug Manufacturers - General · 퀄리티 6/7",
+        "quality": 6,
+        "entry_score": 6,
+        "entry_rel_20d": 6.74,
+        "entry_quality": 6,
+        "entry_tilted": true,
+        "invalidation": "스톱 $28.21 이탈 / 목표 $32.17 도달 / 업종 틸트 소멸"
       },
-      "dist_ma20": 0.63,
-      "atr_pct": 2.92,
-      "rel_20d": 24.3,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.84,
-        "beta_spy": 3.4,
-        "decouple_pct": 14.3,
-        "sec_down_ret": -1.78,
-        "up_capture": 2.26,
-        "down_capture": 1.88,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 11,
-        "rank_pct": 90.9,
-        "excess_20d": 14.12,
-        "corr": 0.89,
-        "decouple_pct": 12.5,
-        "basis": "Semiconductor Equipment & Materials"
-      },
-      "alpha": true
+      "_exit_hold": "AI 청산 보류 — 손실 +1.1% (교체 청산은 +3% 이상일 때만)"
     },
     {
-      "ticker": "COHU",
-      "sector": "Technology",
-      "industry": "Semiconductor Equipment & Materials",
-      "price": 64.2,
-      "rsi": 51.6,
-      "ma20": 64.88,
-      "ma50": 57.48,
+      "ticker": "HUBB",
+      "sector": "Industrials",
+      "industry": "Electrical Equipment & Parts",
       "side": "LONG",
-      "score": 12.0,
-      "base_score": 6,
-      "bonus": {
-        "피어": 2.0,
-        "흐름": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 1.0
-      },
-      "dist_ma20": 0.51,
-      "atr_pct": 2.35,
-      "rel_20d": 28.24,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 3,
-        "measured": 6
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.89,
-        "beta_spy": 3.79,
-        "decouple_pct": 10.7,
-        "sec_down_ret": -1.77,
-        "up_capture": 2.31,
-        "down_capture": 1.88,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 11,
-        "rank_pct": 100.0,
-        "excess_20d": 18.06,
-        "corr": 0.92,
-        "decouple_pct": 15.6,
-        "basis": "Semiconductor Equipment & Materials"
-      },
-      "flow_track": true
-    },
-    {
-      "ticker": "OXIG.L",
-      "sector": "Technology",
-      "industry": "Scientific & Technical Instruments",
-      "price": 3044.0,
-      "rsi": 56.7,
-      "ma20": 2930.0,
-      "ma50": 2857.24,
-      "side": "LONG",
-      "score": 12.0,
-      "base_score": 6,
-      "bonus": {
-        "특성": 1,
-        "피어": 2.0,
-        "흐름": 1.0,
-        "섹터틸트": 2.0
-      },
-      "dist_ma20": 3.75,
-      "atr_pct": 1.89,
-      "rel_20d": 14.37,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "XLK",
-        "corr_sector": -0.1,
-        "beta_spy": -0.41,
-        "decouple_pct": 53.1,
-        "sec_down_ret": 1.12,
-        "up_capture": -0.03,
-        "down_capture": -0.12,
-        "label": "역상관형"
-      },
-      "peer": {
-        "n": 40,
-        "rank_pct": 87.5,
-        "excess_20d": 11.49,
-        "corr": 0.57,
-        "decouple_pct": 30.0,
-        "basis": "Scientific & Technical Instruments"
-      },
-      "flow_track": true
-    },
-    {
-      "ticker": "META",
-      "sector": "Technology",
-      "industry": "Internet Content & Information",
-      "price": 740.0,
-      "rsi": 51.6,
-      "ma20": 723.05,
-      "ma50": 643.46,
-      "side": "LONG",
-      "score": 11.0,
-      "base_score": 7,
-      "bonus": {
-        "피어": 2.0,
-        "섹터틸트": 2.0
-      },
-      "dist_ma20": 2.68,
-      "atr_pct": 1.96,
-      "rel_20d": 9.36,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 7,
-      "character": {
-        "proxy": "XLC",
-        "corr_sector": 0.71,
-        "beta_spy": 1.19,
-        "decouple_pct": 36.4,
-        "sec_down_ret": -0.09,
-        "up_capture": 1.53,
-        "down_capture": 1.09,
-        "label": "보통"
-      },
-      "peer": {
-        "n": 6,
-        "rank_pct": 83.3,
-        "excess_20d": 10.67,
-        "corr": 0.37,
-        "decouple_pct": 39.1,
-        "basis": "Internet Content & Information"
+      "cap_tier": "large",
+      "entry_price": 454.16,
+      "shares": 15,
+      "date": "2026-10-26",
+      "stop_price": 431.55,
+      "target_price": 505.08,
+      "current_price": 443.62,
+      "days_held": 1,
+      "unrealized": -158.1,
+      "quality": 7,
+      "thesis": {
+        "date": "2026-10-26",
+        "why": "기술 6/8+2 · RSI 25.8 · MA20>MA50 · 상대강도 -2.2%p · Industrials/Electrical Equipment & Parts · 퀄리티 7/7",
+        "quality": 7,
+        "entry_score": 6,
+        "entry_rel_20d": -2.2,
+        "entry_quality": 7,
+        "entry_tilted": true,
+        "invalidation": "스톱 $431.55 이탈 / 목표 $505.08 도달 / 업종 틸트 소멸"
       }
     },
     {
-      "ticker": "CRWD",
+      "ticker": "CIBR",
       "sector": "Technology",
-      "industry": "Software - Infrastructure",
-      "price": 261.32,
-      "rsi": 57.2,
-      "ma20": 259.09,
-      "ma50": 230.15,
+      "industry": "ETF - Cybersecurity",
       "side": "LONG",
-      "score": 11.0,
-      "base_score": 6,
-      "bonus": {
-        "피어": 2.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 1.0
-      },
-      "dist_ma20": 1.49,
-      "atr_pct": 2.43,
-      "rel_20d": 9.48,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 4,
-        "measured": 7
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "IGV",
-        "corr_sector": 0.77,
-        "beta_spy": 2.13,
-        "decouple_pct": 15.2,
-        "sec_down_ret": -0.54,
-        "up_capture": 1.65,
-        "down_capture": 1.45,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 9,
-        "rank_pct": 88.9,
-        "excess_20d": 15.02,
-        "corr": 0.44,
-        "decouple_pct": 19.4,
-        "basis": "Software - Infrastructure"
+      "cap_tier": "large",
+      "entry_price": 108.88,
+      "shares": 65,
+      "date": "2026-10-26",
+      "stop_price": 103.46,
+      "target_price": 121.09,
+      "current_price": 109.73,
+      "days_held": 1,
+      "unrealized": 55.25,
+      "quality": 0,
+      "thesis": {
+        "date": "2026-10-26",
+        "why": "기술 6/8+3 · RSI 51.1 · MA20>MA50 · 상대강도 6.82%p · Technology/ETF - Cybersecurity · 퀄리티 ?/?",
+        "quality": null,
+        "entry_score": 6,
+        "entry_rel_20d": 6.82,
+        "entry_quality": null,
+        "entry_tilted": true,
+        "invalidation": "스톱 $103.46 이탈 / 목표 $121.09 도달 / 업종 틸트 소멸"
       }
     },
     {
-      "ticker": "ALAB",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 316.93,
-      "rsi": 36.0,
-      "ma20": 341.4,
-      "ma50": 317.72,
+      "ticker": "CCL",
+      "sector": "Consumer Discretionary",
+      "industry": "Travel Services",
       "side": "LONG",
-      "score": 11.0,
-      "base_score": 4,
-      "bonus": {
-        "피어": 2.0,
-        "알파": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 2.0
-      },
-      "dist_ma20": 5.33,
-      "atr_pct": 3.1,
-      "rel_20d": 23.83,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 6,
-        "measured": 6
-      },
-      "raw_score": 4,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.82,
-        "beta_spy": 4.92,
-        "decouple_pct": 10.7,
-        "sec_down_ret": -2.11,
-        "up_capture": 1.95,
-        "down_capture": 2.05,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 19,
-        "rank_pct": 89.5,
-        "excess_20d": 20.02,
-        "corr": 0.83,
-        "decouple_pct": 11.5,
-        "basis": "Semiconductors"
-      },
-      "alpha": true
-    },
-    {
-      "ticker": "MTSI",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 300.72,
-      "rsi": 58.7,
-      "ma20": 294.02,
-      "ma50": 284.78,
-      "side": "LONG",
-      "score": 11.0,
-      "base_score": 4,
-      "bonus": {
-        "피어": 2.0,
-        "알파": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 2.0
-      },
-      "dist_ma20": 4.03,
-      "atr_pct": 3.56,
-      "rel_20d": 25.59,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 6,
-        "measured": 7
-      },
-      "raw_score": 4,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.77,
-        "beta_spy": 2.96,
-        "decouple_pct": 25.0,
-        "sec_down_ret": -1.06,
-        "up_capture": 1.65,
-        "down_capture": 1.53,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 19,
-        "rank_pct": 94.7,
-        "excess_20d": 21.78,
-        "corr": 0.78,
-        "decouple_pct": 18.5,
-        "basis": "Semiconductors"
-      },
-      "alpha": true
-    },
-    {
-      "ticker": "SOI.PA",
-      "sector": "Technology",
-      "industry": "Semiconductor Equipment & Materials",
-      "price": 151.05,
-      "rsi": 49.3,
-      "ma20": 151.57,
-      "ma50": 133.89,
-      "side": "LONG",
-      "score": 11.0,
-      "base_score": 5,
-      "bonus": {
-        "피어": 2.0,
-        "흐름": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 1.0
-      },
-      "dist_ma20": 0.35,
-      "atr_pct": 3.43,
-      "rel_20d": 20.15,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 3,
-        "measured": 6
-      },
-      "raw_score": 5,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.52,
-        "beta_spy": 2.09,
-        "decouple_pct": 17.9,
-        "sec_down_ret": 0.1,
-        "up_capture": 1.94,
-        "down_capture": 0.95,
-        "label": "보통"
-      },
-      "peer": {
-        "n": 11,
-        "rank_pct": 81.8,
-        "excess_20d": 9.97,
-        "corr": 0.23,
-        "decouple_pct": 38.7,
-        "basis": "Semiconductor Equipment & Materials"
-      },
-      "flow_track": true
-    },
-    {
-      "ticker": "NVDA",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 224.52,
-      "rsi": 46.4,
-      "ma20": 227.5,
-      "ma50": 222.59,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 6,
-      "bonus": {
-        "섹터틸트": 2.0,
-        "업종틸트": 2.0
-      },
-      "dist_ma20": 0.52,
-      "atr_pct": 1.11,
-      "rel_20d": 5.02,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 6,
-        "measured": 7
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.72,
-        "beta_spy": 1.95,
-        "decouple_pct": 17.9,
-        "sec_down_ret": 0.56,
-        "up_capture": 0.9,
-        "down_capture": 0.72,
-        "label": "방어형"
-      },
-      "peer": {
-        "n": 19,
-        "rank_pct": 63.2,
-        "excess_20d": 1.21,
-        "corr": 0.55,
-        "decouple_pct": 25.9,
-        "basis": "Semiconductors"
+      "cap_tier": "large",
+      "entry_price": 26.92,
+      "shares": 265,
+      "date": "2026-10-26",
+      "stop_price": 25.58,
+      "target_price": 29.94,
+      "current_price": 27.82,
+      "days_held": 1,
+      "unrealized": 239.53,
+      "quality": 7,
+      "thesis": {
+        "date": "2026-10-26",
+        "why": "기술 6/8+4 · RSI 52.5 · MA20>MA50 · 상대강도 21.47%p · Consumer Discretionary/Travel Services · 퀄리티 7/7",
+        "quality": 7,
+        "entry_score": 6,
+        "entry_rel_20d": 21.47,
+        "entry_quality": 7,
+        "entry_tilted": true,
+        "invalidation": "스톱 $25.58 이탈 / 목표 $29.94 도달 / 업종 틸트 소멸"
       }
-    },
-    {
-      "ticker": "AMD",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 588.48,
-      "rsi": 40.1,
-      "ma20": 603.11,
-      "ma50": 531.28,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 5,
-      "bonus": {
-        "피어": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 2.0
-      },
-      "dist_ma20": 1.49,
-      "atr_pct": 1.8,
-      "rel_20d": 18.18,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 5,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.84,
-        "beta_spy": 2.96,
-        "decouple_pct": 17.9,
-        "sec_down_ret": -0.46,
-        "up_capture": 1.43,
-        "down_capture": 1.23,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 19,
-        "rank_pct": 78.9,
-        "excess_20d": 14.36,
-        "corr": 0.85,
-        "decouple_pct": 7.7,
-        "basis": "Semiconductors"
-      }
-    },
-    {
-      "ticker": "MSTR",
-      "sector": "Technology",
-      "industry": "Software - Application",
-      "price": 154.95,
-      "rsi": 33.5,
-      "ma20": 154.32,
-      "ma50": 131.01,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 6,
-      "bonus": {
-        "피어": 2.0,
-        "섹터틸트": 2.0
-      },
-      "dist_ma20": 1.08,
-      "atr_pct": 2.07,
-      "rel_20d": 9.23,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 2,
-        "measured": 6
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "IGV",
-        "corr_sector": 0.48,
-        "beta_spy": 3.32,
-        "decouple_pct": 24.2,
-        "sec_down_ret": 0.19,
-        "up_capture": 1.56,
-        "down_capture": 0.84,
-        "label": "보통"
-      },
-      "peer": {
-        "n": 12,
-        "rank_pct": 83.3,
-        "excess_20d": 10.17,
-        "corr": 0.43,
-        "decouple_pct": 23.1,
-        "basis": "Software - Application"
-      }
-    },
-    {
-      "ticker": "ACN",
-      "sector": "Technology",
-      "industry": "Information Technology Services",
-      "price": 215.0,
-      "rsi": 67.8,
-      "ma20": 191.25,
-      "ma50": 185.08,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 6,
-      "bonus": {
-        "피어": 2.0,
-        "섹터틸트": 2.0
-      },
-      "dist_ma20": 10.99,
-      "atr_pct": 2.91,
-      "rel_20d": 7.93,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "XLK",
-        "corr_sector": -0.28,
-        "beta_spy": -0.09,
-        "decouple_pct": 65.6,
-        "sec_down_ret": 2.66,
-        "up_capture": -0.08,
-        "down_capture": -1.64,
-        "label": "탈동조형"
-      },
-      "peer": {
-        "n": 8,
-        "rank_pct": 100.0,
-        "excess_20d": 17.09,
-        "corr": 0.69,
-        "decouple_pct": 23.3,
-        "basis": "Information Technology Services"
-      }
-    },
-    {
-      "ticker": "KLIC",
-      "sector": "Technology",
-      "industry": "Semiconductor Equipment & Materials",
-      "price": 88.39,
-      "rsi": 48.1,
-      "ma20": 90.34,
-      "ma50": 88.34,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 6,
-      "bonus": {
-        "알파": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 1.0
-      },
-      "dist_ma20": 2.21,
-      "atr_pct": 2.47,
-      "rel_20d": 8.99,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 6,
-        "measured": 7
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.83,
-        "beta_spy": 2.41,
-        "decouple_pct": 25.0,
-        "sec_down_ret": -0.9,
-        "up_capture": 1.15,
-        "down_capture": 1.45,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 11,
-        "rank_pct": 36.4,
-        "excess_20d": -1.94,
-        "corr": 0.87,
-        "decouple_pct": 21.2,
-        "basis": "Semiconductor Equipment & Materials"
-      },
-      "alpha": true
-    },
-    {
-      "ticker": "KEYS",
-      "sector": "Technology",
-      "industry": "Scientific & Technical Instruments",
-      "price": 377.7,
-      "rsi": 70.8,
-      "ma20": 359.8,
-      "ma50": 342.56,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 5,
-      "bonus": {
-        "피어": 2.0,
-        "알파": 1.0,
-        "섹터틸트": 2.0
-      },
-      "dist_ma20": 4.74,
-      "atr_pct": 1.38,
-      "rel_20d": 17.66,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 5,
-      "character": {
-        "proxy": "XLK",
-        "corr_sector": 0.8,
-        "beta_spy": 1.86,
-        "decouple_pct": 28.1,
-        "sec_down_ret": -0.19,
-        "up_capture": 1.4,
-        "down_capture": 1.19,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 40,
-        "rank_pct": 87.5,
-        "excess_20d": 14.78,
-        "corr": 0.86,
-        "decouple_pct": 20.0,
-        "basis": "Scientific & Technical Instruments"
-      },
-      "alpha": true
-    },
-    {
-      "ticker": "SMTC",
-      "sector": "Technology",
-      "industry": "Semiconductors",
-      "price": 168.17,
-      "rsi": 46.4,
-      "ma20": 180.05,
-      "ma50": 154.6,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 4,
-      "bonus": {
-        "피어": 1.0,
-        "알파": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 2.0
-      },
-      "dist_ma20": 7.0,
-      "atr_pct": 3.58,
-      "rel_20d": 12.18,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 6,
-        "measured": 7
-      },
-      "raw_score": 4,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.75,
-        "beta_spy": 2.49,
-        "decouple_pct": 17.9,
-        "sec_down_ret": -1.51,
-        "up_capture": 2.27,
-        "down_capture": 1.75,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 19,
-        "rank_pct": 73.7,
-        "excess_20d": 8.37,
-        "corr": 0.79,
-        "decouple_pct": 7.7,
-        "basis": "Semiconductors"
-      },
-      "alpha": true
-    },
-    {
-      "ticker": "CAMT",
-      "sector": "Technology",
-      "industry": "Semiconductor Equipment & Materials",
-      "price": 144.94,
-      "rsi": 46.9,
-      "ma20": 149.81,
-      "ma50": 149.24,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 6,
-      "bonus": {
-        "흐름": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 1.0
-      },
-      "dist_ma20": 1.48,
-      "atr_pct": 2.92,
-      "rel_20d": 8.04,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 4,
-        "measured": 5
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.79,
-        "beta_spy": 3.16,
-        "decouple_pct": 14.3,
-        "sec_down_ret": -1.08,
-        "up_capture": 1.7,
-        "down_capture": 1.54,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 11,
-        "rank_pct": 27.3,
-        "excess_20d": -2.89,
-        "corr": 0.81,
-        "decouple_pct": 21.9,
-        "basis": "Semiconductor Equipment & Materials"
-      },
-      "flow_track": true
-    },
-    {
-      "ticker": "TER",
-      "sector": "Technology",
-      "industry": "Semiconductor Equipment & Materials",
-      "price": 378.0,
-      "rsi": 45.0,
-      "ma20": 394.8,
-      "ma50": 383.21,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 6,
-      "bonus": {
-        "알파": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 1.0
-      },
-      "dist_ma20": 2.85,
-      "atr_pct": 2.78,
-      "rel_20d": 14.34,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 7,
-        "measured": 7
-      },
-      "raw_score": 6,
-      "character": {
-        "proxy": "SMH",
-        "corr_sector": 0.86,
-        "beta_spy": 2.74,
-        "decouple_pct": 17.9,
-        "sec_down_ret": -1.23,
-        "up_capture": 1.86,
-        "down_capture": 1.61,
-        "label": "동조형"
-      },
-      "peer": {
-        "n": 11,
-        "rank_pct": 63.6,
-        "excess_20d": 4.16,
-        "corr": 0.89,
-        "decouple_pct": 24.2,
-        "basis": "Semiconductor Equipment & Materials"
-      },
-      "alpha": true
-    },
-    {
-      "ticker": "ARQQ",
-      "sector": "Technology",
-      "industry": "Software - Infrastructure",
-      "price": 16.66,
-      "rsi": 23.2,
-      "ma20": 21.86,
-      "ma50": 21.53,
-      "side": "LONG",
-      "score": 10.0,
-      "base_score": 4,
-      "bonus": {
-        "특성": 1,
-        "피어": 1.0,
-        "흐름": 1.0,
-        "섹터틸트": 2.0,
-        "업종틸트": 1.0
-      },
-      "dist_ma20": 31.23,
-      "atr_pct": 5.11,
-      "rel_20d": -0.02,
-      "instrument": "STOCK",
-      "quality": {
-        "score": 2,
-        "measured": 6
-      },
-      "raw_score": 4,
-      "character": {
-        "proxy": "IGV",
-        "corr_sector": 0.07,
-        "beta_spy": 4.87,
-        "decouple_pct": 48.5,
-        "sec_down_ret": 0.84,
-        "up_capture": 0.32,
-        "down_capture": 0.29,
-        "label": "역상관형"
-      },
-      "peer": {
-        "n": 9,
-        "rank_pct": 55.6,
-        "excess_20d": 5.52,
-        "corr": 0.38,
-        "decouple_pct": 41.7,
-        "basis": "Software - Infrastructure"
-      },
-      "flow_track": true
     },
     {
       "ticker": "AAPL",
       "sector": "Technology",
       "industry": "Consumer Electronics",
-      "price": 342.35,
-      "rsi": 51.3,
-      "ma20": 335.78,
-      "ma50": 323.03,
+      "side": "LONG",
+      "cap_tier": "large",
+      "entry_price": 344.06,
+      "shares": 18,
+      "date": "2026-10-26",
+      "stop_price": 327.7,
+      "target_price": 380.69,
+      "current_price": 347.08,
+      "days_held": 1,
+      "unrealized": 54.36,
+      "quality": 6,
+      "thesis": {
+        "date": "2026-10-26",
+        "why": "기술 6/8+4 · RSI 64.2 · MA20>MA50 · 상대강도 1.66%p · Technology/Consumer Electronics · 퀄리티 6/7",
+        "quality": 6,
+        "entry_score": 6,
+        "entry_rel_20d": 1.66,
+        "entry_quality": 6,
+        "entry_tilted": true,
+        "invalidation": "스톱 $327.7 이탈 / 목표 $380.69 도달 / 업종 틸트 소멸"
+      }
+    }
+  ],
+  "watchlist": [
+    {
+      "ticker": "PLTR",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "price": 200.73,
+      "rsi": 54.9,
+      "ma20": 196.77,
+      "ma50": 185.81,
       "side": "LONG",
       "score": 9.0,
-      "base_score": 6,
+      "base_score": 8,
       "bonus": {
-        "특성": 1,
-        "섹터틸트": 2.0
+        "피어": 2.0,
+        "알파": 1.0,
+        "섹터틸트": -1.0,
+        "업종틸트": -1.0
       },
-      "dist_ma20": 1.52,
-      "atr_pct": 0.98,
-      "rel_20d": 0.11,
+      "dist_ma20": 1.97,
+      "atr_pct": 2.38,
+      "rel_20d": 6.56,
       "instrument": "STOCK",
       "quality": {
         "score": 6,
         "measured": 7
       },
+      "raw_score": 8,
+      "character": {
+        "proxy": "IGV",
+        "corr_sector": 0.67,
+        "beta_spy": 3.44,
+        "decouple_pct": 21.9,
+        "sec_down_ret": -0.14,
+        "up_capture": 1.5,
+        "down_capture": 1.12,
+        "label": "보통"
+      },
+      "peer": {
+        "n": 5,
+        "rank_pct": 80.0,
+        "excess_20d": 12.85,
+        "corr": 0.43,
+        "decouple_pct": 34.5,
+        "basis": "Software - Infrastructure"
+      },
+      "alpha": true
+    },
+    {
+      "ticker": "IGV",
+      "sector": "Technology",
+      "industry": "ETF - Software",
+      "price": 111.96,
+      "rsi": 54.5,
+      "ma20": 109.22,
+      "ma50": 106.65,
+      "side": "LONG",
+      "score": 9.0,
+      "base_score": 8,
+      "bonus": {
+        "피어": 2.0,
+        "섹터틸트": -1.0
+      },
+      "dist_ma20": 2.45,
+      "atr_pct": 1.49,
+      "rel_20d": 5.61,
+      "instrument": "ETF",
+      "quality": null,
+      "raw_score": 8,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": 0.48,
+        "beta_spy": 1.66,
+        "decouple_pct": 29.0,
+        "sec_down_ret": 0.68,
+        "up_capture": 0.85,
+        "down_capture": 0.39,
+        "label": "방어형"
+      },
+      "peer": {
+        "n": 40,
+        "rank_pct": 87.5,
+        "excess_20d": 19.11,
+        "corr": 0.29,
+        "decouple_pct": 35.7,
+        "basis": "ETF - Software"
+      }
+    },
+    {
+      "ticker": "TSLA",
+      "sector": "Consumer Discretionary",
+      "industry": "Auto Manufacturers",
+      "price": 406.58,
+      "rsi": 62.1,
+      "ma20": 374.26,
+      "ma50": 366.1,
+      "side": "LONG",
+      "score": 8.0,
+      "base_score": 6,
+      "bonus": {
+        "피어": 2.0
+      },
+      "dist_ma20": 7.95,
+      "atr_pct": 2.09,
+      "rel_20d": 14.43,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 5,
+        "measured": 7
+      },
+      "raw_score": 6,
+      "character": {
+        "proxy": "SPY",
+        "corr_sector": 0.64,
+        "beta_spy": 2.3,
+        "decouple_pct": 25.7,
+        "sec_down_ret": -0.43,
+        "up_capture": 2.89,
+        "down_capture": 1.95,
+        "label": "보통"
+      },
+      "peer": {
+        "n": 5,
+        "rank_pct": 100.0,
+        "excess_20d": 19.91,
+        "corr": 0.3,
+        "decouple_pct": 43.2,
+        "basis": "Auto Manufacturers"
+      }
+    },
+    {
+      "ticker": "SNAP",
+      "sector": "Communication Services",
+      "industry": "Internet Content & Information",
+      "price": 6.12,
+      "rsi": 56.8,
+      "ma20": 6.09,
+      "ma50": 5.73,
+      "side": "LONG",
+      "score": 8.0,
+      "base_score": 6,
+      "bonus": {
+        "피어": 2.0
+      },
+      "dist_ma20": 0.6,
+      "atr_pct": 2.69,
+      "rel_20d": 13.9,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 3,
+        "measured": 6
+      },
+      "raw_score": 6,
+      "character": {
+        "proxy": "XLC",
+        "corr_sector": 0.54,
+        "beta_spy": 2.58,
+        "decouple_pct": 20.6,
+        "sec_down_ret": -0.46,
+        "up_capture": 2.84,
+        "down_capture": 1.45,
+        "label": "보통"
+      },
+      "peer": {
+        "n": 4,
+        "rank_pct": 100.0,
+        "excess_20d": 20.83,
+        "corr": 0.48,
+        "decouple_pct": 23.1,
+        "basis": "Internet Content & Information"
+      }
+    },
+    {
+      "ticker": "SKYY",
+      "sector": "Technology",
+      "industry": "ETF - Software",
+      "price": 171.78,
+      "rsi": 51.1,
+      "ma20": 167.67,
+      "ma50": 164.45,
+      "side": "LONG",
+      "score": 8.0,
+      "base_score": 7,
+      "bonus": {
+        "피어": 2.0,
+        "섹터틸트": -1.0
+      },
+      "dist_ma20": 2.4,
+      "atr_pct": 1.87,
+      "rel_20d": 4.75,
+      "instrument": "ETF",
+      "quality": null,
+      "raw_score": 7,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": 0.58,
+        "beta_spy": 1.89,
+        "decouple_pct": 35.5,
+        "sec_down_ret": 0.64,
+        "up_capture": 0.93,
+        "down_capture": 0.42,
+        "label": "방어형"
+      },
+      "peer": {
+        "n": 40,
+        "rank_pct": 87.5,
+        "excess_20d": 18.25,
+        "corr": 0.45,
+        "decouple_pct": 35.7,
+        "basis": "ETF - Software"
+      }
+    },
+    {
+      "ticker": "XLU",
+      "sector": "Utilities",
+      "industry": "ETF - Utilities",
+      "price": 42.62,
+      "rsi": 66.7,
+      "ma20": 41.43,
+      "ma50": 41.8,
+      "side": "LONG",
+      "score": 8.0,
+      "base_score": 6,
+      "bonus": {
+        "특성": 1,
+        "섹터틸트": 1.0
+      },
+      "dist_ma20": 2.8,
+      "atr_pct": 0.74,
+      "rel_20d": 6.54,
+      "instrument": "ETF",
+      "quality": null,
+      "raw_score": 6,
+      "character": {
+        "proxy": "SPY",
+        "corr_sector": 0.07,
+        "beta_spy": 0.1,
+        "decouple_pct": 31.4,
+        "sec_down_ret": 0.19,
+        "up_capture": 0.12,
+        "down_capture": 0.58,
+        "label": "역상관형"
+      }
+    },
+    {
+      "ticker": "KO",
+      "sector": "Consumer Staples",
+      "industry": "Beverages - Non-Alcoholic",
+      "price": 92.28,
+      "rsi": 71.3,
+      "ma20": 90.12,
+      "ma50": 89.31,
+      "side": "LONG",
+      "score": 7.0,
+      "base_score": 6,
+      "bonus": {
+        "섹터틸트": 1.0
+      },
+      "dist_ma20": 2.34,
+      "atr_pct": 1.17,
+      "rel_20d": 5.46,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "raw_score": 6,
+      "character": {
+        "proxy": "XLP",
+        "corr_sector": 0.79,
+        "beta_spy": -0.36,
+        "decouple_pct": 28.1,
+        "sec_down_ret": 0.2,
+        "up_capture": 1.02,
+        "down_capture": 0.73,
+        "label": "동조형"
+      }
+    },
+    {
+      "ticker": "CLF",
+      "sector": "Materials",
+      "industry": "Steel",
+      "price": 14.04,
+      "rsi": 63.0,
+      "ma20": 12.71,
+      "ma50": 12.22,
+      "side": "LONG",
+      "score": 7.0,
+      "base_score": 5,
+      "bonus": {
+        "피어": 2.0
+      },
+      "dist_ma20": 9.46,
+      "atr_pct": 3.87,
+      "rel_20d": 26.72,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 1,
+        "measured": 6
+      },
+      "raw_score": 5,
+      "character": {
+        "proxy": "XME",
+        "corr_sector": 0.52,
+        "beta_spy": 1.96,
+        "decouple_pct": 22.2,
+        "sec_down_ret": 0.35,
+        "up_capture": 1.12,
+        "down_capture": 0.79,
+        "label": "보통"
+      },
+      "peer": {
+        "n": 8,
+        "rank_pct": 100.0,
+        "excess_20d": 38.31,
+        "corr": 0.34,
+        "decouple_pct": 22.6,
+        "basis": "Steel"
+      }
+    },
+    {
+      "ticker": "AIQ",
+      "sector": "Technology",
+      "industry": "ETF - Robotics/AI",
+      "price": 63.81,
+      "rsi": 38.7,
+      "ma20": 64.65,
+      "ma50": 64.31,
+      "side": "LONG",
+      "score": 7.0,
+      "base_score": 6,
+      "bonus": {
+        "피어": 2.0,
+        "섹터틸트": -1.0
+      },
+      "dist_ma20": 1.3,
+      "atr_pct": 1.41,
+      "rel_20d": -2.7,
+      "instrument": "ETF",
+      "quality": null,
       "raw_score": 6,
       "character": {
         "proxy": "XLK",
-        "corr_sector": -0.14,
-        "beta_spy": 0.11,
-        "decouple_pct": 59.4,
-        "sec_down_ret": 1.28,
-        "up_capture": -0.01,
-        "down_capture": -0.27,
+        "corr_sector": 0.93,
+        "beta_spy": 2.02,
+        "decouple_pct": 25.8,
+        "sec_down_ret": 0.15,
+        "up_capture": 0.92,
+        "down_capture": 0.86,
+        "label": "동조형"
+      },
+      "peer": {
+        "n": 40,
+        "rank_pct": 80.0,
+        "excess_20d": 10.8,
+        "corr": 0.89,
+        "decouple_pct": 25.0,
+        "basis": "ETF - Robotics/AI"
+      }
+    },
+    {
+      "ticker": "BUG",
+      "sector": "Technology",
+      "industry": "ETF - Cybersecurity",
+      "price": 52.06,
+      "rsi": 63.0,
+      "ma20": 47.74,
+      "ma50": 44.84,
+      "side": "LONG",
+      "score": 7.0,
+      "base_score": 6,
+      "bonus": {
+        "피어": 2.0,
+        "섹터틸트": -1.0
+      },
+      "dist_ma20": 8.28,
+      "atr_pct": 2.22,
+      "rel_20d": 13.76,
+      "instrument": "ETF",
+      "quality": null,
+      "raw_score": 6,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": 0.4,
+        "beta_spy": 1.57,
+        "decouple_pct": 41.9,
+        "sec_down_ret": 0.66,
+        "up_capture": 1.12,
+        "down_capture": 0.41,
+        "label": "방어형"
+      },
+      "peer": {
+        "n": 40,
+        "rank_pct": 97.5,
+        "excess_20d": 27.26,
+        "corr": 0.21,
+        "decouple_pct": 50.0,
+        "basis": "ETF - Cybersecurity"
+      }
+    },
+    {
+      "ticker": "HACK",
+      "sector": "Technology",
+      "industry": "ETF - Cybersecurity",
+      "price": 133.17,
+      "rsi": 60.3,
+      "ma20": 124.52,
+      "ma50": 118.99,
+      "side": "LONG",
+      "score": 7.0,
+      "base_score": 6,
+      "bonus": {
+        "피어": 2.0,
+        "섹터틸트": -1.0
+      },
+      "dist_ma20": 6.49,
+      "atr_pct": 1.91,
+      "rel_20d": 10.35,
+      "instrument": "ETF",
+      "quality": null,
+      "raw_score": 6,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": 0.47,
+        "beta_spy": 1.57,
+        "decouple_pct": 32.3,
+        "sec_down_ret": 0.5,
+        "up_capture": 1.0,
+        "down_capture": 0.55,
+        "label": "방어형"
+      },
+      "peer": {
+        "n": 40,
+        "rank_pct": 90.0,
+        "excess_20d": 23.85,
+        "corr": 0.29,
+        "decouple_pct": 39.3,
+        "basis": "ETF - Cybersecurity"
+      }
+    },
+    {
+      "ticker": "WCLD",
+      "sector": "Technology",
+      "industry": "ETF - Software",
+      "price": 46.48,
+      "rsi": 68.0,
+      "ma20": 43.25,
+      "ma50": 41.75,
+      "side": "LONG",
+      "score": 7.0,
+      "base_score": 6,
+      "bonus": {
+        "피어": 2.0,
+        "섹터틸트": -1.0
+      },
+      "dist_ma20": 6.94,
+      "atr_pct": 1.95,
+      "rel_20d": 15.63,
+      "instrument": "ETF",
+      "quality": null,
+      "raw_score": 6,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": 0.23,
+        "beta_spy": 1.28,
+        "decouple_pct": 41.9,
+        "sec_down_ret": 1.3,
+        "up_capture": 0.71,
+        "down_capture": -0.17,
+        "label": "방어형"
+      },
+      "peer": {
+        "n": 40,
+        "rank_pct": 97.5,
+        "excess_20d": 29.14,
+        "corr": 0.03,
+        "decouple_pct": 50.0,
+        "basis": "ETF - Software"
+      }
+    },
+    {
+      "ticker": "XLP",
+      "sector": "Consumer Defensive",
+      "industry": "ETF - Consumer Staples",
+      "price": 87.4,
+      "rsi": 71.2,
+      "ma20": 84.87,
+      "ma50": 84.47,
+      "side": "LONG",
+      "score": 7,
+      "base_score": 6,
+      "bonus": {
+        "특성": 1
+      },
+      "dist_ma20": 2.89,
+      "atr_pct": 1.1,
+      "rel_20d": 5.98,
+      "instrument": "ETF",
+      "quality": null,
+      "raw_score": 6,
+      "character": {
+        "proxy": "SPY",
+        "corr_sector": -0.19,
+        "beta_spy": -0.28,
+        "decouple_pct": 42.9,
+        "sec_down_ret": 0.5,
+        "up_capture": 0.09,
+        "down_capture": -0.1,
+        "label": "역상관형"
+      }
+    },
+    {
+      "ticker": "XOP",
+      "sector": "Energy",
+      "industry": "ETF - Oil&Gas E&P",
+      "price": 200.54,
+      "rsi": 64.3,
+      "ma20": 194.37,
+      "ma50": 190.81,
+      "side": "LONG",
+      "score": 7.0,
+      "base_score": 6,
+      "bonus": {
+        "피어": 1.0
+      },
+      "dist_ma20": 3.08,
+      "atr_pct": 1.53,
+      "rel_20d": 11.47,
+      "instrument": "ETF",
+      "quality": null,
+      "raw_score": 6,
+      "character": {
+        "proxy": "XLE",
+        "corr_sector": 0.93,
+        "beta_spy": -0.58,
+        "decouple_pct": 19.2,
+        "sec_down_ret": -0.12,
+        "up_capture": 1.11,
+        "down_capture": 1.12,
+        "label": "동조형"
+      },
+      "peer": {
+        "n": 9,
+        "rank_pct": 77.8,
+        "excess_20d": 5.32,
+        "corr": 0.58,
+        "decouple_pct": 37.9,
+        "basis": "ETF - Oil&Gas E&P"
+      }
+    },
+    {
+      "ticker": "INFY",
+      "sector": "Technology",
+      "industry": "Information Technology Services",
+      "price": 12.15,
+      "rsi": 70.2,
+      "ma20": 11.61,
+      "ma50": 11.47,
+      "side": "LONG",
+      "score": 6.0,
+      "base_score": 4,
+      "bonus": {
+        "특성": 1,
+        "피어": 2.0,
+        "섹터틸트": -1.0
+      },
+      "dist_ma20": 4.45,
+      "atr_pct": 2.34,
+      "rel_20d": 13.44,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "raw_score": 4,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": -0.24,
+        "beta_spy": 0.26,
+        "decouple_pct": 61.3,
+        "sec_down_ret": 2.05,
+        "up_capture": -0.46,
+        "down_capture": -0.85,
         "label": "역상관형"
       },
       "peer": {
         "n": 40,
-        "rank_pct": 32.5,
-        "excess_20d": -3.7,
-        "corr": -0.32,
-        "decouple_pct": 63.3,
-        "basis": "Consumer Electronics"
+        "rank_pct": 95.0,
+        "excess_20d": 27.1,
+        "corr": -0.38,
+        "decouple_pct": 60.7,
+        "basis": "Information Technology Services"
+      }
+    },
+    {
+      "ticker": "XP",
+      "sector": "Financials",
+      "industry": "Capital Markets",
+      "price": 16.48,
+      "rsi": 25.9,
+      "ma20": 27.56,
+      "ma50": 22.47,
+      "side": "LONG",
+      "score": 6.0,
+      "base_score": 4,
+      "bonus": {
+        "특성": 1,
+        "피어": 1.0
+      },
+      "dist_ma20": 67.24,
+      "atr_pct": 11.74,
+      "rel_20d": -19.5,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 4,
+        "measured": 4
+      },
+      "raw_score": 4,
+      "character": {
+        "proxy": "IAI",
+        "corr_sector": 0.09,
+        "beta_spy": 1.02,
+        "decouple_pct": 41.7,
+        "sec_down_ret": 0.97,
+        "up_capture": 0.55,
+        "down_capture": -0.1,
+        "label": "역상관형"
+      },
+      "peer": {
+        "n": 7,
+        "rank_pct": 71.4,
+        "excess_20d": 16.16,
+        "corr": 0.09,
+        "decouple_pct": 48.7,
+        "basis": "Capital Markets"
+      }
+    },
+    {
+      "ticker": "ABEV",
+      "sector": "Consumer Staples",
+      "industry": "Beverages - Brewers",
+      "price": 2.88,
+      "rsi": 35.8,
+      "ma20": 3.16,
+      "ma50": 3.03,
+      "side": "LONG",
+      "score": 6.0,
+      "base_score": 4,
+      "bonus": {
+        "특성": 1,
+        "섹터틸트": 1.0
+      },
+      "dist_ma20": 9.61,
+      "atr_pct": 2.31,
+      "rel_20d": -0.63,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "raw_score": 4,
+      "character": {
+        "proxy": "SPY",
+        "corr_sector": 0.01,
+        "beta_spy": 0.05,
+        "decouple_pct": 42.9,
+        "sec_down_ret": 0.21,
+        "up_capture": 0.12,
+        "down_capture": 0.53,
+        "label": "역상관형"
+      }
+    },
+    {
+      "ticker": "AMC",
+      "sector": "Communication Services",
+      "industry": "Entertainment",
+      "price": 2.95,
+      "rsi": 53.5,
+      "ma20": 2.93,
+      "ma50": 2.78,
+      "side": "LONG",
+      "score": 6,
+      "base_score": 6,
+      "bonus": {},
+      "dist_ma20": 0.58,
+      "atr_pct": 2.45,
+      "rel_20d": -5.02,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 2,
+        "measured": 5
+      },
+      "raw_score": 6,
+      "character": {
+        "proxy": "XLC",
+        "corr_sector": 0.19,
+        "beta_spy": 1.24,
+        "decouple_pct": 41.2,
+        "sec_down_ret": 0.93,
+        "up_capture": 0.69,
+        "down_capture": 0.08,
+        "label": "방어형"
+      },
+      "peer": {
+        "n": 9,
+        "rank_pct": 77.8,
+        "excess_20d": 2.62,
+        "corr": 0.2,
+        "decouple_pct": 40.0,
+        "basis": "Entertainment"
+      }
+    },
+    {
+      "ticker": "OXIG.L",
+      "sector": "Technology",
+      "industry": "Scientific & Technical Instruments",
+      "price": 2626.0,
+      "rsi": 26.4,
+      "ma20": 2840.2,
+      "ma50": 2813.24,
+      "side": "LONG",
+      "score": 6.0,
+      "base_score": 5,
+      "bonus": {
+        "특성": 1,
+        "흐름": 1.0,
+        "섹터틸트": -1.0
+      },
+      "dist_ma20": 8.16,
+      "atr_pct": 2.43,
+      "rel_20d": -12.56,
+      "instrument": "STOCK",
+      "quality": {
+        "score": 7,
+        "measured": 7
+      },
+      "raw_score": 5,
+      "character": {
+        "proxy": "XLK",
+        "corr_sector": -0.02,
+        "beta_spy": 0.02,
+        "decouple_pct": 50.0,
+        "sec_down_ret": 0.74,
+        "up_capture": -0.13,
+        "down_capture": 0.32,
+        "label": "역상관형"
+      },
+      "peer": {
+        "n": 40,
+        "rank_pct": 52.5,
+        "excess_20d": 0.94,
+        "corr": 0.62,
+        "decouple_pct": 28.6,
+        "basis": "Scientific & Technical Instruments"
+      },
+      "flow_track": true
+    },
+    {
+      "ticker": "ARKG",
+      "sector": "Thematic ETF",
+      "industry": "ETF - Genomics",
+      "price": 51.28,
+      "rsi": 53.2,
+      "ma20": 50.24,
+      "ma50": 49.46,
+      "side": "LONG",
+      "score": 6,
+      "base_score": 6,
+      "bonus": {},
+      "dist_ma20": 2.03,
+      "atr_pct": 2.5,
+      "rel_20d": -5.75,
+      "instrument": "ETF",
+      "quality": null,
+      "raw_score": 6,
+      "character": {
+        "proxy": "QQQ",
+        "corr_sector": 0.45,
+        "beta_spy": 1.88,
+        "decouple_pct": 37.5,
+        "sec_down_ret": 0.48,
+        "up_capture": 1.27,
+        "down_capture": 0.4,
+        "label": "방어형"
       }
     }
   ],
@@ -3463,22 +3361,346 @@
       "exit_date": "2026-10-12",
       "pnl": -528.09,
       "exit_reason": "AI 배분 청산 (섹터 전환 지시)"
+    },
+    {
+      "ticker": "SPCX",
+      "sector": "Industrials",
+      "industry": "Aerospace & Defense",
+      "side": "LONG",
+      "cap_tier": "large",
+      "entry_price": 164.69,
+      "shares": 24,
+      "date": "2026-10-09",
+      "stop_price": 154.46,
+      "target_price": 186.61,
+      "current_price": 156.9,
+      "days_held": 5,
+      "unrealized": -186.96,
+      "quality": 2,
+      "thesis": {
+        "date": "2026-10-09",
+        "why": "기술 6/8+2 · RSI 60.5 · MA20>MA50 · 상대강도 7.33%p · Industrials/Aerospace & Defense · 퀄리티 2/4",
+        "quality": 2,
+        "entry_score": 6,
+        "entry_rel_20d": 7.33,
+        "entry_quality": 2,
+        "entry_tilted": true,
+        "invalidation": "스톱 $154.46 이탈 / 목표 $186.61 도달 / 업종 틸트 소멸"
+      },
+      "exit_price": 153.95,
+      "exit_date": "2026-10-14",
+      "pnl": -257.76,
+      "exit_reason": "스톱 이탈 ($154.00 ≤ $154.46)"
+    },
+    {
+      "ticker": "ABBN.SW",
+      "sector": "Industrials",
+      "industry": "Electrical Equipment & Parts",
+      "side": "LONG",
+      "cap_tier": "large",
+      "entry_price": 81.98,
+      "shares": 115,
+      "date": "2026-10-05",
+      "stop_price": 77.05,
+      "target_price": 92.5,
+      "current_price": 79.02,
+      "days_held": 10,
+      "unrealized": -340.4,
+      "quality": 7,
+      "thesis": {
+        "date": "2026-10-05",
+        "why": "기술 9/8 · RSI 68.1 · MA20>MA50 · 상대강도 3.68%p · Industrials/Electrical Equipment & Parts · 퀄리티 7/7",
+        "quality": 7,
+        "entry_score": 5,
+        "entry_rel_20d": 3.68,
+        "entry_quality": 7,
+        "entry_tilted": true,
+        "invalidation": "스톱 $77.05 이탈 / 목표 $92.5 도달 / 업종 틸트 소멸"
+      },
+      "exit_price": 75.0,
+      "exit_date": "2026-10-15",
+      "pnl": -802.7,
+      "exit_reason": "스톱 이탈 ($75.08 ≤ $77.05)"
+    },
+    {
+      "ticker": "HPE",
+      "sector": "Technology",
+      "side": "LONG",
+      "cap_tier": "mid",
+      "entry_price": 65.25,
+      "shares": 86,
+      "date": "2026-10-01",
+      "stop_price": 59.78,
+      "target_price": 75.25,
+      "current_price": 61.29,
+      "days_held": 14,
+      "unrealized": -340.56,
+      "industry": "Communication Equipment",
+      "quality": 6,
+      "exit_price": 58.96,
+      "exit_date": "2026-10-15",
+      "pnl": -540.94,
+      "exit_reason": "스톱 이탈 ($58.98 ≤ $59.78)"
+    },
+    {
+      "ticker": "PLTR",
+      "sector": "Technology",
+      "industry": "Software - Infrastructure",
+      "side": "LONG",
+      "cap_tier": "large",
+      "entry_price": 208.69,
+      "shares": 40,
+      "date": "2026-10-12",
+      "stop_price": 195.88,
+      "target_price": 236.09,
+      "current_price": 197.08,
+      "days_held": 3,
+      "unrealized": -464.4,
+      "quality": 6,
+      "thesis": {
+        "date": "2026-10-12",
+        "why": "기술 5/8+8 · RSI 81.7 · MA20>MA50 · 상대강도 18.33%p · Technology/Software - Infrastructure · 퀄리티 6/7",
+        "quality": 6,
+        "entry_score": 5,
+        "entry_rel_20d": 18.33,
+        "entry_quality": 6,
+        "entry_tilted": true,
+        "invalidation": "스톱 $195.88 이탈 / 목표 $236.09 도달 / 업종 틸트 소멸"
+      },
+      "exit_price": 194.84,
+      "exit_date": "2026-10-15",
+      "pnl": -554.0,
+      "exit_reason": "스톱 이탈 ($194.90 ≤ $195.88)"
+    },
+    {
+      "ticker": "ITUB",
+      "sector": "Financials",
+      "industry": "Banks - Regional",
+      "side": "LONG",
+      "cap_tier": "large",
+      "entry_price": 10.02,
+      "shares": 363,
+      "date": "2026-10-09",
+      "stop_price": 9.37,
+      "target_price": 11.41,
+      "current_price": 9.45,
+      "days_held": 10,
+      "unrealized": -206.91,
+      "quality": 3,
+      "thesis": {
+        "date": "2026-10-09",
+        "why": "기술 5/8+3 · RSI 72.2 · MA20>MA50 · 상대강도 18.62%p · Financials/Banks - Regional · 퀄리티 3/4",
+        "quality": 3,
+        "entry_score": 5,
+        "entry_rel_20d": 18.62,
+        "entry_quality": 3,
+        "entry_tilted": true,
+        "invalidation": "스톱 $9.37 이탈 / 목표 $11.41 도달 / 업종 틸트 소멸"
+      },
+      "exit_price": 9.54,
+      "exit_date": "2026-10-19",
+      "pnl": -174.24,
+      "exit_reason": "스톱 이탈 ($9.55 ≤ $9.63 · AI스톱×0.6)"
+    },
+    {
+      "ticker": "PG",
+      "sector": "Consumer Staples",
+      "industry": "Household & Personal Products",
+      "side": "LONG",
+      "cap_tier": "large",
+      "entry_price": 159.0,
+      "shares": 33,
+      "date": "2026-10-15",
+      "stop_price": 150.81,
+      "target_price": 176.12,
+      "current_price": 157.71,
+      "days_held": 4,
+      "unrealized": -42.57,
+      "quality": 7,
+      "thesis": {
+        "date": "2026-10-15",
+        "why": "기술 5/8+6 · RSI 76.1 · MA20>MA50 · 상대강도 6.79%p · Consumer Staples/Household & Personal Products · 퀄리티 7/7",
+        "quality": 7,
+        "entry_score": 5,
+        "entry_rel_20d": 6.79,
+        "entry_quality": 7,
+        "entry_tilted": true,
+        "invalidation": "스톱 $150.81 이탈 / 목표 $176.12 도달 / 업종 틸트 소멸"
+      },
+      "exit_price": 148.51,
+      "exit_date": "2026-10-19",
+      "pnl": -346.17,
+      "exit_reason": "스톱 이탈 ($148.59 ≤ $150.81)"
+    },
+    {
+      "ticker": "PBR",
+      "sector": "Energy",
+      "industry": "Oil & Gas Integrated",
+      "side": "LONG",
+      "cap_tier": "large",
+      "entry_price": 24.17,
+      "shares": 446,
+      "date": "2026-10-05",
+      "stop_price": 22.61,
+      "target_price": 27.52,
+      "current_price": 26.32,
+      "days_held": 21,
+      "unrealized": 958.9,
+      "quality": 7,
+      "thesis": {
+        "date": "2026-10-05",
+        "why": "기술 8/8 · RSI 69.1 · MA20>MA50 · 상대강도 19.47%p · Energy/Oil & Gas Integrated · 퀄리티 7/7",
+        "quality": 7,
+        "entry_score": 6,
+        "entry_rel_20d": 19.47,
+        "entry_quality": 7,
+        "entry_tilted": true,
+        "invalidation": "스톱 $22.61 이탈 / 목표 $27.52 도달 / 업종 틸트 소멸"
+      },
+      "exit_price": 20.54,
+      "exit_date": "2026-10-26",
+      "pnl": -1618.98,
+      "exit_reason": "스톱 이탈 ($20.56 ≤ $22.61)"
+    },
+    {
+      "ticker": "SBS",
+      "sector": "Utilities",
+      "industry": "Utilities - Regulated Water",
+      "side": "LONG",
+      "cap_tier": "large",
+      "entry_price": 6.43,
+      "shares": 824,
+      "date": "2026-10-15",
+      "stop_price": 6.11,
+      "target_price": 7.08,
+      "current_price": 6.8,
+      "days_held": 11,
+      "unrealized": 304.88,
+      "quality": 6,
+      "thesis": {
+        "date": "2026-10-15",
+        "why": "기술 5/8+5 · RSI 79.3 · MA20>MA50 · 상대강도 19.53%p · Utilities/Utilities - Regulated Water · 퀄리티 6/7",
+        "quality": 6,
+        "entry_score": 5,
+        "entry_rel_20d": 19.53,
+        "entry_quality": 6,
+        "entry_tilted": true,
+        "invalidation": "스톱 $6.11 이탈 / 목표 $7.08 도달 / 업종 틸트 소멸"
+      },
+      "_exit_hold": "AI 청산 보류 — 보유 7일 < 최소 10일",
+      "exit_price": 4.99,
+      "exit_date": "2026-10-26",
+      "pnl": -1186.56,
+      "exit_reason": "스톱 이탈 ($5.00 ≤ $6.11)"
+    },
+    {
+      "ticker": "GGB",
+      "sector": "Materials",
+      "industry": "Steel",
+      "side": "LONG",
+      "cap_tier": "large",
+      "entry_price": 4.42,
+      "shares": 2233,
+      "date": "2026-10-26",
+      "stop_price": 4.21,
+      "target_price": 4.9,
+      "current_price": 4.41,
+      "days_held": 0,
+      "unrealized": -22.33,
+      "quality": 4,
+      "thesis": {
+        "date": "2026-10-26",
+        "why": "기술 7/8+4 · RSI 46.8 · MA20>MA50 · 상대강도 6.63%p · Materials/Steel · 퀄리티 4/7",
+        "quality": 4,
+        "entry_score": 7,
+        "entry_rel_20d": 6.63,
+        "entry_quality": 4,
+        "entry_tilted": true,
+        "invalidation": "스톱 $4.21 이탈 / 목표 $4.9 도달 / 업종 틸트 소멸"
+      },
+      "long_term": true,
+      "long_term_since": "2026-10-26",
+      "exit_price": 5.16,
+      "exit_date": "2026-10-26",
+      "pnl": 1652.42,
+      "exit_reason": "목표 도달 ($5.17 ≥ $4.90)"
+    },
+    {
+      "ticker": "MDLN",
+      "sector": "Health Care",
+      "industry": "Medical Instruments & Supplies",
+      "side": "LONG",
+      "cap_tier": "large",
+      "entry_price": 35.22,
+      "shares": 122,
+      "date": "2026-10-19",
+      "stop_price": 33.68,
+      "target_price": 38.5,
+      "current_price": 34.03,
+      "days_held": 7,
+      "unrealized": -145.18,
+      "quality": 5,
+      "thesis": {
+        "date": "2026-10-19",
+        "why": "기술 6/8+8 · RSI 52.0 · MA20>MA50 · 상대강도 11.02%p · Health Care/Medical Instruments & Supplies · 퀄리티 5/7",
+        "quality": 5,
+        "entry_score": 6,
+        "entry_rel_20d": 11.02,
+        "entry_quality": 5,
+        "entry_tilted": true,
+        "invalidation": "스톱 $33.68 이탈 / 목표 $38.5 도달 / 업종 틸트 소멸"
+      },
+      "_exit_hold": "AI 청산 보류 — 손실 -3.4% (교체 청산은 +0% 이상일 때만)",
+      "exit_price": 33.66,
+      "exit_date": "2026-10-26",
+      "pnl": -190.32,
+      "exit_reason": "스톱 이탈 ($33.70 ≤ $34.14 · AI스톱×0.7)"
+    },
+    {
+      "ticker": "GME",
+      "sector": "Consumer Discretionary",
+      "industry": "Specialty Retail",
+      "side": "LONG",
+      "cap_tier": "mid",
+      "entry_price": 25.16,
+      "shares": 230,
+      "date": "2026-10-05",
+      "stop_price": 23.04,
+      "target_price": 29.03,
+      "current_price": 23.88,
+      "days_held": 21,
+      "unrealized": -293.37,
+      "quality": 6,
+      "thesis": {
+        "date": "2026-10-05",
+        "why": "기술 9/8 · RSI 68.2 · MA20>MA50 · 상대강도 28.91%p · Consumer Discretionary/Specialty Retail · 퀄리티 6/7",
+        "quality": 6,
+        "entry_score": 6,
+        "entry_rel_20d": 28.91,
+        "entry_quality": 6,
+        "entry_tilted": true,
+        "invalidation": "스톱 $23.04 이탈 / 목표 $29.03 도달 / 업종 틸트 소멸"
+      },
+      "exit_price": 23.53,
+      "exit_date": "2026-10-26",
+      "pnl": -374.9,
+      "exit_reason": "스톱 이탈 ($23.56 ≤ $23.68 · AI스톱×0.7)"
     }
   ],
   "total_invested": 0.0,
   "spy_baseline_price": 741.75,
   "spy_baseline_date": "2026-06-15",
-  "spy_current_price": 778.82,
+  "spy_current_price": 770.33,
   "qqq_current_price": 706.52,
   "qqq_baseline_price": 706.52,
   "qqq_baseline_date": "2026-06-27",
-  "nasdaq_current_price": 742.94,
+  "nasdaq_current_price": 721.6,
   "nasdaq_baseline_price": 709.43,
   "nasdaq_baseline_date": "2026-07-08",
-  "dia_current_price": 521.54,
+  "dia_current_price": 523.62,
   "dia_baseline_price": 517.84,
   "dia_baseline_date": "2026-07-24",
-  "iwm_current_price": 279.22,
+  "iwm_current_price": 279.67,
   "iwm_baseline_price": 293.26,
   "iwm_baseline_date": "2026-07-24",
   "equity_curve": [
@@ -3514,21 +3736,82 @@
     },
     {
       "date": "2026-10-13",
-      "total": 104687.78,
-      "spy": 778.82,
-      "qqq": 742.94
+      "total": 104383.35,
+      "spy": 778.07,
+      "qqq": 743.65
+    },
+    {
+      "date": "2026-10-14",
+      "total": 103313.8,
+      "spy": 768.97,
+      "qqq": 727.58
+    },
+    {
+      "date": "2026-10-15",
+      "total": 101952.58,
+      "spy": 771.49,
+      "qqq": 727.03
+    },
+    {
+      "date": "2026-10-16",
+      "total": 102319.28,
+      "spy": 763.1,
+      "qqq": 710.08
+    },
+    {
+      "date": "2026-10-19",
+      "total": 101606.75,
+      "spy": 766.96,
+      "qqq": 718.93
+    },
+    {
+      "date": "2026-10-20",
+      "total": 101883.09,
+      "spy": 771.43,
+      "qqq": 722.0
+    },
+    {
+      "date": "2026-10-21",
+      "total": 101768.25,
+      "spy": 773.02,
+      "qqq": 725.18
+    },
+    {
+      "date": "2026-10-22",
+      "total": 102038.05,
+      "spy": 764.14,
+      "qqq": 703.92
+    },
+    {
+      "date": "2026-10-23",
+      "total": 102158.99,
+      "spy": 761.14,
+      "qqq": 705.4
+    },
+    {
+      "date": "2026-10-26",
+      "total": 99541.14,
+      "spy": 765.31,
+      "qqq": 712.45
+    },
+    {
+      "date": "2026-10-27",
+      "total": 99841.85,
+      "spy": 770.33,
+      "qqq": 721.6
     }
   ],
   "market_info": {
-    "date": "2026-10-13",
-    "aggression": 0.555,
-    "spread": -3.11,
-    "rsp20": -0.85,
-    "spy20": 2.26,
-    "iwm20": -3.48,
+    "date": "2026-10-27",
+    "aggression": 0.767,
+    "spread": 2.93,
+    "rsp20": 3.73,
+    "spy20": 0.8,
+    "iwm20": 0.23,
     "iwm_below_ma50": true,
-    "vix": 15.33,
-    "sentiment": 0.7,
-    "aggression_bias": 0.25
-  }
+    "vix": 17.54,
+    "sentiment": 0.914,
+    "aggression_bias": 0.08
+  },
+  "pending": []
 }
